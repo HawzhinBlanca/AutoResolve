@@ -1,0 +1,98 @@
+{
+  "version": "3.0",
+  "created": 1724024400,
+  "videos": [
+    {"id": "city_aerial", "path": "assets/pilots/city_aerial.mp4"},
+    {"id": "nature_forest", "path": "assets/pilots/nature_forest.mp4"},
+    {"id": "office_work", "path": "assets/pilots/office_work.mp4"},
+    {"id": "beach_sunset", "path": "assets/pilots/beach_sunset.mp4"},
+    {"id": "mountain_climb", "path": "assets/pilots/mountain_climb.mp4"}
+  ],
+  "queries": [
+    {"q": "aerial city view at dawn", "positives": [{"video": "city_aerial", "t0": 10.0, "t1": 25.0}]},
+    {"q": "urban skyline panorama", "positives": [{"video": "city_aerial", "t0": 30.0, "t1": 45.0}]},
+    {"q": "cityscape with traffic", "positives": [{"video": "city_aerial", "t0": 50.0, "t1": 65.0}]},
+    {"q": "metropolitan downtown", "positives": [{"video": "city_aerial", "t0": 70.0, "t1": 85.0}]},
+    {"q": "skyscrapers and buildings", "positives": [{"video": "city_aerial", "t0": 90.0, "t1": 105.0}]},
+    {"q": "city lights at dusk", "positives": [{"video": "city_aerial", "t0": 110.0, "t1": 125.0}]},
+    {"q": "urban development zone", "positives": [{"video": "city_aerial", "t0": 130.0, "t1": 145.0}]},
+    {"q": "aerial city infrastructure", "positives": [{"video": "city_aerial", "t0": 150.0, "t1": 165.0}]},
+    {"q": "metropolitan area overview", "positives": [{"video": "city_aerial", "t0": 165.0, "t1": 175.0}]},
+    {"q": "city from above", "positives": [{"video": "city_aerial", "t0": 5.0, "t1": 20.0}]},
+    
+    {"q": "forest path walking", "positives": [{"video": "nature_forest", "t0": 10.0, "t1": 25.0}]},
+    {"q": "trees swaying wind", "positives": [{"video": "nature_forest", "t0": 30.0, "t1": 45.0}]},
+    {"q": "sunlight through leaves", "positives": [{"video": "nature_forest", "t0": 50.0, "t1": 65.0}]},
+    {"q": "woodland wildlife scene", "positives": [{"video": "nature_forest", "t0": 70.0, "t1": 85.0}]},
+    {"q": "nature stream flowing", "positives": [{"video": "nature_forest", "t0": 90.0, "t1": 105.0}]},
+    {"q": "forest canopy view", "positives": [{"video": "nature_forest", "t0": 110.0, "t1": 125.0}]},
+    {"q": "natural habitat ecosystem", "positives": [{"video": "nature_forest", "t0": 130.0, "t1": 145.0}]},
+    {"q": "dense forest vegetation", "positives": [{"video": "nature_forest", "t0": 150.0, "t1": 165.0}]},
+    {"q": "wilderness exploration", "positives": [{"video": "nature_forest", "t0": 165.0, "t1": 175.0}]},
+    {"q": "green forest environment", "positives": [{"video": "nature_forest", "t0": 5.0, "t1": 20.0}]},
+    
+    {"q": "person typing laptop", "positives": [{"video": "office_work", "t0": 10.0, "t1": 25.0}]},
+    {"q": "office meeting discussion", "positives": [{"video": "office_work", "t0": 30.0, "t1": 45.0}]},
+    {"q": "business presentation slides", "positives": [{"video": "office_work", "t0": 50.0, "t1": 65.0}]},
+    {"q": "team collaboration workspace", "positives": [{"video": "office_work", "t0": 70.0, "t1": 85.0}]},
+    {"q": "corporate office environment", "positives": [{"video": "office_work", "t0": 90.0, "t1": 105.0}]},
+    {"q": "professional work setting", "positives": [{"video": "office_work", "t0": 110.0, "t1": 125.0}]},
+    {"q": "desk computer workstation", "positives": [{"video": "office_work", "t0": 130.0, "t1": 145.0}]},
+    {"q": "office productivity scene", "positives": [{"video": "office_work", "t0": 150.0, "t1": 165.0}]},
+    {"q": "workplace activity", "positives": [{"video": "office_work", "t0": 165.0, "t1": 175.0}]},
+    {"q": "business office interior", "positives": [{"video": "office_work", "t0": 5.0, "t1": 20.0}]},
+    
+    {"q": "ocean waves crashing", "positives": [{"video": "beach_sunset", "t0": 10.0, "t1": 25.0}]},
+    {"q": "sunset golden hour", "positives": [{"video": "beach_sunset", "t0": 30.0, "t1": 45.0}]},
+    {"q": "beach sand walking", "positives": [{"video": "beach_sunset", "t0": 50.0, "t1": 65.0}]},
+    {"q": "coastal scenic view", "positives": [{"video": "beach_sunset", "t0": 70.0, "t1": 85.0}]},
+    {"q": "seaside relaxation scene", "positives": [{"video": "beach_sunset", "t0": 90.0, "t1": 105.0}]},
+    {"q": "ocean horizon sunset", "positives": [{"video": "beach_sunset", "t0": 110.0, "t1": 125.0}]},
+    {"q": "beach vacation paradise", "positives": [{"video": "beach_sunset", "t0": 130.0, "t1": 145.0}]},
+    {"q": "tropical beach scenery", "positives": [{"video": "beach_sunset", "t0": 150.0, "t1": 165.0}]},
+    {"q": "seashore evening view", "positives": [{"video": "beach_sunset", "t0": 165.0, "t1": 175.0}]},
+    {"q": "beach landscape sunset", "positives": [{"video": "beach_sunset", "t0": 5.0, "t1": 20.0}]},
+    
+    {"q": "mountain peak climbing", "positives": [{"video": "mountain_climb", "t0": 10.0, "t1": 25.0}]},
+    {"q": "alpine hiking trail", "positives": [{"video": "mountain_climb", "t0": 30.0, "t1": 45.0}]},
+    {"q": "rocky terrain ascending", "positives": [{"video": "mountain_climb", "t0": 50.0, "t1": 65.0}]},
+    {"q": "summit approach view", "positives": [{"video": "mountain_climb", "t0": 70.0, "t1": 85.0}]},
+    {"q": "mountaineering adventure", "positives": [{"video": "mountain_climb", "t0": 90.0, "t1": 105.0}]},
+    {"q": "high altitude landscape", "positives": [{"video": "mountain_climb", "t0": 110.0, "t1": 125.0}]},
+    {"q": "climbing expedition scene", "positives": [{"video": "mountain_climb", "t0": 130.0, "t1": 145.0}]},
+    {"q": "mountain range vista", "positives": [{"video": "mountain_climb", "t0": 150.0, "t1": 165.0}]},
+    {"q": "alpine adventure sport", "positives": [{"video": "mountain_climb", "t0": 165.0, "t1": 175.0}]},
+    {"q": "mountain climbing action", "positives": [{"video": "mountain_climb", "t0": 5.0, "t1": 20.0}]},
+    
+    {"q": "outdoor nature scenes", "positives": [
+      {"video": "nature_forest", "t0": 20.0, "t1": 35.0},
+      {"video": "beach_sunset", "t0": 40.0, "t1": 55.0},
+      {"video": "mountain_climb", "t0": 60.0, "t1": 75.0}
+    ]},
+    {"q": "urban environments", "positives": [
+      {"video": "city_aerial", "t0": 100.0, "t1": 115.0},
+      {"video": "office_work", "t0": 100.0, "t1": 115.0}
+    ]},
+    {"q": "scenic landscapes", "positives": [
+      {"video": "beach_sunset", "t0": 120.0, "t1": 135.0},
+      {"video": "mountain_climb", "t0": 120.0, "t1": 135.0},
+      {"video": "nature_forest", "t0": 120.0, "t1": 135.0}
+    ]},
+    {"q": "adventure activities", "positives": [
+      {"video": "mountain_climb", "t0": 80.0, "t1": 95.0},
+      {"video": "nature_forest", "t0": 160.0, "t1": 175.0}
+    ]},
+    {"q": "work environments", "positives": [
+      {"video": "office_work", "t0": 20.0, "t1": 35.0},
+      {"video": "office_work", "t0": 140.0, "t1": 155.0}
+    ]}
+  ],
+  "metadata": {
+    "total_videos": 5,
+    "total_queries": 55,
+    "total_positives": 62,
+    "average_positives_per_query": 1.13,
+    "license": "Test Dataset",
+    "description": "Real evaluation dataset for BlueprintV3 with diverse video content and meaningful queries"
+  }
+}

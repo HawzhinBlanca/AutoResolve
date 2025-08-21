@@ -1,0 +1,1 @@
+{"model": "vjepa2-vitl-fpc64-256", "weights_hash": "4c279bf0a64e7197", "fps": 1.0, "window": 8, "crop": 256, "segments": 22, "elapsed_s": 6.023346900939941, "sec_per_min": 2.007782300313314, "peak_rss_gb": 0.6443328857421875, "device": "mps", "timestamp": 1755711312.226078}

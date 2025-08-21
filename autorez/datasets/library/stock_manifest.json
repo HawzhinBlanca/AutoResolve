@@ -1,0 +1,62 @@
+{
+  "clips": [
+    {
+      "id": "city_aerial_01",
+      "path": "assets/stock/city_aerial_01.mp4",
+      "tags": ["city", "aerial", "sunset"]
+    },
+    {
+      "id": "typing_hands_05",
+      "path": "assets/stock/typing_hands_05.mp4",
+      "tags": ["typing", "hands", "closeup"]
+    },
+    {
+      "id": "nature_forest_02",
+      "path": "assets/stock/nature_forest_02.mp4",
+      "tags": ["nature", "forest", "trees", "green"]
+    },
+    {
+      "id": "office_meeting_03",
+      "path": "assets/stock/office_meeting_03.mp4",
+      "tags": ["office", "meeting", "business", "people"]
+    },
+    {
+      "id": "coffee_pour_04",
+      "path": "assets/stock/coffee_pour_04.mp4",
+      "tags": ["coffee", "morning", "closeup", "beverage"]
+    },
+    {
+      "id": "code_screen_06",
+      "path": "assets/stock/code_screen_06.mp4",
+      "tags": ["coding", "programming", "screen", "technology"]
+    },
+    {
+      "id": "sunrise_timelapse_07",
+      "path": "assets/stock/sunrise_timelapse_07.mp4",
+      "tags": ["sunrise", "timelapse", "sky", "morning"]
+    },
+    {
+      "id": "busy_street_08",
+      "path": "assets/stock/busy_street_08.mp4",
+      "tags": ["street", "city", "people", "urban"]
+    },
+    {
+      "id": "abstract_particles_09",
+      "path": "assets/stock/abstract_particles_09.mp4",
+      "tags": ["abstract", "particles", "motion", "graphics"]
+    },
+    {
+      "id": "waves_beach_10",
+      "path": "assets/stock/waves_beach_10.mp4",
+      "tags": ["beach", "waves", "ocean", "nature"]
+    }
+  ],
+  "meta": {
+    "version": "1.0",
+    "created": "2025-08-19",
+    "total_clips": 10,
+    "format": "mp4",
+    "resolution": "1920x1080",
+    "fps": 30
+  }
+}

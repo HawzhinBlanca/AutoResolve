@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/debug/AutoResolveUI.build/master.swiftdeps"
+  },
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/SimpleEnhanced.swift": {
+    "dependencies": "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/debug/AutoResolveUI.build/SimpleEnhanced.d",
+    "object": "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/debug/AutoResolveUI.build/SimpleEnhanced.swift.o",
+    "swiftmodule": "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/debug/AutoResolveUI.build/SimpleEnhanced~partial.swiftmodule",
+    "swift-dependencies": "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/debug/AutoResolveUI.build/SimpleEnhanced.swiftdeps"
+  }
+}

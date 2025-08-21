@@ -1,0 +1,607 @@
+{
+  "version": "3.0",
+  "source_selection": "assets/pilots/art_painting.mp4",
+  "placements": [
+    {
+      "id": "broll_1",
+      "main_segment": [
+        0.0,
+        7.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 0.0,
+        "end_time": 5.6000000000000005,
+        "duration": 5.6000000000000005
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_2",
+      "main_segment": [
+        8.0,
+        15.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 8.0,
+        "end_time": 13.600000000000001,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_3",
+      "main_segment": [
+        16.0,
+        23.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 16.0,
+        "end_time": 21.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_4",
+      "main_segment": [
+        24.0,
+        31.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 24.0,
+        "end_time": 29.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_5",
+      "main_segment": [
+        32.0,
+        39.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 32.0,
+        "end_time": 37.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_6",
+      "main_segment": [
+        40.0,
+        47.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 40.0,
+        "end_time": 45.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_7",
+      "main_segment": [
+        48.0,
+        55.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 48.0,
+        "end_time": 53.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_8",
+      "main_segment": [
+        56.0,
+        63.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 56.0,
+        "end_time": 61.6,
+        "duration": 5.600000000000001
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_9",
+      "main_segment": [
+        64.0,
+        71.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 64.0,
+        "end_time": 69.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_10",
+      "main_segment": [
+        72.0,
+        79.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 72.0,
+        "end_time": 77.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_11",
+      "main_segment": [
+        80.0,
+        87.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 80.0,
+        "end_time": 85.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_12",
+      "main_segment": [
+        88.0,
+        95.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 88.0,
+        "end_time": 93.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_13",
+      "main_segment": [
+        96.0,
+        103.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 96.0,
+        "end_time": 101.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_14",
+      "main_segment": [
+        104.0,
+        111.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 104.0,
+        "end_time": 109.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_15",
+      "main_segment": [
+        112.0,
+        119.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 112.0,
+        "end_time": 117.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_16",
+      "main_segment": [
+        120.0,
+        127.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 120.0,
+        "end_time": 125.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_17",
+      "main_segment": [
+        128.0,
+        135.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 128.0,
+        "end_time": 133.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_18",
+      "main_segment": [
+        136.0,
+        143.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 136.0,
+        "end_time": 141.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_19",
+      "main_segment": [
+        144.0,
+        151.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 144.0,
+        "end_time": 149.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_20",
+      "main_segment": [
+        152.0,
+        159.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 152.0,
+        "end_time": 157.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_21",
+      "main_segment": [
+        160.0,
+        167.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 160.0,
+        "end_time": 165.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    },
+    {
+      "id": "broll_22",
+      "main_segment": [
+        168.0,
+        175.0
+      ],
+      "broll_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "placement": {
+        "start_time": 168.0,
+        "end_time": 173.6,
+        "duration": 5.599999999999994
+      },
+      "track": "V2",
+      "opacity": 1.0,
+      "has_conflict": false,
+      "query_used": "close up of hands"
+    }
+  ],
+  "protected_regions": [],
+  "metadata": {
+    "generated_at": 1755714268.800853,
+    "conflict_rate": 0.0,
+    "total_placements": 22,
+    "algorithm": "conflict_avoidance_v1"
+  }
+}

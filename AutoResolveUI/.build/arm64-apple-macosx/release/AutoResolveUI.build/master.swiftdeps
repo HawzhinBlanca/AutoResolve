@@ -1,0 +1,17 @@
+version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
+options: "d334ce4d60e5031dd265985c7c79fbb2d81a516178c4f3f211a34495c55d7dce"
+build_start_time: [1755814441, 390498000]
+build_end_time: [1755814443, 130743000]
+inputs:
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/BackendService.swift": !dirty [1755813786, 757065404]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/CompleteProfessionalTimeline.swift": !dirty [1755811621, 954011751]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/KeyboardShortcuts.swift": !dirty [1755813807, 327600945]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/MenuBarCommands.swift": !dirty [1755811675, 576242259]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/ProjectPersistence.swift": !dirty [1755813888, 703520218]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/UndoRedoSystem.swift": !dirty [1755813897, 907454477]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProject.swift": !dirty [1755811009, 263990434]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProjectStore.swift": !dirty [1755813834, 962003696]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/MinimalWorkingApp.swift": !dirty [1755814433, 549472617]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/NeuralTimelineView.swift": !dirty [1755805375, 66850502]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/UnifiedStoreWithBackend.swift": !dirty [1755811611, 97850152]
+  "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/main.swift": !dirty [1755813411, 627751023]

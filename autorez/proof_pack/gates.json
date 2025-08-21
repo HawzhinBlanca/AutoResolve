@@ -1,0 +1,58 @@
+{
+  "retrieval": {
+    "vjepa_improvement": {
+      "target": "\u226515%",
+      "actual": "666.7%",
+      "pass": true
+    },
+    "ci_lower_bound": {
+      "target": ">0",
+      "actual": "Top3: 0.291, MRR: 0.170",
+      "pass": true
+    },
+    "vjepa_speed": {
+      "target": "\u22645.0 sec/min",
+      "actual": "2.01 sec/min",
+      "pass": true
+    },
+    "clip_speed": {
+      "target": "\u22642.0 sec/min",
+      "actual": "not_tested",
+      "pass": false
+    }
+  },
+  "system": {
+    "memory": {
+      "target": "<16GB",
+      "actual": "0.64GB",
+      "pass": true
+    },
+    "determinism": {
+      "target": "yes",
+      "actual": "verified",
+      "pass": true
+    },
+    "cache_hit": {
+      "target": ">90%",
+      "actual": "not_tested",
+      "pass": false
+    }
+  },
+  "director": {
+    "f1_iou": {
+      "target": "\u22650.60",
+      "actual": "not_tested",
+      "pass": false
+    },
+    "pr_auc": {
+      "target": "\u22650.65",
+      "actual": "not_tested",
+      "pass": false
+    },
+    "speed": {
+      "target": "\u22647.5 sec/min",
+      "actual": "not_tested",
+      "pass": false
+    }
+  }
+}

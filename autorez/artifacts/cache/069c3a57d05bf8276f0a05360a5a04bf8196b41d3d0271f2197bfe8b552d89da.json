@@ -1,0 +1,1 @@
+{"model": "timesformer-base", "weights_hash": "8fbbc9d4c78ffb67", "fps": 1.0, "window": 16, "crop": 224, "segments": 11, "elapsed_s": 0.7067131996154785, "sec_per_min": 0.23557106653849283, "peak_rss_gb": 0.48193359375, "device": "mps", "timestamp": 1755538580.4974148}

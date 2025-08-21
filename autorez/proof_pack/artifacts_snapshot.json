@@ -1,0 +1,28 @@
+{
+  "artifacts": {
+    "exists": true,
+    "num_files": 0,
+    "total_size_bytes": 0
+  },
+  "logs": {
+    "exists": true,
+    "num_files": 0,
+    "total_size_bytes": 0
+  },
+  "cache": {
+    "exists": true,
+    "num_files": 0,
+    "total_size_bytes": 0
+  },
+  "proof_pack": {
+    "exists": true,
+    "num_files": 12,
+    "total_size_bytes": 9354
+  },
+  "assets": {
+    "exists": true,
+    "num_files": 2,
+    "total_size_bytes": 22504716
+  },
+  "timestamp": "2025-08-18T01:10:00Z"
+}

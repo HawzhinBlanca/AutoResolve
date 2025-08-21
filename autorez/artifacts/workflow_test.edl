@@ -1,0 +1,6 @@
+TITLE: AutoResolve Edit
+
+FCM: NON-DROP FRAME
+
+001  test_vid V     C        00:00:00:00 00:00:30:00 00:00:00:00 00:00:30:00
+* FROM CLIP NAME: test_video.mp4

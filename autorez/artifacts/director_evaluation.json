@@ -1,0 +1,93 @@
+{
+  "narrative": {
+    "module": "narrative",
+    "f1_iou_0.5": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "pr_auc": 0.0,
+    "sec_per_min": 5.0,
+    "peak_rss_gb": 8.0,
+    "processing_time": 0.0,
+    "gates": {
+      "f1_passes": false,
+      "pr_auc_passes": false,
+      "perf_passes": true,
+      "memory_passes": true
+    },
+    "status": "fail"
+  },
+  "emotion": {
+    "module": "emotion",
+    "f1_iou_0.5": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "pr_auc": 0.0,
+    "sec_per_min": 5.0,
+    "peak_rss_gb": 8.0,
+    "processing_time": 0.0,
+    "gates": {
+      "f1_passes": false,
+      "pr_auc_passes": false,
+      "perf_passes": true,
+      "memory_passes": true
+    },
+    "status": "fail"
+  },
+  "rhythm": {
+    "module": "rhythm",
+    "f1_iou_0.5": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "pr_auc": 0.0,
+    "sec_per_min": 5.0,
+    "peak_rss_gb": 8.0,
+    "processing_time": 9.5367431640625e-07,
+    "gates": {
+      "f1_passes": false,
+      "pr_auc_passes": false,
+      "perf_passes": true,
+      "memory_passes": true
+    },
+    "status": "fail"
+  },
+  "continuity": {
+    "module": "continuity",
+    "f1_iou_0.5": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "pr_auc": 0.0,
+    "sec_per_min": 5.0,
+    "peak_rss_gb": 8.0,
+    "processing_time": 0.0,
+    "gates": {
+      "f1_passes": false,
+      "pr_auc_passes": false,
+      "perf_passes": true,
+      "memory_passes": true
+    },
+    "status": "fail"
+  },
+  "emphasis": {
+    "module": "emphasis",
+    "f1_iou_0.5": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "pr_auc": 0.0,
+    "sec_per_min": 5.0,
+    "peak_rss_gb": 8.0,
+    "processing_time": 9.5367431640625e-07,
+    "gates": {
+      "f1_passes": false,
+      "pr_auc_passes": false,
+      "perf_passes": true,
+      "memory_passes": true
+    },
+    "status": "fail"
+  },
+  "summary": {
+    "all_modules_pass": false,
+    "modules_evaluated": 5,
+    "modules_passed": 0,
+    "timestamp": 1755711846.5315042
+  }
+}

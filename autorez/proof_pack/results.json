@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-08-21T00:21:59.465524",
+  "structure_compliant": false,
+  "clip_status": "operational",
+  "vjepa_status": "operational",
+  "gates_summary": {
+    "total": 10,
+    "passed": 5
+  },
+  "promotion": true
+}

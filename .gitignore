@@ -1,0 +1,180 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Video processing artifacts
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.3gp
+*.ogv
+*.ts
+*.mts
+*.m2ts
+
+# Audio files
+*.wav
+*.mp3
+*.aac
+*.flac
+*.ogg
+*.wma
+*.m4a
+
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.svg
+*.webp
+
+# DaVinci Resolve project files
+*.drp
+*.drx
+*.dra
+
+# FCP XML and OTIO files (keep these as they're part of the pipeline)
+# *.fcpxml
+# *.otio
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+*.jsonl
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Swift build artifacts
+.build/
+.swiftpm/
+DerivedData/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+artifacts/renders/
+artifacts/logs/
+artifacts/hf/
+artifacts/cache/
+artifacts/*.pt
+artifacts/*.pth
+artifacts/*.ckpt
+artifacts/*.safetensors
+*.db
+pro_auto_editor.egg-info/
+
+# Keep essential pipeline files
+!artifacts/editdata/*.fcpxml
+!artifacts/editdata/*.otio
+!artifacts/editdata/*.json
+!artifacts/editdata/*.srt

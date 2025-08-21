@@ -1,0 +1,14 @@
+Testing core modules...
+{
+  "memory_governor": "functional",
+  "alignment": {
+    "shape": "(768, 1024)",
+    "cv_score": 0.021343398839235306
+  },
+  "bootstrap_ci": [
+    0.6597349643707275,
+    0.6870921850204468,
+    0.7146121263504028
+  ],
+  "scoring": 0.24766694542344564
+}

@@ -1,0 +1,19 @@
+{
+  "source": "test_video.mp4",
+  "shorts": [],
+  "params": {
+    "target": 60,
+    "min_seg": 3.0,
+    "max_seg": 18.0,
+    "topk": 2,
+    "use_director": true,
+    "caption_burn": false
+  },
+  "meta": {
+    "candidates_generated": 0,
+    "candidates_after_nms": 0,
+    "shorts_exported": 0,
+    "total_duration": 0,
+    "processing_time": 0.00013589859008789062
+  }
+}

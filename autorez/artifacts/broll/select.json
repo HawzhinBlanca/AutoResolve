@@ -1,0 +1,672 @@
+{
+  "version": "3.0",
+  "main_video": "assets/pilots/art_painting.mp4",
+  "library_used": "datasets/library/stock_manifest.json",
+  "selections": [
+    {
+      "main_segment_time": [
+        0.0,
+        7.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        8.0,
+        15.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        16.0,
+        23.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        24.0,
+        31.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        32.0,
+        39.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        40.0,
+        47.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        48.0,
+        55.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        56.0,
+        63.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        64.0,
+        71.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        72.0,
+        79.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        80.0,
+        87.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        88.0,
+        95.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        96.0,
+        103.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        104.0,
+        111.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        112.0,
+        119.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        120.0,
+        127.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        128.0,
+        135.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        136.0,
+        143.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        144.0,
+        151.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        152.0,
+        159.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        160.0,
+        167.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    },
+    {
+      "main_segment_time": [
+        168.0,
+        175.0
+      ],
+      "query": "close up of hands",
+      "selected_clip": {
+        "id": "typing_hands_05",
+        "path": "assets/stock/typing_hands_05.mp4",
+        "score": 0.7659316658973694,
+        "tags": [
+          "typing",
+          "hands",
+          "closeup"
+        ],
+        "duration": 10.0
+      },
+      "alternatives": [
+        {
+          "id": "coffee_pour_04",
+          "score": 0.3824657201766968,
+          "path": "assets/stock/coffee_pour_04.mp4"
+        },
+        {
+          "id": "abstract_particles_09",
+          "score": 0.35983774065971375,
+          "path": "assets/stock/abstract_particles_09.mp4"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "generated_at": 1755714259.4979498,
+    "match_rate": 0.2,
+    "total_selections": 22
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "clip": {
+    "status": "operational",
+    "model": "openclip-ViT-H-14-laion2B-s32B-b79K",
+    "weights_hash": "857337b80809458d",
+    "text_encoding": "working",
+    "embedding_dim": 1024
+  },
+  "vjepa": {
+    "status": "operational",
+    "model": "vjepa2-vitl-fpc64-256",
+    "weights_hash": "4c279bf0a64e7197",
+    "checkpoint_support": true,
+    "frame_cls_support": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "memory": {
+    "status": "working",
+    "current_rss_gb": 1.16,
+    "budget_defaults": {
+      "max_gb": 16.0,
+      "fps": 1.0,
+      "window": 16,
+      "crop": 256
+    },
+    "degradation_order": "fps -> window -> crop",
+    "seed": 1234
+  },
+  "cache": {
+    "status": "working",
+    "deterministic_keys": true,
+    "npz_compression": true,
+    "json_metadata": true,
+    "test_key_sample": "4dfe7e135989b764..."
+  }
+}

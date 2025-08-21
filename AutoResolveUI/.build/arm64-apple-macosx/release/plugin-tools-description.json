@@ -1,0 +1,439 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.AutoResolveUI-arm64-apple-macosx15.0-release.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/sources",
+      "importPath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/BackendService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/CompleteProfessionalTimeline.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/KeyboardShortcuts.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/MenuBarCommands.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/ProjectPersistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/UndoRedoSystem.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProject.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProjectStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/MinimalWorkingApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/NeuralTimelineView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/UnifiedStoreWithBackend.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "AutoResolveUI",
+      "moduleOutputPath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/Modules/AutoResolveUI.swiftmodule",
+      "objects" : [
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/BackendService.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/CompleteProfessionalTimeline.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/KeyboardShortcuts.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MenuBarCommands.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/ProjectPersistence.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UndoRedoSystem.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProject.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProjectStore.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MinimalWorkingApp.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/NeuralTimelineView.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UnifiedStoreWithBackend.swift.o",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-O",
+        "-j14",
+        "-DSWIFT_PACKAGE",
+        "-module-cache-path",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "AutoResolveUI_main",
+        "-swift-version",
+        "5",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "autoresolveui"
+      ],
+      "outputFileMapPath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/BackendService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/CompleteProfessionalTimeline.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/KeyboardShortcuts.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MenuBarCommands.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/ProjectPersistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UndoRedoSystem.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProject.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProjectStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MinimalWorkingApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/NeuralTimelineView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UnifiedStoreWithBackend.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/Modules/AutoResolveUI.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/BackendService.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/CompleteProfessionalTimeline.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/KeyboardShortcuts.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/MenuBarCommands.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/ProjectPersistence.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/UndoRedoSystem.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProject.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProjectStore.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/MinimalWorkingApp.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/NeuralTimelineView.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/UnifiedStoreWithBackend.swift",
+        "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/main.swift"
+      ],
+      "tempsPath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build",
+      "wholeModuleOptimization" : true
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "AutoResolveUI" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "AutoResolveUI",
+      "-package-name",
+      "autoresolveui",
+      "-whole-module-optimization",
+      "-num-threads",
+      "14",
+      "-c",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/BackendService.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/CompleteProfessionalTimeline.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/KeyboardShortcuts.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/MenuBarCommands.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/ProjectPersistence.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/UndoRedoSystem.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProject.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProjectStore.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/MinimalWorkingApp.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/NeuralTimelineView.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/UnifiedStoreWithBackend.swift",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/main.swift",
+      "-I",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-O",
+      "-j14",
+      "-DSWIFT_PACKAGE",
+      "-module-cache-path",
+      "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "AutoResolveUI_main",
+      "-swift-version",
+      "5",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "autoresolveui",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "AutoResolveUI" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "enableAllTraits" : false
+  },
+  "writeCommands" : {
+    "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/BackendService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/CompleteProfessionalTimeline.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/KeyboardShortcuts.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/MenuBarCommands.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/ProjectPersistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/UndoRedoSystem.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProject.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/Core/VideoProjectStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/MinimalWorkingApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/NeuralTimelineView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/UnifiedStoreWithBackend.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/Sources/AutoResolveUI/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/sources"
+    },
+    "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/BackendService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/CompleteProfessionalTimeline.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/KeyboardShortcuts.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MenuBarCommands.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/MinimalWorkingApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/NeuralTimelineView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/ProjectPersistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UndoRedoSystem.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/UnifiedStoreWithBackend.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProject.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/VideoProjectStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/AutoResolveUI.product/Objects.LinkFileList"
+    },
+    "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/hawzhin/AutoResolve/AutoResolveUI/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "keep": [
+    {
+      "t0": 0,
+      "t1": 30.0001875
+    }
+  ],
+  "removed": [],
+  "params": {
+    "rms_thresh_db": -34.0,
+    "min_silence_s": 0.35,
+    "min_keep_s": 0.4,
+    "pad_s": 0.05
+  },
+  "meta": {
+    "original_duration": 30.0001875,
+    "kept_duration": 30.0001875,
+    "removed_duration": 0,
+    "processing_time": 0.01178121566772461,
+    "compression_ratio": 1.0,
+    "false_cut_rate": 0.0
+  }
+}

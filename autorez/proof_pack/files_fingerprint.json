@@ -1,0 +1,18 @@
+{
+  "files_sha256": {
+    "requirements.txt": "b80c157bed0494513b2dc510a86a32b965d9c276302a523bb72defa93b78bce6",
+    "Makefile": "f3fbb497c6bc5e7b5e79155178e1fcb8a860087d49ed3f8b090415570ea19e89",
+    "conf/embeddings.ini": "5bf92fc9421973de862ca24442df60ffe87fcc01441b4f7c298a3a63e1d8fd54",
+    "src/utils/memory.py": "903fde41fbd67b90be64917036ebfa8315b18c64189ddff60ca944f4253a0c55",
+    "src/utils/cache.py": "34d72758fbf578fccaebea72ffbb93881d9de0912513aaa9ab615d27231e222c",
+    "src/embedders/vjepa_embedder.py": "23a019aa16677d7e69681ad593309086e03343fd42e83ed3b7d10a4cbb1ca385",
+    "src/embedders/clip_embedder.py": "443cbc8d2ab685078980cd488db2612be0273b415fa0fce01e2263f38dd63d43",
+    "src/align/align_vjepa_to_clip.py": "adb5d07f449e909efdd478e9721e265ee537d41403b46b869e85c097e3cfdfa8",
+    "src/scoring/broll_scoring.py": "dc9fc98321e6eabf0c27c2dbe344dbeda907f5cbf8c4f55e9bc8f68910a63cff",
+    "src/eval/ablate_vjepa_vs_clip.py": "d2c880d72968f4b766de8d2f0996b298f41c6510ed58362c5ddae6f5787b4e1e",
+    "src/eval/bootstrap_ci.py": "86c6d6b5ef596829c02862e30c3a21f15691f3694714e7a70ea537dda8b2da6a",
+    "datasets/broll_pilot/manifest.json": "763ba64c8a995925d391c7fa558b4f8190098842259e063153caa81adca8f145"
+  },
+  "total_files": 12,
+  "timestamp": "2025-08-18T01:00:00Z"
+}

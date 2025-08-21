@@ -1,0 +1,12 @@
+{
+  "basic": true,
+  "video": true,
+  "frame_cls": false,
+  "checkpoint": true,
+  "robustness": false,
+  "memory": true,
+  "sec_per_min": 0.21583199501037598,
+  "peak_rss_gb": 1.0106964111328125,
+  "perf_passed": true,
+  "mem_passed": true
+}

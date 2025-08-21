@@ -1,0 +1,5 @@
+{
+  "compliant": false,
+  "output": "",
+  "errors": "python3: can't open file '/Users/hawzhin/AutoResolve/autorez/verify_blueprint3_structure.py': [Errno 2] No such file or directory\n"
+}
