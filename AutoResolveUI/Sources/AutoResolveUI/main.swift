@@ -12,6 +12,7 @@ struct AutoResolveApp: App {
     @StateObject private var videoPlayerViewModel = VideoPlayerViewModel()
     @StateObject private var undoManager = ProfessionalUndoManager()
     @StateObject private var backendService = BackendService()
+    @StateObject private var unifiedStore = UnifiedStore.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     init() {
@@ -21,13 +22,14 @@ struct AutoResolveApp: App {
     
     var body: some SwiftUI.Scene {
         WindowGroup(id: "main") {
-            MinimalTimeline()
+            CompleteProfessionalTimeline()
                 .frame(minWidth: 1400, minHeight: 900)
                 .environmentObject(projectStore)
                 .environmentObject(timelineViewModel)
                 .environmentObject(videoPlayerViewModel)
                 .environmentObject(undoManager)
                 .environmentObject(backendService)
+                .environmentObject(unifiedStore)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     // Connect timeline to project store
@@ -77,6 +79,7 @@ struct AutoResolveApp: App {
             DirectorBrainView()
                 .environmentObject(projectStore)
                 .environmentObject(backendService)
+                .environmentObject(unifiedStore)
                 .frame(width: 800, height: 600)
         }
         .windowResizability(.contentSize)
