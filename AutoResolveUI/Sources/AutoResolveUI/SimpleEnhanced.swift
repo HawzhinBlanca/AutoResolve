@@ -262,14 +262,14 @@ struct TimelineRuler: View {
                     .offset(x: (appState.currentTime / appState.duration) * geometry.size.width)
                     .animation(.linear(duration: 0.1), value: appState.currentTime)
             }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let progress = value.location.x / geometry.size.width
+                        appState.currentTime = appState.duration * min(1, max(0, progress))
+                    }
+            )
         }
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    let progress = value.location.x / geometry.size.width
-                    appState.currentTime = appState.duration * min(1, max(0, progress))
-                }
-        )
     }
 }
 
