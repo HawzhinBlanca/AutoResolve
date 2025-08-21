@@ -13,7 +13,7 @@ struct ProfessionalMenuBarCommands: Commands {
     var body: some Commands {
         
         // MARK: - File Menu
-        CommandGroup(replacing: CommandGroupPlacement.newItem) {
+        CommandGroup(replacing: .newItem) {
             Button("New Project") {
                 projectStore.createNewProject()
             }

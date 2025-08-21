@@ -16,7 +16,6 @@ let package = Package(
         .executableTarget(
             name: "AutoResolveUI",
             dependencies: [],
-            sources: ["SimpleEnhanced.swift"],
             swiftSettings: [
                 .unsafeFlags(["-parse-as-library"])
             ]

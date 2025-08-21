@@ -516,7 +516,6 @@ struct NeuralSettingsView: View {
                     }
                     .padding(.top, 8)
                 }
-            }
             
             Spacer()
             

@@ -3,6 +3,7 @@
 
 import SwiftUI
 import AVFoundation
+import AVKit
 
 // MARK: - Simple Working Timeline
 struct MinimalTimeline: View {
@@ -304,7 +305,6 @@ struct VideoPlayer: NSViewRepresentable {
         let view = AVPlayerView()
         view.player = player
         view.controlsStyle = .none
-        view.videoGravity = .resizeAspectFill
         return view
     }
     
