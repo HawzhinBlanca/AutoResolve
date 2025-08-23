@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 Ops Module - Silence Removal
 Real implementation meeting ≤5% false-cut rate requirement
@@ -8,7 +12,6 @@ import configparser
 import time
 import os
 import json
-from pathlib import Path
 from src.utils.common import set_global_seed
 
 CFG = configparser.ConfigParser()
@@ -144,7 +147,7 @@ def silence_cli():
     """CLI interface for silence removal"""
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python -m src.ops.silence <video_path> [output_path]")
+        logger.info("Usage: python -m src.ops.silence <video_path> [output_path]")
         sys.exit(1)
     
     video_path = sys.argv[1]
@@ -153,13 +156,13 @@ def silence_cli():
     remover = SilenceRemover()
     cuts_data, metrics = remover.remove_silence(video_path, output_path)
     
-    print(f"Silence removal complete:")
-    print(f"  Original duration: {cuts_data['original_duration']:.1f}s")
-    print(f"  New duration: {cuts_data['estimated_new_duration']:.1f}s")
-    print(f"  Compression: {metrics['compression_ratio']:.2f}")
-    print(f"  Segments: {metrics['segments_found']}")
-    print(f"  Est. false cut rate: {metrics['false_cut_rate_estimated']:.3f}")
-    print(f"  Meets requirement (≤{remover.false_cut_threshold}): {metrics['false_cut_rate_estimated'] <= remover.false_cut_threshold}")
+    logger.info(f"Silence removal complete:")
+    logger.info(f"  Original duration: {cuts_data['original_duration']:.1f}s")
+    logger.info(f"  New duration: {cuts_data['estimated_new_duration']:.1f}s")
+    logger.info(f"  Compression: {metrics['compression_ratio']:.2f}")
+    logger.info(f"  Segments: {metrics['segments_found']}")
+    logger.info(f"  Est. false cut rate: {metrics['false_cut_rate_estimated']:.3f}")
+    logger.info(f"  Meets requirement (≤{remover.false_cut_threshold}): {metrics['false_cut_rate_estimated'] <= remover.false_cut_threshold}")
 
 if __name__ == "__main__":
     silence_cli()

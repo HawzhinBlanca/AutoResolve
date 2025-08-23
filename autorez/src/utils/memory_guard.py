@@ -6,7 +6,7 @@ Implements adaptive degradation and resource monitoring.
 import psutil
 import torch
 from contextlib import contextmanager
-from typing import Dict, Optional, List
+from typing import Dict
 import logging
 
 logger = logging.getLogger(__name__)

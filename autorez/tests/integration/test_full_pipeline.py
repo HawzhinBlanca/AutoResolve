@@ -7,14 +7,12 @@ Tests that all components work together correctly.
 import sys
 import os
 import tempfile
-import json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from src.utils.promotion import promote_vjepa
 from src.utils.memory_guard import MemoryGuard
 from src.utils.memory import set_seeds
 from src.scoring.score_normalizer import ScoreNormalizer
-from src.validators.segment_validator import SegmentValidator
 from src.validators.duration_validator import DurationValidator
 from src.config.schema_validator import ConfigValidator
 from src.schemas.output_schemas import TRANSCRIPT_SCHEMA

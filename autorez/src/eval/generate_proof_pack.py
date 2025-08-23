@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 Blueprint3 Proof Pack Generator
@@ -6,11 +10,9 @@ Generates complete validation package for AutoResolve v3.0
 import json
 import os
 import sys
-import time
 import platform
 import subprocess
 from datetime import datetime
-import numpy as np
 
 def get_environment_info():
     """Capture complete environment information"""
@@ -109,7 +111,7 @@ def test_core_utilities():
     
     # Test memory management
     try:
-        from src.utils.memory import Budget, enforce_budget, set_seeds, rss_gb
+        from src.utils.memory import Budget, set_seeds, rss_gb
         
         b = Budget(max_gb=16.0)
         set_seeds(1234)
@@ -132,8 +134,7 @@ def test_core_utilities():
     
     # Test caching
     try:
-        from src.utils.cache import key, save, load
-        import tempfile
+        from src.utils.cache import key
         
         test_key = key("test.mp4", 1.0, 16, 256, "temp_attn", "test", "abc123")
         
@@ -202,7 +203,7 @@ def evaluate_gates():
             json.dump(results, f, indent=2)
             
     except Exception as e:
-        print(f"  ⚠️ Could not run evaluation: {e}")
+        logger.info(f"  ⚠️ Could not run evaluation: {e}")
     
     return gates
 
@@ -308,61 +309,61 @@ def generate_run_log():
 
 def main():
     """Generate complete proof pack"""
-    print("=" * 60)
-    print("GENERATING BLUEPRINT3 PROOF PACK")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("GENERATING BLUEPRINT3 PROOF PACK")
+    logger.info("=" * 60)
     
     os.makedirs("proof_pack", exist_ok=True)
     
     # 1. Environment capture
-    print("\n📦 Capturing environment...")
+    logger.info("\n📦 Capturing environment...")
     env = get_environment_info()
     with open("proof_pack/environment.json", "w") as f:
         json.dump(env, f, indent=2)
-    print("  ✅ environment.json")
+    logger.info("  ✅ environment.json")
     
     # 2. Structure compliance
-    print("\n🏗️  Checking structure compliance...")
+    logger.info("\n🏗️  Checking structure compliance...")
     structure = check_structure_compliance()
     with open("proof_pack/structure.json", "w") as f:
         json.dump(structure, f, indent=2)
-    print(f"  {'✅' if structure['compliant'] else '❌'} structure.json")
+    logger.info(f"  {'✅' if structure['compliant'] else '❌'} structure.json")
     
     # 3. Component testing
-    print("\n🧪 Testing components...")
+    logger.info("\n🧪 Testing components...")
     embedders = test_embedders()
     with open("proof_pack/embedders.json", "w") as f:
         json.dump(embedders, f, indent=2)
-    print("  ✅ embedders.json")
+    logger.info("  ✅ embedders.json")
     
     utilities = test_core_utilities()
     with open("proof_pack/utilities.json", "w") as f:
         json.dump(utilities, f, indent=2)
-    print("  ✅ utilities.json")
+    logger.info("  ✅ utilities.json")
     
     # 4. Gates evaluation
-    print("\n🎯 Evaluating gates...")
+    logger.info("\n🎯 Evaluating gates...")
     gates = evaluate_gates()
     with open("proof_pack/gates.json", "w") as f:
         json.dump(gates, f, indent=2)
-    print("  ✅ gates.json")
+    logger.info("  ✅ gates.json")
     
     # 5. Promotion decision
-    print("\n🚀 Generating promotion decision...")
+    logger.info("\n🚀 Generating promotion decision...")
     decision = generate_promotion_decision(gates)
     with open("proof_pack/promotion_decision.json", "w") as f:
         json.dump(decision, f, indent=2)
-    print(f"  {'✅' if decision['promote_vjepa'] else '❌'} promotion_decision.json")
+    logger.info(f"  {'✅' if decision['promote_vjepa'] else '❌'} promotion_decision.json")
     
     # 6. Run log
-    print("\n📝 Generating run log...")
+    logger.info("\n📝 Generating run log...")
     log = generate_run_log()
     with open("proof_pack/run_log.md", "w") as f:
         f.write(log)
-    print("  ✅ run_log.md")
+    logger.info("  ✅ run_log.md")
     
     # 7. Results summary
-    print("\n📊 Generating results summary...")
+    logger.info("\n📊 Generating results summary...")
     results = {
         "timestamp": datetime.now().isoformat(),
         "structure_compliant": structure["compliant"],
@@ -376,22 +377,22 @@ def main():
     }
     with open("proof_pack/results.json", "w") as f:
         json.dump(results, f, indent=2)
-    print("  ✅ results.json")
+    logger.info("  ✅ results.json")
     
     # Summary
-    print("\n" + "=" * 60)
-    print("✅ PROOF PACK GENERATED")
-    print(f"Location: {os.path.abspath('proof_pack/')}")
-    print("\nRequired files:")
-    print("  ✅ environment.json")
-    print("  ✅ gates.json")  
-    print("  ✅ promotion_decision.json")
-    print("  ✅ run_log.md")
-    print("  ✅ results.json")
+    logger.info("\n" + "=" * 60)
+    logger.info("✅ PROOF PACK GENERATED")
+    logger.info(f"Location: {os.path.abspath('proof_pack/')}")
+    logger.info("\nRequired files:")
+    logger.info("  ✅ environment.json")
+    logger.info("  ✅ gates.json")
+    logger.info("  ✅ promotion_decision.json")
+    logger.info("  ✅ run_log.md")
+    logger.info("  ✅ results.json")
     
     compliance_pct = (results["gates_summary"]["passed"] / 
                      results["gates_summary"]["total"] * 100) if results["gates_summary"]["total"] > 0 else 0
-    print(f"\nBlueprint3 Compliance: {compliance_pct:.1f}%")
+    logger.info(f"\nBlueprint3 Compliance: {compliance_pct:.1f}%")
     
     return 0
 

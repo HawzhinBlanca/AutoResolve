@@ -1,0 +1,136 @@
+{
+  "timestamp": 1755862985.607161,
+  "passed": false,
+  "critical_violations": [
+    {
+      "rule": "vjepa_quality_top3",
+      "alert": "Required metric 'top3_gain' not found in telemetry"
+    },
+    {
+      "rule": "vjepa_quality_mrr",
+      "alert": "Required metric 'mrr_gain' not found in telemetry"
+    },
+    {
+      "rule": "shortsify_latency",
+      "alert": "Required metric 'shorts_sec_30min' not found in telemetry"
+    },
+    {
+      "rule": "broll_top3_match",
+      "alert": "Required metric 'broll_top3' not found in telemetry"
+    },
+    {
+      "rule": "broll_placement_conflicts",
+      "alert": "Required metric 'placement_conflict_rate' not found in telemetry"
+    },
+    {
+      "rule": "determinism_check",
+      "alert": "Required metric 'outputs_identical' not found in telemetry"
+    }
+  ],
+  "warnings": [
+    {
+      "rule": "memory_adaptive_degrade",
+      "alert": "Required metric 'degradation_triggered' not found in telemetry"
+    },
+    {
+      "rule": "director_f1",
+      "alert": "Required metric 'f1_iou0.5' not found in telemetry"
+    },
+    {
+      "rule": "director_pr_auc",
+      "alert": "Required metric 'pr_auc' not found in telemetry"
+    },
+    {
+      "rule": "director_performance",
+      "alert": "Required metric 'director_sec_per_min' not found in telemetry"
+    }
+  ],
+  "metrics_checked": 4,
+  "compliance_score": 28.57142857142857,
+  "rule_details": {
+    "vjepa_performance": {
+      "description": "V-JEPA performance degraded:",
+      "threshold": 5.0,
+      "operator": "<=",
+      "critical": true
+    },
+    "vjepa_quality_top3": {
+      "description": "V-JEPA Top-3 gain",
+      "threshold": 0.15,
+      "operator": ">=",
+      "critical": true
+    },
+    "vjepa_quality_mrr": {
+      "description": "V-JEPA MRR gain",
+      "threshold": 0.15,
+      "operator": ">=",
+      "critical": true
+    },
+    "memory_usage": {
+      "description": "Memory usage",
+      "threshold": 16.0,
+      "operator": "<=",
+      "critical": true
+    },
+    "memory_adaptive_degrade": {
+      "description": "Memory degradation was triggered - check optimization",
+      "threshold": false,
+      "operator": "==",
+      "critical": false
+    },
+    "director_f1": {
+      "description": "Director F1@IoU0.5",
+      "threshold": 0.6,
+      "operator": ">=",
+      "critical": false
+    },
+    "director_pr_auc": {
+      "description": "Director PR-AUC",
+      "threshold": 0.65,
+      "operator": ">=",
+      "critical": false
+    },
+    "director_performance": {
+      "description": "Director analysis",
+      "threshold": 7.5,
+      "operator": "<=",
+      "critical": false
+    },
+    "transcription_speed": {
+      "description": "Transcription RTF",
+      "threshold": 1.5,
+      "operator": "<=",
+      "critical": true
+    },
+    "silence_false_cut": {
+      "description": "Silence cutter false-cut rate",
+      "threshold": 0.05,
+      "operator": "<=",
+      "critical": true
+    },
+    "shortsify_latency": {
+      "description": "Shortsify took",
+      "threshold": 120,
+      "operator": "<=",
+      "critical": true
+    },
+    "broll_top3_match": {
+      "description": "B-roll Top-3 match rate",
+      "threshold": 0.65,
+      "operator": ">=",
+      "critical": true
+    },
+    "broll_placement_conflicts": {
+      "description": "B-roll placement conflicts",
+      "threshold": 0.1,
+      "operator": "<=",
+      "critical": true
+    },
+    "determinism_check": {
+      "description": "Non-deterministic outputs detected - seeds not working",
+      "threshold": true,
+      "operator": "==",
+      "critical": true
+    }
+  }
+}

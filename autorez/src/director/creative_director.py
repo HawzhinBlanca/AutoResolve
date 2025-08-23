@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Blueprint3 Director Module - Creative Director
 # Orchestration of all director modules
 
@@ -245,7 +249,7 @@ def main():
     with open(args.out, 'w') as f:
         json.dump(analysis, f, indent=2)
     
-    print(f"✓ Analysis saved to {args.out}")
+    logger.info(f"✓ Analysis saved to {args.out}")
     return 0
 
 if __name__ == "__main__":
@@ -286,4 +290,4 @@ if __name__ == "__main__":
     with open(args.out, 'w') as f:
         json.dump(serializable_results, f, indent=2)
     
-    print(f"Director analysis saved to {args.out}")
+    logger.info(f"Director analysis saved to {args.out}")

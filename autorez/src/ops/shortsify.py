@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 Ops Module - Shortsify
 Real implementation meeting ≤120s latency for 30min video
@@ -7,7 +11,6 @@ import json
 import time
 import os
 import configparser
-from pathlib import Path
 from src.utils.common import set_global_seed
 from src.embedders.vjepa_embedder import VJEPAEmbedder
 
@@ -198,7 +201,7 @@ def shortsify_cli():
     """CLI interface for shortsify"""
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python -m src.ops.shortsify <video_path> [output_dir]")
+        logger.info("Usage: python -m src.ops.shortsify <video_path> [output_dir]")
         sys.exit(1)
     
     video_path = sys.argv[1]
@@ -207,13 +210,13 @@ def shortsify_cli():
     shortsify = Shortsify()
     shorts_data, metrics = shortsify.generate_shorts(video_path, output_dir)
     
-    print(f"Shortsify complete:")
-    print(f"  Video duration: {metrics['video_duration_s']:.1f}s")
-    print(f"  Processing time: {metrics['processing_time_s']:.1f}s")
-    print(f"  Latency per 30min: {metrics['latency_per_30min']:.1f}s")
-    print(f"  Meets requirement (≤{shortsify.max_latency_30min}s): {metrics['meets_requirement']}")
-    print(f"  Shorts generated: {metrics['shorts_generated']}")
-    print(f"  Hooks found: {metrics['hooks_found']}")
+    logger.info(f"Shortsify complete:")
+    logger.info(f"  Video duration: {metrics['video_duration_s']:.1f}s")
+    logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
+    logger.info(f"  Latency per 30min: {metrics['latency_per_30min']:.1f}s")
+    logger.info(f"  Meets requirement (≤{shortsify.max_latency_30min}s): {metrics['meets_requirement']}")
+    logger.info(f"  Shorts generated: {metrics['shorts_generated']}")
+    logger.info(f"  Hooks found: {metrics['hooks_found']}")
 
 if __name__ == "__main__":
     shortsify_cli()

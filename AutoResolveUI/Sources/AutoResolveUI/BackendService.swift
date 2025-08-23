@@ -8,8 +8,13 @@ import Combine
 class BackendService: ObservableObject {
     static let shared = BackendService()
     
-    private let baseURL = URL(string: "http://localhost:8081/api")!
-    private let session = URLSession.shared
+    private let baseURL = URL(string: "http://localhost:8000/api")!
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 60
+        return URLSession(configuration: config)
+    }()
     private var cancellables = Set<AnyCancellable>()
     
     @Published var isConnected = false
@@ -32,17 +37,23 @@ class BackendService: ObservableObject {
     }
     
     func checkHealth() {
-        let url = baseURL.appendingPathComponent("/projects")
+        let url = baseURL.appendingPathComponent("projects")
         
         session.dataTask(with: url) { [weak self] data, response, error in
             DispatchQueue.main.async {
                 if let httpResponse = response as? HTTPURLResponse,
-                   httpResponse.statusCode == 200 {
+                   (200..<300).contains(httpResponse.statusCode) {
                     self?.isConnected = true
                     self?.lastError = nil
                 } else {
                     self?.isConnected = false
-                    self?.lastError = error?.localizedDescription ?? "Backend unavailable"
+                    if let httpResponse = response as? HTTPURLResponse {
+                        let code = httpResponse.statusCode
+                        let snippet = data.flatMap { String(data: $0, encoding: .utf8) }?.prefix(200) ?? ""
+                        self?.lastError = "HTTP \(code): \(snippet)"
+                    } else {
+                        self?.lastError = error?.localizedDescription ?? "Backend unavailable"
+                    }
                 }
             }
         }.resume()
@@ -50,27 +61,49 @@ class BackendService: ObservableObject {
     
     // MARK: - Pipeline Management
     func startPipeline(inputFile: String, options: [String: Any] = [:]) -> AnyPublisher<PipelineStartResponse, Error> {
-        let request = PipelineStartRequest(input_file: inputFile, options: options)
-        return performRequest(endpoint: "/pipeline/start", method: "POST", body: request)
+        // Convert [String: Any] to [String: AnyCodableValue] for safe encoding
+        let anyOptions: [String: AnyCodableValue] = options.mapValues { AnyCodableValue($0) }
+        let request = PipelineStartRequest(input_file: inputFile, options: anyOptions)
+        return performRequest(endpoint: "pipeline/start", method: "POST", body: request)
     }
     
     func getPipelineStatus(taskId: String) -> AnyPublisher<PipelineStatusResponse, Error> {
-        let url = baseURL.appendingPathComponent("/pipeline/status/\(taskId)")
+        let url = baseURL
+            .appendingPathComponent("pipeline")
+            .appendingPathComponent("status")
+            .appendingPathComponent(taskId)
         
         return session.dataTaskPublisher(for: url)
-            .map(\.data)
+            .tryMap { output -> Data in
+                guard let http = output.response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode) else {
+                    let body = String(data: output.data, encoding: .utf8) ?? ""
+                    throw URLError(.badServerResponse, userInfo: ["body": body])
+                }
+                return output.data
+            }
             .decode(type: PipelineStatusResponse.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
     
     func cancelPipeline(taskId: String) -> AnyPublisher<CancelResponse, Error> {
-        let url = baseURL.appendingPathComponent("/pipeline/cancel/\(taskId)")
+        let url = baseURL
+            .appendingPathComponent("pipeline")
+            .appendingPathComponent("cancel")
+            .appendingPathComponent(taskId)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
         return session.dataTaskPublisher(for: request)
-            .map(\.data)
+            .tryMap { output -> Data in
+                guard let http = output.response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode) else {
+                    let body = String(data: output.data, encoding: .utf8) ?? ""
+                    throw URLError(.badServerResponse, userInfo: ["body": body])
+                }
+                return output.data
+            }
             .decode(type: CancelResponse.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
@@ -78,10 +111,17 @@ class BackendService: ObservableObject {
     
     // MARK: - Project Management
     func getResolveProjects() -> AnyPublisher<ProjectsResponse, Error> {
-        let url = baseURL.appendingPathComponent("/projects")
+        let url = baseURL.appendingPathComponent("projects")
         
         return session.dataTaskPublisher(for: url)
-            .map(\.data)
+            .tryMap { output -> Data in
+                guard let http = output.response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode) else {
+                    let body = String(data: output.data, encoding: .utf8) ?? ""
+                    throw URLError(.badServerResponse, userInfo: ["body": body])
+                }
+                return output.data
+            }
             .decode(type: ProjectsResponse.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
@@ -89,17 +129,29 @@ class BackendService: ObservableObject {
     
     // MARK: - Presets Management
     func getPresets() -> AnyPublisher<PresetsResponse, Error> {
-        let url = baseURL.appendingPathComponent("/presets")
+        let url = baseURL.appendingPathComponent("presets")
         
         return session.dataTaskPublisher(for: url)
-            .map(\.data)
+            .tryMap { output -> Data in
+                guard let http = output.response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode) else {
+                    let body = String(data: output.data, encoding: .utf8) ?? ""
+                    throw URLError(.badServerResponse, userInfo: ["body": body])
+                }
+                return output.data
+            }
             .decode(type: PresetsResponse.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
     
     func savePreset(name: String, settings: [String: Any]) -> AnyPublisher<SavePresetResponse, Error> {
-        let request = SavePresetRequest(name: name, settings: settings)
+        // Convert [String: Any] to [String: AnyCodableValue]
+        var codableSettings: [String: AnyCodableValue] = [:]
+        for (key, value) in settings {
+            codableSettings[key] = AnyCodableValue(value)
+        }
+        let request = SavePresetRequest(name: name, settings: codableSettings)
         return performRequest(endpoint: "/presets", method: "POST", body: request)
     }
     
@@ -115,7 +167,12 @@ class BackendService: ObservableObject {
         method: String,
         body: T
     ) -> AnyPublisher<R, Error> {
-        let url = baseURL.appendingPathComponent(endpoint)
+        // Safely append path components to avoid encoding leading slashes as %2F
+        let trimmed = endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        var url = baseURL
+        for component in trimmed.split(separator: "/") {
+            url = url.appendingPathComponent(String(component))
+        }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -127,7 +184,14 @@ class BackendService: ObservableObject {
         }
         
         return session.dataTaskPublisher(for: request)
-            .map(\.data)
+            .tryMap { output -> Data in
+                guard let http = output.response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode) else {
+                    let body = String(data: output.data, encoding: .utf8) ?? ""
+                    throw URLError(.badServerResponse, userInfo: ["body": body])
+                }
+                return output.data
+            }
             .decode(type: R.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
@@ -137,37 +201,7 @@ class BackendService: ObservableObject {
 // MARK: - Request Models
 struct PipelineStartRequest: Codable {
     let input_file: String
-    let options: [String: Any]
-    
-    enum CodingKeys: String, CodingKey {
-        case input_file, options
-    }
-    
-    init(input_file: String, options: [String: Any]) {
-        self.input_file = input_file
-        self.options = options
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        input_file = try container.decode(String.self, forKey: .input_file)
-        
-        // Handle options as [String: Any]
-        if let optionsData = try? container.decode([String: String].self, forKey: .options) {
-            options = optionsData
-        } else {
-            options = [:]
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(input_file, forKey: .input_file)
-        
-        // Simplified encoding for options
-        let stringOptions = options.compactMapValues { $0 as? String }
-        try container.encode(stringOptions, forKey: .options)
-    }
+    let options: [String: AnyCodableValue]
 }
 
 struct ValidationRequest: Codable {
@@ -176,35 +210,7 @@ struct ValidationRequest: Codable {
 
 struct SavePresetRequest: Codable {
     let name: String
-    let settings: [String: Any]
-    
-    enum CodingKeys: String, CodingKey {
-        case name, settings
-    }
-    
-    init(name: String, settings: [String: Any]) {
-        self.name = name
-        self.settings = settings
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        name = try container.decode(String.self, forKey: .name)
-        
-        if let settingsData = try? container.decode([String: String].self, forKey: .settings) {
-            settings = settingsData
-        } else {
-            settings = [:]
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(name, forKey: .name)
-        
-        let stringSettings = settings.compactMapValues { $0 as? String }
-        try container.encode(stringSettings, forKey: .settings)
-    }
+    let settings: [String: AnyCodableValue]
 }
 
 // MARK: - Response Models
@@ -218,6 +224,17 @@ struct PipelineStatusResponse: Codable {
     let stage: String?
     let message: String?
     let error: String?
+    let current_operation: String?
+    let performance_metrics: BackendPerformanceMetrics?
+}
+
+public struct BackendPerformanceMetrics: Codable {
+    let processing_time: Double?
+    let realtime_factor: Double?
+    let memory_usage: Double?
+    let cpu_usage: Double?
+    let memory_mb: Double?
+    let fps: Double?
 }
 
 struct CancelResponse: Codable {
@@ -297,7 +314,7 @@ struct AnyCodableValue: Codable {
 
 
 // MARK: - Task Status
-struct BackendTask {
+public struct BackendTask {
     let id: UUID
     let type: TaskType
     let status: TaskStatus

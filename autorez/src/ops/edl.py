@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 EDL (Edit Decision List) generator for Resolve import
@@ -7,7 +11,7 @@ Supports both EDL and FCXML formats
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -20,22 +24,22 @@ def timecode_from_seconds(seconds: float, fps: int = 30) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}:{frames:02d}"
 
 def generate_edl(
-    video_path: str,
-    cuts: Dict,
-    output_path: str,
-    fps: int = 30
-) -> Dict:
+    cuts: List[Dict],
+    fps: int = 30,
+    video_path: str = None,
+    output_path: str = None
+) -> str:
     """
     Generate EDL from cuts data
     
     Args:
-        video_path: Path to source video
-        cuts: Cuts dictionary with keep regions
-        output_path: Output EDL path
+        cuts: List of cut dictionaries with keep regions
         fps: Frame rate
+        video_path: Optional path to source video
+        output_path: Optional output EDL path
         
     Returns:
-        Result dictionary
+        EDL content as string
     """
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     
@@ -83,7 +87,7 @@ def generate_edl(
     with open(output_path, 'w') as f:
         f.write("\n".join(lines))
     
-    print(f"Generated EDL with {event_num - 1} events: {output_path}")
+    logger.info(f"Generated EDL with {event_num - 1} events: {output_path}")
     
     return {
         "success": True,
@@ -189,7 +193,7 @@ def generate_fcxml(
     with open(output_path, 'w') as f:
         f.write(pretty_xml)
     
-    print(f"Generated FCXML with {len(cuts.get('keep', []))} clips: {output_path}")
+    logger.info(f"Generated FCXML with {len(cuts.get('keep', []))} clips: {output_path}")
     
     return {
         "success": True,
@@ -264,11 +268,11 @@ def main():
         else:
             result = generate_edl(video_path, cuts, args.output, args.fps)
     else:
-        print("Error: Either --cuts or --shorts required")
+        logger.error("Error: Either --cuts or --shorts required")
         return 1
     
     if result["success"]:
-        print(f"✓ Generated {result['format'].upper()}")
+        logger.info(f"✓ Generated {result['format'].upper()}")
         return 0
     else:
         return 1
@@ -301,7 +305,7 @@ def parse_edl(edl_path: str) -> Dict:
             timeline_duration = max(clip["timeline_out"] for clip in clips)
             
     except Exception as e:
-        print(f"Error parsing EDL: {e}")
+        logger.error(f"Error parsing EDL: {e}")
     
     return {
         "clips": clips,

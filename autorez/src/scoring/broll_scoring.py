@@ -1,4 +1,5 @@
-import numpy as np, json, os
+import json
+import os
 from src.utils.common import cosine
 
 def score_candidate(emb_vjepa_proj, emb_clip, qtext_clip, mask_iou, beat_sync,
@@ -53,8 +54,13 @@ def retrieval_score(segment, query_emb, weights=None):
     t_mid = (segment["t0"] + segment["t1"]) / 2
     temporal_score = 1.0 - abs(0.5 - t_mid / max(segment.get("duration", 100), 1)) * 0.5
     
-    # Quality score (placeholder)
-    quality_score = segment.get("quality", 0.5)
+    # Quality score (real implementation)
+    from src.scoring.broll_quality import calculate_broll_quality_score
+    quality_score = segment.get("quality", None)
+    if quality_score is None:
+        # Calculate real quality score
+        quality_score = calculate_broll_quality_score(segment)
+        segment["quality"] = quality_score
     
     score = (weights["similarity"] * sim + 
              weights["temporal"] * temporal_score +

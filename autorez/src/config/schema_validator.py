@@ -3,7 +3,7 @@ Configuration schema validation for AutoResolve.
 Ensures all config values are within valid ranges and types.
 """
 
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any
 import configparser
 import logging
 

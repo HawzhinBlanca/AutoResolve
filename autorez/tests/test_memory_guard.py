@@ -44,7 +44,7 @@ class TestMemoryGuard:
         
         # Further degradation
         guard._degrade_and_get_params()
-        level2_params = guard.get_current_params()
+        guard.get_current_params()
         assert guard.current_level == 2
     
     def test_memory_degradation_limits(self):
@@ -139,7 +139,7 @@ class TestMemoryGuard:
         
         try:
             with guard.protected_execution("test_operation"):
-                params = guard.get_current_params()
+                guard.get_current_params()
                 # Should have degraded preemptively
                 assert guard.current_level > 0
         except:

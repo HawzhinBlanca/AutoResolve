@@ -176,7 +176,6 @@ topk = 12
         """Test that min_seg must be less than max_seg logically."""
         # Note: This would require additional business logic validation
         # beyond simple schema validation
-        pass
     
     def test_validate_broll_config(self):
         """Test B-roll configuration validation."""

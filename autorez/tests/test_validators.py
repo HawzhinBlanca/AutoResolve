@@ -8,7 +8,6 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.validators.segment_validator import SegmentValidator
 from src.validators.duration_validator import DurationValidator
 
 
@@ -20,12 +19,10 @@ class TestSegmentValidator:
         # For a 60-second video at 1 fps, theoretical max is 60 segments
         # If config says 500, should return 60
         # Note: This would need a mock video file for actual testing
-        pass
     
     def test_validate_max_segments_exceeds_theoretical(self):
         """Test when config max_segments exceeds theoretical maximum."""
         # Would need mock implementation
-        pass
 
 
 class TestDurationValidator:

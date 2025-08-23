@@ -189,11 +189,13 @@ struct TimelineCanvas: View {
                     TimelineBackground()
                     
                     // VIDEO TRACK V1
-                    TimelineTrack(
+                    // NeuralTimelineTrack expects VideoTrack but we have TimelineTrack
+                    // TODO: Convert TimelineTrack to VideoTrack or update NeuralTimelineTrack
+                    /*NeuralTimelineTrack(
                         track: store.timeline.videoTracks[0],
                         height: 100,
                         offset: CGPoint(x: 0, y: 100)
-                    )
+                    )*/
                     
                     // DIRECTOR ANNOTATIONS LAYER
                     DirectorAnnotationsLayer(
@@ -203,12 +205,12 @@ struct TimelineCanvas: View {
                         offset: CGPoint(x: 0, y: 60)
                     )
                     
-                    // AUDIO WAVEFORM
-                    WaveformTrack(
+                    // AUDIO WAVEFORM - WaveformTrack expects AudioTrack but we have TimelineTrack
+                    /*WaveformTrack(
                         audio: store.timeline.audioTracks[0],
                         height: 80,
                         offset: CGPoint(x: 0, y: 220)
-                    )
+                    )*/
                     
                     // TRANSCRIPTION TRACK
                     TranscriptionTrack(
@@ -218,12 +220,12 @@ struct TimelineCanvas: View {
                     )
                     
                     // PLAYHEAD
-                    PlayheadView(currentTime: $currentTime)
+                    PlayheadView(timeline: store.timeline, height: 400)
                         .zIndex(1000)
                     
                     // SELECTION RECTANGLE
                     if isDragging {
-                        SelectionRectangle()
+                        NeuralSelectionRectangle()
                     }
                 }
                 .frame(
@@ -501,14 +503,14 @@ struct NeuralToolbar: ToolbarContent {
 // MARK: - ADAPTIVE INSPECTOR
 struct AdaptiveInspector: View {
     @EnvironmentObject var store: UnifiedStore
-    @State private var selectedTab: InspectorTab = .properties
+    @State private var selectedTab: InspectorTab = .video
     
     var body: some View {
         VStack(spacing: 0) {
             // TAB SELECTOR
             Picker("Inspector", selection: $selectedTab) {
-                ForEach(InspectorTab.allCases) { tab in
-                    Label(tab.label, systemImage: tab.icon)
+                ForEach(InspectorTab.allCases, id: \.self) { tab in
+                    Label(tab.rawValue, systemImage: tab.icon)
                         .tag(tab)
                 }
             }
@@ -520,16 +522,18 @@ struct AdaptiveInspector: View {
             // CONTENT
             ScrollView {
                 switch selectedTab {
-                case .properties:
+                case .video:
                     PropertiesInspector()
-                case .effects:
-                    EffectsInspector()
+                case .audio:
+                    AudioInspector()
+                case .neuralAnalysis:
+                    NeuralAnalysisInspector()
                 case .director:
                     DirectorInsightsPanel()
-                case .transcription:
-                    TranscriptionInspector()
-                case .metadata:
-                    MetadataInspector()
+                case .cuts:
+                    CutsInspector()
+                case .shorts:
+                    ShortsInspector()
                 }
             }
             .scrollIndicators(.hidden)
@@ -544,31 +548,7 @@ enum VisualizationMode: CaseIterable {
     case energy, motion, complexity, continuity
 }
 
-enum InspectorTab: String, CaseIterable, Identifiable {
-    case properties, effects, director, transcription, metadata
-    
-    var id: String { rawValue }
-    
-    var label: String {
-        switch self {
-        case .properties: return "Properties"
-        case .effects: return "Effects"
-        case .director: return "Director"
-        case .transcription: return "Transcription"
-        case .metadata: return "Metadata"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .properties: return "slider.horizontal.3"
-        case .effects: return "sparkle"
-        case .director: return "brain"
-        case .transcription: return "captions.bubble"
-        case .metadata: return "info.circle"
-        }
-    }
-}
+// InspectorTab enum moved to VideoEditor.swift to avoid duplication
 
 enum DirectorInsight: Hashable {
     case beat(StoryBeat)
@@ -682,7 +662,7 @@ struct TimelineBackground: View {
     }
 }
 
-struct TimelineTrack: View {
+struct NeuralTimelineTrack: View {
     let track: VideoTrack
     let height: CGFloat
     let offset: CGPoint
@@ -735,7 +715,7 @@ struct TranscriptionTrack: View {
     }
 }
 
-struct PlayheadView: View {
+struct NeuralPlayheadView: View {
     @Binding var currentTime: TimeInterval
     
     var body: some View {
@@ -745,7 +725,7 @@ struct PlayheadView: View {
     }
 }
 
-struct SelectionRectangle: View {
+struct NeuralSelectionRectangle: View {
     var body: some View {
         Rectangle()
             .stroke(.blue, lineWidth: 2)
@@ -894,10 +874,64 @@ struct PropertiesInspector: View {
     }
 }
 
-struct EffectsInspector: View {
+struct TimelineEffectsInspector: View {
     var body: some View {
         Text("Effects Inspector")
             .padding()
+    }
+}
+
+// MARK: - Additional Inspector Views for DaVinci Style Layout
+
+struct AudioInspector: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Audio Inspector")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text("Audio controls would go here...")
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+
+struct NeuralAnalysisInspector: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Neural Analysis")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text("Neural analysis controls would go here...")
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+
+struct CutsInspector: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Cuts Inspector")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text("Cut controls would go here...")
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+
+struct ShortsInspector: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Shorts Inspector")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text("Shorts generation controls would go here...")
+                .foregroundColor(.secondary)
+        }
+        .padding()
     }
 }
 
@@ -906,8 +940,8 @@ struct DirectorInsightsPanel: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // CURRENT SEGMENT ANALYSIS
-            if let current = store.timeline.currentSegment {
+            // CURRENT SEGMENT ANALYSIS - not available in TimelineModel
+            /*if let current = store.timeline.currentSegment {
                 GroupBox {
                     VStack(alignment: .leading) {
                         Label("Current Segment", systemImage: "play.square")
@@ -968,7 +1002,7 @@ struct DirectorInsightsPanel: View {
                         }
                     }
                 }
-            }
+            }*/
             
             // NEXT SUGGESTED CUT
             if let nextCut = store.director.nextSuggestedCut {
@@ -991,7 +1025,7 @@ struct DirectorInsightsPanel: View {
                         }
                         
                         Button {
-                            store.timeline.jumpTo(nextCut.time)
+                            store.timeline.playheadPosition = nextCut.time
                         } label: {
                             Label("Jump to Cut", systemImage: "arrow.right.square")
                         }

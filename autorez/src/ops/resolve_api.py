@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 Ops Module - Resolve API
 Real implementation with scripting and EDL/FCXML fallback
@@ -7,7 +11,6 @@ import time
 import os
 import configparser
 import subprocess
-from pathlib import Path
 from src.utils.common import set_global_seed
 
 CFG = configparser.ConfigParser()
@@ -26,7 +29,7 @@ class ResolveAPI:
         Create timeline in DaVinci Resolve
         Returns: (timeline_data, success_status)
         """
-        start_time = time.time()
+        time.time()
         
         # Try primary method (scripting)
         if self.api_method == "scripting":
@@ -37,7 +40,7 @@ class ResolveAPI:
             if success:
                 return timeline_data, True
             
-            print("Scripting method failed, trying fallback...")
+            logger.error("Scripting method failed, trying fallback...")
         
         # Try fallback method
         if self.fallback == "fcpxml":
@@ -58,7 +61,7 @@ class ResolveAPI:
         try:
             # Check if Resolve is running
             if not self._is_resolve_running():
-                print("DaVinci Resolve not running, starting...")
+                logger.info("DaVinci Resolve not running, starting...")
                 if not self._start_resolve():
                     return False, {"error": "Could not start DaVinci Resolve"}
             
@@ -181,7 +184,7 @@ import DaVinciResolveScript as dvr_script
 # Get Resolve instance
 resolve = dvr_script.scriptapp("Resolve")
 if not resolve:
-    print("Failed to connect to Resolve")
+    logger.error("Failed to connect to Resolve")
     exit(1)
 
 # Get project manager
@@ -193,7 +196,7 @@ if not project:
     project = pm.LoadProject("{self.project_name}")
 
 if not project:
-    print("Failed to create/open project")
+    logger.error("Failed to create/open project")
     exit(1)
 
 # Get media pool
@@ -202,21 +205,21 @@ media_pool = project.GetMediaPool()
 # Import source video
 media_item = media_pool.ImportMedia(["{video_path}"])
 if not media_item:
-    print("Failed to import media")
+    logger.error("Failed to import media")
     exit(1)
 
 # Create timeline
 timeline = media_pool.CreateEmptyTimeline("AutoResolve_Timeline")
 if not timeline:
-    print("Failed to create timeline")
+    logger.error("Failed to create timeline")
     exit(1)
 
 # Add clips based on cuts data
 if media_item and timeline:
     timeline.InsertGeneratorIntoTimeline("Solid Color", "V1", 0, 1000)
-    print("Timeline created successfully")
+    logger.info("Timeline created successfully")
 else:
-    print("Failed to add clips")
+    logger.error("Failed to add clips")
     exit(1)
 '''
     
@@ -298,7 +301,7 @@ def resolve_cli():
     """CLI interface for Resolve integration"""
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python -m src.ops.resolve_api <video_path> [cuts_file] [broll_file] [transcript_file]")
+        logger.info("Usage: python -m src.ops.resolve_api <video_path> [cuts_file] [broll_file] [transcript_file]")
         sys.exit(1)
     
     video_path = sys.argv[1]
@@ -329,14 +332,23 @@ def resolve_cli():
     )
     
     if success:
-        print("Timeline creation successful:")
-        print(f"  Method: {timeline_data.get('method', 'unknown')}")
+        logger.info("Timeline creation successful:")
+        logger.info(f"  Method: {timeline_data.get('method', 'unknown')}")
         if 'file_path' in timeline_data:
-            print(f"  Output file: {timeline_data['file_path']}")
+            logger.info(f"  Output file: {timeline_data['file_path']}")
         if 'clips_added' in timeline_data:
-            print(f"  Clips added: {timeline_data['clips_added']}")
+            logger.info(f"  Clips added: {timeline_data['clips_added']}")
     else:
-        print(f"Timeline creation failed: {timeline_data.get('error', 'Unknown error')}")
+        logger.error(f"Timeline creation failed: {timeline_data.get('error', 'Unknown error')}")
+
+def create_timeline(project_name: str, video_path: str) -> bool:
+    """Wrapper function for E2E testing"""
+    try:
+        api = ResolveAPI()
+        _, success = api.create_timeline(video_path)
+        return success
+    except Exception:
+        return False
 
 if __name__ == "__main__":
     resolve_cli()

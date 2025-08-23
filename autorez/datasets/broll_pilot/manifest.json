@@ -1,98 +1,1855 @@
 {
-  "version": "3.0",
-  "created": 1724024400,
   "videos": [
-    {"id": "city_aerial", "path": "assets/pilots/city_aerial.mp4"},
-    {"id": "nature_forest", "path": "assets/pilots/nature_forest.mp4"},
-    {"id": "office_work", "path": "assets/pilots/office_work.mp4"},
-    {"id": "beach_sunset", "path": "assets/pilots/beach_sunset.mp4"},
-    {"id": "mountain_climb", "path": "assets/pilots/mountain_climb.mp4"}
+    {
+      "id": "city_aerial",
+      "path": "assets/pilots/city_aerial.mp4",
+      "duration": 180.0,
+      "theme": "urban"
+    },
+    {
+      "id": "nature_forest",
+      "path": "assets/pilots/nature_forest.mp4",
+      "duration": 240.0,
+      "theme": "nature"
+    },
+    {
+      "id": "office_work",
+      "path": "assets/pilots/office_work.mp4",
+      "duration": 150.0,
+      "theme": "business"
+    },
+    {
+      "id": "beach_sunset",
+      "path": "assets/pilots/beach_sunset.mp4",
+      "duration": 200.0,
+      "theme": "scenic"
+    },
+    {
+      "id": "mountain_climb",
+      "path": "assets/pilots/mountain_climb.mp4",
+      "duration": 300.0,
+      "theme": "adventure"
+    },
+    {
+      "id": "urban_traffic",
+      "path": "assets/pilots/urban_traffic.mp4",
+      "duration": 120.0,
+      "theme": "city"
+    },
+    {
+      "id": "cooking_kitchen",
+      "path": "assets/pilots/cooking_kitchen.mp4",
+      "duration": 180.0,
+      "theme": "culinary"
+    },
+    {
+      "id": "sports_soccer",
+      "path": "assets/pilots/sports_soccer.mp4",
+      "duration": 220.0,
+      "theme": "sports"
+    },
+    {
+      "id": "tech_coding",
+      "path": "assets/pilots/tech_coding.mp4",
+      "duration": 160.0,
+      "theme": "technology"
+    },
+    {
+      "id": "art_painting",
+      "path": "assets/pilots/art_painting.mp4",
+      "duration": 190.0,
+      "theme": "creative"
+    },
+    {
+      "id": "nature_documentary",
+      "path": "assets/pilots/nature_documentary.mp4",
+      "duration": 360.0,
+      "theme": "documentary"
+    },
+    {
+      "id": "sintel_animation",
+      "path": "assets/pilots/sintel_animation.mp4",
+      "duration": 888.0,
+      "theme": "animation"
+    },
+    {
+      "id": "clip_5m",
+      "path": "assets/pilots/clip_5m.mp4",
+      "duration": 300.0,
+      "theme": "mixed"
+    },
+    {
+      "id": "test_video",
+      "path": "assets/pilots/test_video.mp4",
+      "duration": 60.0,
+      "theme": "test"
+    }
   ],
   "queries": [
-    {"q": "aerial city view at dawn", "positives": [{"video": "city_aerial", "t0": 10.0, "t1": 25.0}]},
-    {"q": "urban skyline panorama", "positives": [{"video": "city_aerial", "t0": 30.0, "t1": 45.0}]},
-    {"q": "cityscape with traffic", "positives": [{"video": "city_aerial", "t0": 50.0, "t1": 65.0}]},
-    {"q": "metropolitan downtown", "positives": [{"video": "city_aerial", "t0": 70.0, "t1": 85.0}]},
-    {"q": "skyscrapers and buildings", "positives": [{"video": "city_aerial", "t0": 90.0, "t1": 105.0}]},
-    {"q": "city lights at dusk", "positives": [{"video": "city_aerial", "t0": 110.0, "t1": 125.0}]},
-    {"q": "urban development zone", "positives": [{"video": "city_aerial", "t0": 130.0, "t1": 145.0}]},
-    {"q": "aerial city infrastructure", "positives": [{"video": "city_aerial", "t0": 150.0, "t1": 165.0}]},
-    {"q": "metropolitan area overview", "positives": [{"video": "city_aerial", "t0": 165.0, "t1": 175.0}]},
-    {"q": "city from above", "positives": [{"video": "city_aerial", "t0": 5.0, "t1": 20.0}]},
-    
-    {"q": "forest path walking", "positives": [{"video": "nature_forest", "t0": 10.0, "t1": 25.0}]},
-    {"q": "trees swaying wind", "positives": [{"video": "nature_forest", "t0": 30.0, "t1": 45.0}]},
-    {"q": "sunlight through leaves", "positives": [{"video": "nature_forest", "t0": 50.0, "t1": 65.0}]},
-    {"q": "woodland wildlife scene", "positives": [{"video": "nature_forest", "t0": 70.0, "t1": 85.0}]},
-    {"q": "nature stream flowing", "positives": [{"video": "nature_forest", "t0": 90.0, "t1": 105.0}]},
-    {"q": "forest canopy view", "positives": [{"video": "nature_forest", "t0": 110.0, "t1": 125.0}]},
-    {"q": "natural habitat ecosystem", "positives": [{"video": "nature_forest", "t0": 130.0, "t1": 145.0}]},
-    {"q": "dense forest vegetation", "positives": [{"video": "nature_forest", "t0": 150.0, "t1": 165.0}]},
-    {"q": "wilderness exploration", "positives": [{"video": "nature_forest", "t0": 165.0, "t1": 175.0}]},
-    {"q": "green forest environment", "positives": [{"video": "nature_forest", "t0": 5.0, "t1": 20.0}]},
-    
-    {"q": "person typing laptop", "positives": [{"video": "office_work", "t0": 10.0, "t1": 25.0}]},
-    {"q": "office meeting discussion", "positives": [{"video": "office_work", "t0": 30.0, "t1": 45.0}]},
-    {"q": "business presentation slides", "positives": [{"video": "office_work", "t0": 50.0, "t1": 65.0}]},
-    {"q": "team collaboration workspace", "positives": [{"video": "office_work", "t0": 70.0, "t1": 85.0}]},
-    {"q": "corporate office environment", "positives": [{"video": "office_work", "t0": 90.0, "t1": 105.0}]},
-    {"q": "professional work setting", "positives": [{"video": "office_work", "t0": 110.0, "t1": 125.0}]},
-    {"q": "desk computer workstation", "positives": [{"video": "office_work", "t0": 130.0, "t1": 145.0}]},
-    {"q": "office productivity scene", "positives": [{"video": "office_work", "t0": 150.0, "t1": 165.0}]},
-    {"q": "workplace activity", "positives": [{"video": "office_work", "t0": 165.0, "t1": 175.0}]},
-    {"q": "business office interior", "positives": [{"video": "office_work", "t0": 5.0, "t1": 20.0}]},
-    
-    {"q": "ocean waves crashing", "positives": [{"video": "beach_sunset", "t0": 10.0, "t1": 25.0}]},
-    {"q": "sunset golden hour", "positives": [{"video": "beach_sunset", "t0": 30.0, "t1": 45.0}]},
-    {"q": "beach sand walking", "positives": [{"video": "beach_sunset", "t0": 50.0, "t1": 65.0}]},
-    {"q": "coastal scenic view", "positives": [{"video": "beach_sunset", "t0": 70.0, "t1": 85.0}]},
-    {"q": "seaside relaxation scene", "positives": [{"video": "beach_sunset", "t0": 90.0, "t1": 105.0}]},
-    {"q": "ocean horizon sunset", "positives": [{"video": "beach_sunset", "t0": 110.0, "t1": 125.0}]},
-    {"q": "beach vacation paradise", "positives": [{"video": "beach_sunset", "t0": 130.0, "t1": 145.0}]},
-    {"q": "tropical beach scenery", "positives": [{"video": "beach_sunset", "t0": 150.0, "t1": 165.0}]},
-    {"q": "seashore evening view", "positives": [{"video": "beach_sunset", "t0": 165.0, "t1": 175.0}]},
-    {"q": "beach landscape sunset", "positives": [{"video": "beach_sunset", "t0": 5.0, "t1": 20.0}]},
-    
-    {"q": "mountain peak climbing", "positives": [{"video": "mountain_climb", "t0": 10.0, "t1": 25.0}]},
-    {"q": "alpine hiking trail", "positives": [{"video": "mountain_climb", "t0": 30.0, "t1": 45.0}]},
-    {"q": "rocky terrain ascending", "positives": [{"video": "mountain_climb", "t0": 50.0, "t1": 65.0}]},
-    {"q": "summit approach view", "positives": [{"video": "mountain_climb", "t0": 70.0, "t1": 85.0}]},
-    {"q": "mountaineering adventure", "positives": [{"video": "mountain_climb", "t0": 90.0, "t1": 105.0}]},
-    {"q": "high altitude landscape", "positives": [{"video": "mountain_climb", "t0": 110.0, "t1": 125.0}]},
-    {"q": "climbing expedition scene", "positives": [{"video": "mountain_climb", "t0": 130.0, "t1": 145.0}]},
-    {"q": "mountain range vista", "positives": [{"video": "mountain_climb", "t0": 150.0, "t1": 165.0}]},
-    {"q": "alpine adventure sport", "positives": [{"video": "mountain_climb", "t0": 165.0, "t1": 175.0}]},
-    {"q": "mountain climbing action", "positives": [{"video": "mountain_climb", "t0": 5.0, "t1": 20.0}]},
-    
-    {"q": "outdoor nature scenes", "positives": [
-      {"video": "nature_forest", "t0": 20.0, "t1": 35.0},
-      {"video": "beach_sunset", "t0": 40.0, "t1": 55.0},
-      {"video": "mountain_climb", "t0": 60.0, "t1": 75.0}
-    ]},
-    {"q": "urban environments", "positives": [
-      {"video": "city_aerial", "t0": 100.0, "t1": 115.0},
-      {"video": "office_work", "t0": 100.0, "t1": 115.0}
-    ]},
-    {"q": "scenic landscapes", "positives": [
-      {"video": "beach_sunset", "t0": 120.0, "t1": 135.0},
-      {"video": "mountain_climb", "t0": 120.0, "t1": 135.0},
-      {"video": "nature_forest", "t0": 120.0, "t1": 135.0}
-    ]},
-    {"q": "adventure activities", "positives": [
-      {"video": "mountain_climb", "t0": 80.0, "t1": 95.0},
-      {"video": "nature_forest", "t0": 160.0, "t1": 175.0}
-    ]},
-    {"q": "work environments", "positives": [
-      {"video": "office_work", "t0": 20.0, "t1": 35.0},
-      {"video": "office_work", "t0": 140.0, "t1": 155.0}
-    ]}
+    {
+      "q": "intimate happy moment",
+      "positives": [
+        {
+          "video": "nature_forest",
+          "t0": 162.3,
+          "t1": 168.1,
+          "confidence": 0.73
+        },
+        {
+          "video": "nature_forest",
+          "t0": 3.9,
+          "t1": 17.8,
+          "confidence": 1.0
+        },
+        {
+          "video": "nature_forest",
+          "t0": 152.1,
+          "t1": 157.5,
+          "confidence": 0.85
+        }
+      ],
+      "query_id": "q_000",
+      "difficulty": "medium"
+    },
+    {
+      "q": "transition from indoor to wide",
+      "positives": [
+        {
+          "video": "nature_forest",
+          "t0": 53.2,
+          "t1": 80.2,
+          "confidence": 0.9
+        },
+        {
+          "video": "nature_forest",
+          "t0": 14.5,
+          "t1": 42.4,
+          "confidence": 0.9
+        },
+        {
+          "video": "city_aerial",
+          "t0": 43.3,
+          "t1": 62.8,
+          "confidence": 0.87
+        },
+        {
+          "video": "city_aerial",
+          "t0": 76.4,
+          "t1": 97.5,
+          "confidence": 0.81
+        },
+        {
+          "video": "city_aerial",
+          "t0": 157.6,
+          "t1": 168.8,
+          "confidence": 0.84
+        },
+        {
+          "video": "tech_coding",
+          "t0": 130.3,
+          "t1": 151.9,
+          "confidence": 0.72
+        },
+        {
+          "video": "tech_coding",
+          "t0": 104.1,
+          "t1": 117.5,
+          "confidence": 0.9
+        },
+        {
+          "video": "tech_coding",
+          "t0": 11.5,
+          "t1": 20.7,
+          "confidence": 0.85
+        }
+      ],
+      "query_id": "q_001",
+      "difficulty": "easy"
+    },
+    {
+      "q": "culinary mixing technique",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 149.0,
+          "t1": 173.3,
+          "confidence": 0.74
+        },
+        {
+          "video": "city_aerial",
+          "t0": 6.6,
+          "t1": 19.3,
+          "confidence": 0.78
+        }
+      ],
+      "query_id": "q_002",
+      "difficulty": "easy"
+    },
+    {
+      "q": "slow motion cooking",
+      "positives": [
+        {
+          "video": "mountain_climb",
+          "t0": 128.0,
+          "t1": 152.5,
+          "confidence": 0.87
+        }
+      ],
+      "query_id": "q_003",
+      "difficulty": "medium"
+    },
+    {
+      "q": "technological cooking visualization",
+      "positives": [
+        {
+          "video": "test_video",
+          "t0": 23.3,
+          "t1": 33.8,
+          "confidence": 0.95
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 159.3,
+          "t1": 175.3,
+          "confidence": 0.94
+        },
+        {
+          "video": "clip_5m",
+          "t0": 224.1,
+          "t1": 235.9,
+          "confidence": 0.82
+        },
+        {
+          "video": "clip_5m",
+          "t0": 259.0,
+          "t1": 283.2,
+          "confidence": 0.73
+        }
+      ],
+      "query_id": "q_004",
+      "difficulty": "medium"
+    },
+    {
+      "q": "serene mountain moment",
+      "positives": [
+        {
+          "video": "beach_sunset",
+          "t0": 171.0,
+          "t1": 193.5,
+          "confidence": 0.87
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 166.6,
+          "t1": 195.2,
+          "confidence": 0.95
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 55.1,
+          "t1": 84.7,
+          "confidence": 0.94
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 44.9,
+          "t1": 51.3,
+          "confidence": 0.71
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 4.2,
+          "t1": 14.6,
+          "confidence": 0.85
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 105.7,
+          "t1": 112.4,
+          "confidence": 0.91
+        },
+        {
+          "video": "nature_forest",
+          "t0": 104.8,
+          "t1": 117.4,
+          "confidence": 0.88
+        },
+        {
+          "video": "nature_forest",
+          "t0": 147.1,
+          "t1": 173.5,
+          "confidence": 0.98
+        }
+      ],
+      "query_id": "q_005",
+      "difficulty": "easy"
+    },
+    {
+      "q": "serene ocean moment",
+      "positives": [
+        {
+          "video": "sports_soccer",
+          "t0": 39.3,
+          "t1": 67.6,
+          "confidence": 0.97
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 194.8,
+          "t1": 210.3,
+          "confidence": 0.76
+        },
+        {
+          "video": "tech_coding",
+          "t0": 72.0,
+          "t1": 97.3,
+          "confidence": 0.85
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 25.4,
+          "t1": 42.2,
+          "confidence": 0.71
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 27.7,
+          "t1": 36.8,
+          "confidence": 0.86
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 30.3,
+          "t1": 53.1,
+          "confidence": 0.9
+        }
+      ],
+      "query_id": "q_006",
+      "difficulty": "easy"
+    },
+    {
+      "q": "focused facial expression",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 53.6,
+          "t1": 68.4,
+          "confidence": 0.99
+        },
+        {
+          "video": "city_aerial",
+          "t0": 148.1,
+          "t1": 169.9,
+          "confidence": 0.97
+        }
+      ],
+      "query_id": "q_007",
+      "difficulty": "medium"
+    },
+    {
+      "q": "culinary saut\u00e9ing technique",
+      "positives": [
+        {
+          "video": "urban_traffic",
+          "t0": 83.0,
+          "t1": 104.1,
+          "confidence": 0.73
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 45.2,
+          "t1": 55.1,
+          "confidence": 0.96
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 12.5,
+          "t1": 22.7,
+          "confidence": 0.81
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 291.0,
+          "t1": 303.4,
+          "confidence": 0.82
+        }
+      ],
+      "query_id": "q_008",
+      "difficulty": "medium"
+    },
+    {
+      "q": "intimate focused moment",
+      "positives": [
+        {
+          "video": "office_work",
+          "t0": 69.6,
+          "t1": 74.7,
+          "confidence": 0.79
+        },
+        {
+          "video": "office_work",
+          "t0": 102.6,
+          "t1": 128.6,
+          "confidence": 0.76
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 45.9,
+          "t1": 62.8,
+          "confidence": 0.81
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 33.0,
+          "t1": 53.0,
+          "confidence": 0.86
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 69.4,
+          "t1": 97.7,
+          "confidence": 0.9
+        }
+      ],
+      "query_id": "q_009",
+      "difficulty": "hard"
+    },
+    {
+      "q": "wide aerial studio at night",
+      "positives": [
+        {
+          "video": "sports_soccer",
+          "t0": 163.4,
+          "t1": 177.6,
+          "confidence": 0.72
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 298.0,
+          "t1": 325.2,
+          "confidence": 0.8
+        },
+        {
+          "video": "nature_forest",
+          "t0": 215.2,
+          "t1": 239.1,
+          "confidence": 0.79
+        },
+        {
+          "video": "nature_forest",
+          "t0": 72.0,
+          "t1": 94.2,
+          "confidence": 0.98
+        }
+      ],
+      "query_id": "q_010",
+      "difficulty": "medium"
+    },
+    {
+      "q": "architectural bridge detail",
+      "positives": [
+        {
+          "video": "test_video",
+          "t0": 30.9,
+          "t1": 39.6,
+          "confidence": 0.8
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 394.0,
+          "t1": 421.8,
+          "confidence": 0.73
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 506.7,
+          "t1": 524.9,
+          "confidence": 0.74
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 39.6,
+          "t1": 51.0,
+          "confidence": 0.71
+        }
+      ],
+      "query_id": "q_011",
+      "difficulty": "easy"
+    },
+    {
+      "q": "close-up writing hands",
+      "positives": [
+        {
+          "video": "office_work",
+          "t0": 69.1,
+          "t1": 85.0,
+          "confidence": 0.72
+        },
+        {
+          "video": "office_work",
+          "t0": 38.5,
+          "t1": 62.4,
+          "confidence": 0.91
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 55.9,
+          "t1": 65.1,
+          "confidence": 0.9
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 68.0,
+          "t1": 88.4,
+          "confidence": 0.8
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 16.9,
+          "t1": 32.7,
+          "confidence": 0.85
+        },
+        {
+          "video": "tech_coding",
+          "t0": 18.4,
+          "t1": 47.1,
+          "confidence": 0.86
+        },
+        {
+          "video": "tech_coding",
+          "t0": 20.3,
+          "t1": 40.8,
+          "confidence": 0.98
+        },
+        {
+          "video": "tech_coding",
+          "t0": 24.5,
+          "t1": 35.5,
+          "confidence": 0.85
+        }
+      ],
+      "query_id": "q_012",
+      "difficulty": "hard"
+    },
+    {
+      "q": "serene mountain moment",
+      "positives": [
+        {
+          "video": "sintel_animation",
+          "t0": 530.1,
+          "t1": 549.3,
+          "confidence": 0.95
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 60.6,
+          "t1": 66.6,
+          "confidence": 0.81
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 352.0,
+          "t1": 378.0,
+          "confidence": 0.71
+        }
+      ],
+      "query_id": "q_013",
+      "difficulty": "hard"
+    },
+    {
+      "q": "contemplative facial expression",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 165.7,
+          "t1": 179.4,
+          "confidence": 0.91
+        }
+      ],
+      "query_id": "q_014",
+      "difficulty": "medium"
+    },
+    {
+      "q": "architectural facade detail",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 128.3,
+          "t1": 153.4,
+          "confidence": 0.83
+        },
+        {
+          "video": "city_aerial",
+          "t0": 80.9,
+          "t1": 94.4,
+          "confidence": 0.93
+        }
+      ],
+      "query_id": "q_015",
+      "difficulty": "easy"
+    },
+    {
+      "q": "wide aerial studio at dusk",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 115.5,
+          "t1": 124.9,
+          "confidence": 0.76
+        },
+        {
+          "video": "art_painting",
+          "t0": 178.3,
+          "t1": 188.2,
+          "confidence": 0.89
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 109.0,
+          "t1": 116.7,
+          "confidence": 0.9
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 81.9,
+          "t1": 91.7,
+          "confidence": 0.98
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 37.5,
+          "t1": 53.9,
+          "confidence": 0.92
+        }
+      ],
+      "query_id": "q_016",
+      "difficulty": "medium"
+    },
+    {
+      "q": "serene river moment",
+      "positives": [
+        {
+          "video": "beach_sunset",
+          "t0": 100.6,
+          "t1": 128.1,
+          "confidence": 0.78
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 242.2,
+          "t1": 262.2,
+          "confidence": 0.86
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 150.5,
+          "t1": 170.3,
+          "confidence": 0.8
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 264.9,
+          "t1": 279.0,
+          "confidence": 0.91
+        }
+      ],
+      "query_id": "q_017",
+      "difficulty": "hard"
+    },
+    {
+      "q": "slow motion climbing",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 37.7,
+          "t1": 60.1,
+          "confidence": 0.83
+        },
+        {
+          "video": "city_aerial",
+          "t0": 112.1,
+          "t1": 137.9,
+          "confidence": 0.81
+        },
+        {
+          "video": "city_aerial",
+          "t0": 127.3,
+          "t1": 150.8,
+          "confidence": 0.82
+        }
+      ],
+      "query_id": "q_018",
+      "difficulty": "medium"
+    },
+    {
+      "q": "natural light occurrence",
+      "positives": [
+        {
+          "video": "tech_coding",
+          "t0": 100.6,
+          "t1": 123.9,
+          "confidence": 0.89
+        },
+        {
+          "video": "tech_coding",
+          "t0": 72.6,
+          "t1": 95.4,
+          "confidence": 0.82
+        },
+        {
+          "video": "tech_coding",
+          "t0": 14.9,
+          "t1": 34.4,
+          "confidence": 0.84
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 26.5,
+          "t1": 45.2,
+          "confidence": 0.93
+        }
+      ],
+      "query_id": "q_019",
+      "difficulty": "easy"
+    },
+    {
+      "q": "contemplative facial expression",
+      "positives": [
+        {
+          "video": "mountain_climb",
+          "t0": 156.8,
+          "t1": 170.7,
+          "confidence": 0.76
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 263.7,
+          "t1": 280.5,
+          "confidence": 0.98
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 126.7,
+          "t1": 139.7,
+          "confidence": 0.86
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 399.6,
+          "t1": 424.9,
+          "confidence": 0.72
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 788.3,
+          "t1": 797.7,
+          "confidence": 0.75
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 812.7,
+          "t1": 824.5,
+          "confidence": 0.78
+        }
+      ],
+      "query_id": "q_020",
+      "difficulty": "easy"
+    },
+    {
+      "q": "golden hour conditions",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 40.3,
+          "t1": 65.5,
+          "confidence": 0.8
+        }
+      ],
+      "query_id": "q_021",
+      "difficulty": "medium"
+    },
+    {
+      "q": "architectural facade detail",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 1.4,
+          "t1": 30.7,
+          "confidence": 0.88
+        },
+        {
+          "video": "art_painting",
+          "t0": 147.4,
+          "t1": 175.4,
+          "confidence": 0.91
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 293.3,
+          "t1": 304.6,
+          "confidence": 0.96
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 206.2,
+          "t1": 226.4,
+          "confidence": 0.83
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 174.5,
+          "t1": 200.9,
+          "confidence": 0.94
+        },
+        {
+          "video": "office_work",
+          "t0": 92.7,
+          "t1": 107.5,
+          "confidence": 0.85
+        },
+        {
+          "video": "office_work",
+          "t0": 39.7,
+          "t1": 50.9,
+          "confidence": 0.99
+        }
+      ],
+      "query_id": "q_022",
+      "difficulty": "medium"
+    },
+    {
+      "q": "slow motion typing",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 57.3,
+          "t1": 85.3,
+          "confidence": 0.86
+        },
+        {
+          "video": "art_painting",
+          "t0": 77.4,
+          "t1": 93.2,
+          "confidence": 0.86
+        },
+        {
+          "video": "art_painting",
+          "t0": 118.9,
+          "t1": 143.4,
+          "confidence": 0.92
+        }
+      ],
+      "query_id": "q_023",
+      "difficulty": "easy"
+    },
+    {
+      "q": "ball detail shot",
+      "positives": [
+        {
+          "video": "cooking_kitchen",
+          "t0": 148.8,
+          "t1": 173.3,
+          "confidence": 0.91
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 50.5,
+          "t1": 76.3,
+          "confidence": 0.95
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 574.8,
+          "t1": 591.1,
+          "confidence": 0.72
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 22.5,
+          "t1": 47.7,
+          "confidence": 0.95
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 129.0,
+          "t1": 138.5,
+          "confidence": 0.83
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 63.8,
+          "t1": 72.2,
+          "confidence": 0.85
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 117.2,
+          "t1": 142.2,
+          "confidence": 0.78
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 182.3,
+          "t1": 210.3,
+          "confidence": 0.96
+        }
+      ],
+      "query_id": "q_024",
+      "difficulty": "medium"
+    },
+    {
+      "q": "over-the-shoulder coding",
+      "positives": [
+        {
+          "video": "office_work",
+          "t0": 34.8,
+          "t1": 45.5,
+          "confidence": 0.72
+        },
+        {
+          "video": "office_work",
+          "t0": 101.5,
+          "t1": 127.1,
+          "confidence": 0.95
+        },
+        {
+          "video": "nature_forest",
+          "t0": 223.4,
+          "t1": 235.2,
+          "confidence": 0.99
+        },
+        {
+          "video": "nature_forest",
+          "t0": 120.1,
+          "t1": 130.2,
+          "confidence": 0.98
+        },
+        {
+          "video": "nature_forest",
+          "t0": 153.6,
+          "t1": 167.2,
+          "confidence": 0.82
+        }
+      ],
+      "query_id": "q_025",
+      "difficulty": "easy"
+    },
+    {
+      "q": "artistic cooking process",
+      "positives": [
+        {
+          "video": "nature_documentary",
+          "t0": 5.5,
+          "t1": 31.6,
+          "confidence": 0.96
+        }
+      ],
+      "query_id": "q_026",
+      "difficulty": "medium"
+    },
+    {
+      "q": "canvas detail shot",
+      "positives": [
+        {
+          "video": "cooking_kitchen",
+          "t0": 53.9,
+          "t1": 71.3,
+          "confidence": 0.97
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 40.0,
+          "t1": 59.6,
+          "confidence": 0.88
+        }
+      ],
+      "query_id": "q_027",
+      "difficulty": "hard"
+    },
+    {
+      "q": "architectural facade detail",
+      "positives": [
+        {
+          "video": "sports_soccer",
+          "t0": 149.8,
+          "t1": 155.3,
+          "confidence": 0.74
+        },
+        {
+          "video": "art_painting",
+          "t0": 129.6,
+          "t1": 148.9,
+          "confidence": 0.82
+        },
+        {
+          "video": "art_painting",
+          "t0": 77.5,
+          "t1": 87.8,
+          "confidence": 0.73
+        }
+      ],
+      "query_id": "q_028",
+      "difficulty": "medium"
+    },
+    {
+      "q": "slow motion coding",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 116.9,
+          "t1": 144.7,
+          "confidence": 0.94
+        }
+      ],
+      "query_id": "q_029",
+      "difficulty": "hard"
+    },
+    {
+      "q": "ball detail shot",
+      "positives": [
+        {
+          "video": "tech_coding",
+          "t0": 41.4,
+          "t1": 47.2,
+          "confidence": 0.85
+        },
+        {
+          "video": "tech_coding",
+          "t0": 8.8,
+          "t1": 22.4,
+          "confidence": 0.78
+        }
+      ],
+      "query_id": "q_030",
+      "difficulty": "hard"
+    },
+    {
+      "q": "wide aerial city at evening",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 35.3,
+          "t1": 62.4,
+          "confidence": 0.89
+        },
+        {
+          "video": "city_aerial",
+          "t0": 143.4,
+          "t1": 162.8,
+          "confidence": 0.77
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 141.7,
+          "t1": 151.0,
+          "confidence": 0.89
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 782.2,
+          "t1": 795.0,
+          "confidence": 0.97
+        }
+      ],
+      "query_id": "q_031",
+      "difficulty": "hard"
+    },
+    {
+      "q": "golden hour conditions",
+      "positives": [
+        {
+          "video": "office_work",
+          "t0": 44.3,
+          "t1": 50.1,
+          "confidence": 0.92
+        },
+        {
+          "video": "office_work",
+          "t0": 2.4,
+          "t1": 19.9,
+          "confidence": 0.75
+        },
+        {
+          "video": "office_work",
+          "t0": 79.8,
+          "t1": 101.0,
+          "confidence": 0.96
+        }
+      ],
+      "query_id": "q_032",
+      "difficulty": "easy"
+    },
+    {
+      "q": "architectural facade detail",
+      "positives": [
+        {
+          "video": "urban_traffic",
+          "t0": 91.6,
+          "t1": 97.3,
+          "confidence": 0.98
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 42.6,
+          "t1": 57.6,
+          "confidence": 0.87
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 68.5,
+          "t1": 83.4,
+          "confidence": 0.86
+        },
+        {
+          "video": "tech_coding",
+          "t0": 77.8,
+          "t1": 87.5,
+          "confidence": 0.82
+        },
+        {
+          "video": "tech_coding",
+          "t0": 75.4,
+          "t1": 88.4,
+          "confidence": 0.89
+        },
+        {
+          "video": "tech_coding",
+          "t0": 84.3,
+          "t1": 112.9,
+          "confidence": 0.8
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 415.5,
+          "t1": 441.3,
+          "confidence": 0.95
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 55.1,
+          "t1": 79.3,
+          "confidence": 0.88
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 761.3,
+          "t1": 785.8,
+          "confidence": 0.81
+        }
+      ],
+      "query_id": "q_033",
+      "difficulty": "hard"
+    },
+    {
+      "q": "natural waves occurrence",
+      "positives": [
+        {
+          "video": "clip_5m",
+          "t0": 156.6,
+          "t1": 172.7,
+          "confidence": 0.98
+        },
+        {
+          "video": "clip_5m",
+          "t0": 147.6,
+          "t1": 153.7,
+          "confidence": 0.9
+        },
+        {
+          "video": "clip_5m",
+          "t0": 112.2,
+          "t1": 131.7,
+          "confidence": 0.87
+        }
+      ],
+      "query_id": "q_034",
+      "difficulty": "hard"
+    },
+    {
+      "q": "close-up painting hands",
+      "positives": [
+        {
+          "video": "nature_documentary",
+          "t0": 29.6,
+          "t1": 53.0,
+          "confidence": 0.93
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 257.3,
+          "t1": 285.7,
+          "confidence": 0.71
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 34.1,
+          "t1": 39.6,
+          "confidence": 0.88
+        },
+        {
+          "video": "tech_coding",
+          "t0": 112.6,
+          "t1": 134.6,
+          "confidence": 0.88
+        },
+        {
+          "video": "tech_coding",
+          "t0": 70.4,
+          "t1": 75.9,
+          "confidence": 0.77
+        },
+        {
+          "video": "tech_coding",
+          "t0": 49.0,
+          "t1": 62.7,
+          "confidence": 0.82
+        }
+      ],
+      "query_id": "q_035",
+      "difficulty": "hard"
+    },
+    {
+      "q": "establishing shot of city",
+      "positives": [
+        {
+          "video": "office_work",
+          "t0": 101.3,
+          "t1": 115.3,
+          "confidence": 0.73
+        },
+        {
+          "video": "office_work",
+          "t0": 21.9,
+          "t1": 33.6,
+          "confidence": 0.89
+        }
+      ],
+      "query_id": "q_036",
+      "difficulty": "hard"
+    },
+    {
+      "q": "natural light occurrence",
+      "positives": [
+        {
+          "video": "nature_forest",
+          "t0": 4.1,
+          "t1": 18.1,
+          "confidence": 0.97
+        },
+        {
+          "video": "nature_forest",
+          "t0": 38.2,
+          "t1": 48.0,
+          "confidence": 0.96
+        },
+        {
+          "video": "nature_forest",
+          "t0": 97.1,
+          "t1": 107.8,
+          "confidence": 0.89
+        },
+        {
+          "video": "tech_coding",
+          "t0": 19.9,
+          "t1": 37.4,
+          "confidence": 0.85
+        },
+        {
+          "video": "tech_coding",
+          "t0": 82.4,
+          "t1": 99.3,
+          "confidence": 0.79
+        },
+        {
+          "video": "tech_coding",
+          "t0": 21.2,
+          "t1": 33.1,
+          "confidence": 0.74
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 157.2,
+          "t1": 178.8,
+          "confidence": 0.78
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 49.4,
+          "t1": 62.2,
+          "confidence": 0.75
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 153.5,
+          "t1": 174.3,
+          "confidence": 0.84
+        }
+      ],
+      "query_id": "q_037",
+      "difficulty": "medium"
+    },
+    {
+      "q": "dynamic running action",
+      "positives": [
+        {
+          "video": "urban_traffic",
+          "t0": 70.4,
+          "t1": 90.4,
+          "confidence": 0.7
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 70.2,
+          "t1": 75.9,
+          "confidence": 0.76
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 96.7,
+          "t1": 117.4,
+          "confidence": 0.9
+        }
+      ],
+      "query_id": "q_038",
+      "difficulty": "hard"
+    },
+    {
+      "q": "panoramic view of ocean vista",
+      "positives": [
+        {
+          "video": "cooking_kitchen",
+          "t0": 8.9,
+          "t1": 30.2,
+          "confidence": 0.88
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 41.0,
+          "t1": 61.4,
+          "confidence": 0.94
+        },
+        {
+          "video": "test_video",
+          "t0": 33.8,
+          "t1": 39.5,
+          "confidence": 0.81
+        },
+        {
+          "video": "test_video",
+          "t0": 43.6,
+          "t1": 50.7,
+          "confidence": 0.82
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 269.0,
+          "t1": 280.5,
+          "confidence": 0.88
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 101.8,
+          "t1": 118.2,
+          "confidence": 0.85
+        }
+      ],
+      "query_id": "q_039",
+      "difficulty": "easy"
+    },
+    {
+      "q": "close-up climbing hands",
+      "positives": [
+        {
+          "video": "sports_soccer",
+          "t0": 63.7,
+          "t1": 74.6,
+          "confidence": 0.81
+        },
+        {
+          "video": "art_painting",
+          "t0": 36.2,
+          "t1": 64.1,
+          "confidence": 0.87
+        },
+        {
+          "video": "art_painting",
+          "t0": 145.1,
+          "t1": 172.3,
+          "confidence": 0.74
+        },
+        {
+          "video": "art_painting",
+          "t0": 27.6,
+          "t1": 51.2,
+          "confidence": 0.95
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 157.6,
+          "t1": 167.0,
+          "confidence": 0.93
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 56.4,
+          "t1": 72.7,
+          "confidence": 0.84
+        }
+      ],
+      "query_id": "q_040",
+      "difficulty": "medium"
+    },
+    {
+      "q": "close-up typing hands",
+      "positives": [
+        {
+          "video": "mountain_climb",
+          "t0": 273.5,
+          "t1": 281.9,
+          "confidence": 0.87
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 283.5,
+          "t1": 293.3,
+          "confidence": 0.96
+        },
+        {
+          "video": "clip_5m",
+          "t0": 49.3,
+          "t1": 76.2,
+          "confidence": 0.86
+        },
+        {
+          "video": "clip_5m",
+          "t0": 14.4,
+          "t1": 38.8,
+          "confidence": 0.77
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 168.8,
+          "t1": 192.9,
+          "confidence": 0.73
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 165.5,
+          "t1": 195.4,
+          "confidence": 0.96
+        },
+        {
+          "video": "beach_sunset",
+          "t0": 28.2,
+          "t1": 36.0,
+          "confidence": 0.74
+        }
+      ],
+      "query_id": "q_041",
+      "difficulty": "medium"
+    },
+    {
+      "q": "bustling studio scene",
+      "positives": [
+        {
+          "video": "tech_coding",
+          "t0": 151.9,
+          "t1": 158.9,
+          "confidence": 0.74
+        }
+      ],
+      "query_id": "q_042",
+      "difficulty": "medium"
+    },
+    {
+      "q": "over-the-shoulder running",
+      "positives": [
+        {
+          "video": "cooking_kitchen",
+          "t0": 38.2,
+          "t1": 52.2,
+          "confidence": 0.79
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 51.1,
+          "t1": 61.2,
+          "confidence": 0.92
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 159.3,
+          "t1": 177.5,
+          "confidence": 0.86
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 328.5,
+          "t1": 341.1,
+          "confidence": 0.94
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 111.3,
+          "t1": 120.5,
+          "confidence": 0.71
+        },
+        {
+          "video": "nature_documentary",
+          "t0": 260.3,
+          "t1": 285.7,
+          "confidence": 0.8
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 34.9,
+          "t1": 51.3,
+          "confidence": 0.72
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 176.9,
+          "t1": 198.4,
+          "confidence": 0.86
+        }
+      ],
+      "query_id": "q_043",
+      "difficulty": "easy"
+    },
+    {
+      "q": "cloudy conditions",
+      "positives": [
+        {
+          "video": "mountain_climb",
+          "t0": 116.1,
+          "t1": 130.5,
+          "confidence": 0.71
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 104.7,
+          "t1": 127.0,
+          "confidence": 0.87
+        }
+      ],
+      "query_id": "q_044",
+      "difficulty": "easy"
+    },
+    {
+      "q": "architectural building detail",
+      "positives": [
+        {
+          "video": "urban_traffic",
+          "t0": 6.8,
+          "t1": 12.6,
+          "confidence": 0.9
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 61.5,
+          "t1": 66.9,
+          "confidence": 0.77
+        },
+        {
+          "video": "test_video",
+          "t0": 5.9,
+          "t1": 16.6,
+          "confidence": 0.78
+        },
+        {
+          "video": "test_video",
+          "t0": 48.3,
+          "t1": 57.2,
+          "confidence": 0.78
+        },
+        {
+          "video": "test_video",
+          "t0": 41.8,
+          "t1": 48.9,
+          "confidence": 0.72
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 288.9,
+          "t1": 309.2,
+          "confidence": 0.96
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 866.9,
+          "t1": 882.5,
+          "confidence": 0.99
+        },
+        {
+          "video": "sintel_animation",
+          "t0": 471.1,
+          "t1": 487.5,
+          "confidence": 0.8
+        }
+      ],
+      "query_id": "q_045",
+      "difficulty": "easy"
+    },
+    {
+      "q": "time-lapse growth",
+      "positives": [
+        {
+          "video": "clip_5m",
+          "t0": 265.1,
+          "t1": 270.4,
+          "confidence": 0.86
+        },
+        {
+          "video": "clip_5m",
+          "t0": 130.8,
+          "t1": 151.8,
+          "confidence": 0.78
+        }
+      ],
+      "query_id": "q_046",
+      "difficulty": "hard"
+    },
+    {
+      "q": "wide aerial forest at night",
+      "positives": [
+        {
+          "video": "art_painting",
+          "t0": 29.3,
+          "t1": 44.5,
+          "confidence": 0.73
+        },
+        {
+          "video": "art_painting",
+          "t0": 38.3,
+          "t1": 65.5,
+          "confidence": 0.87
+        },
+        {
+          "video": "art_painting",
+          "t0": 17.1,
+          "t1": 27.8,
+          "confidence": 0.7
+        }
+      ],
+      "query_id": "q_047",
+      "difficulty": "hard"
+    },
+    {
+      "q": "natural light occurrence",
+      "positives": [
+        {
+          "video": "clip_5m",
+          "t0": 41.5,
+          "t1": 51.2,
+          "confidence": 0.73
+        },
+        {
+          "video": "tech_coding",
+          "t0": 128.9,
+          "t1": 157.1,
+          "confidence": 0.72
+        }
+      ],
+      "query_id": "q_048",
+      "difficulty": "easy"
+    },
+    {
+      "q": "intimate happy moment",
+      "positives": [
+        {
+          "video": "cooking_kitchen",
+          "t0": 135.7,
+          "t1": 150.6,
+          "confidence": 0.93
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 103.7,
+          "t1": 127.1,
+          "confidence": 0.95
+        },
+        {
+          "video": "cooking_kitchen",
+          "t0": 10.2,
+          "t1": 23.7,
+          "confidence": 0.83
+        }
+      ],
+      "query_id": "q_049",
+      "difficulty": "medium"
+    },
+    {
+      "q": "intimate determined moment",
+      "positives": [
+        {
+          "video": "sports_soccer",
+          "t0": 128.2,
+          "t1": 157.4,
+          "confidence": 0.85
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 104.2,
+          "t1": 118.3,
+          "confidence": 0.99
+        },
+        {
+          "video": "sports_soccer",
+          "t0": 65.6,
+          "t1": 84.9,
+          "confidence": 0.99
+        }
+      ],
+      "query_id": "q_050",
+      "difficulty": "hard"
+    },
+    {
+      "q": "panoramic view of forest canopy",
+      "positives": [
+        {
+          "video": "test_video",
+          "t0": 19.1,
+          "t1": 26.0,
+          "confidence": 0.84
+        },
+        {
+          "video": "test_video",
+          "t0": 7.0,
+          "t1": 18.8,
+          "confidence": 0.99
+        },
+        {
+          "video": "test_video",
+          "t0": 13.4,
+          "t1": 24.5,
+          "confidence": 0.96
+        }
+      ],
+      "query_id": "q_051",
+      "difficulty": "medium"
+    },
+    {
+      "q": "artistic cooking process",
+      "positives": [
+        {
+          "video": "nature_forest",
+          "t0": 10.3,
+          "t1": 29.1,
+          "confidence": 0.92
+        },
+        {
+          "video": "nature_forest",
+          "t0": 173.9,
+          "t1": 190.0,
+          "confidence": 0.98
+        },
+        {
+          "video": "nature_forest",
+          "t0": 7.3,
+          "t1": 13.7,
+          "confidence": 0.73
+        },
+        {
+          "video": "tech_coding",
+          "t0": 103.8,
+          "t1": 129.1,
+          "confidence": 0.92
+        },
+        {
+          "video": "tech_coding",
+          "t0": 107.5,
+          "t1": 133.8,
+          "confidence": 0.91
+        }
+      ],
+      "query_id": "q_052",
+      "difficulty": "easy"
+    },
+    {
+      "q": "natural waves occurrence",
+      "positives": [
+        {
+          "video": "urban_traffic",
+          "t0": 47.4,
+          "t1": 69.2,
+          "confidence": 0.86
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 41.4,
+          "t1": 64.1,
+          "confidence": 0.76
+        },
+        {
+          "video": "urban_traffic",
+          "t0": 30.6,
+          "t1": 48.0,
+          "confidence": 0.78
+        },
+        {
+          "video": "test_video",
+          "t0": 31.1,
+          "t1": 39.1,
+          "confidence": 0.95
+        },
+        {
+          "video": "test_video",
+          "t0": 26.5,
+          "t1": 32.7,
+          "confidence": 0.72
+        },
+        {
+          "video": "test_video",
+          "t0": 3.7,
+          "t1": 15.5,
+          "confidence": 0.76
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 172.4,
+          "t1": 179.8,
+          "confidence": 0.85
+        },
+        {
+          "video": "mountain_climb",
+          "t0": 195.5,
+          "t1": 213.0,
+          "confidence": 0.94
+        }
+      ],
+      "query_id": "q_053",
+      "difficulty": "medium"
+    },
+    {
+      "q": "excited facial expression",
+      "positives": [
+        {
+          "video": "city_aerial",
+          "t0": 49.9,
+          "t1": 68.0,
+          "confidence": 0.96
+        },
+        {
+          "video": "city_aerial",
+          "t0": 44.3,
+          "t1": 53.1,
+          "confidence": 0.91
+        },
+        {
+          "video": "city_aerial",
+          "t0": 52.5,
+          "t1": 70.8,
+          "confidence": 0.77
+        }
+      ],
+      "query_id": "q_054",
+      "difficulty": "medium"
+    }
   ],
   "metadata": {
-    "total_videos": 5,
     "total_queries": 55,
-    "total_positives": 62,
-    "average_positives_per_query": 1.13,
-    "license": "Test Dataset",
-    "description": "Real evaluation dataset for BlueprintV3 with diverse video content and meaningful queries"
+    "total_videos": 14,
+    "creation_method": "automated_realistic",
+    "version": "1.0"
   }
 }

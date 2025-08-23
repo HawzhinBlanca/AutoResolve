@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 Media I/O operations module
@@ -8,7 +12,7 @@ import subprocess
 import json
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import tempfile
 import time
 
@@ -386,17 +390,17 @@ def main():
         result = remux_media(args.video, args.audio, args.output, args.offset)
     elif args.command == 'info':
         result = get_media_info(args.input)
-        print(json.dumps(result, indent=2))
+        logger.info(json.dumps(result, indent=2))
         return 0 if result.get('success') else 1
     else:
         parser.print_help()
         return 1
     
     if result.get('success'):
-        print(f"✓ Success: {result.get('path')}")
+        logger.info(f"✓ Success: {result.get('path')}")
         return 0
     else:
-        print(f"✗ Failed: {result.get('error')}")
+        logger.error(f"✗ Failed: {result.get('error')}")
         return 1
 
 

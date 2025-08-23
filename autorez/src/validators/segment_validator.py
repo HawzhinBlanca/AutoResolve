@@ -4,7 +4,7 @@ Ensures segments are within valid ranges for video duration.
 """
 
 import av
-from typing import Tuple, Optional
+from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)

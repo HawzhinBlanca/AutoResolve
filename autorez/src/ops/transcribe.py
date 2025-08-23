@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 Ops Module - Transcription
 Real implementation meeting ≤1.5× realtime requirement
@@ -7,7 +11,6 @@ import configparser
 import time
 import os
 import torch
-from pathlib import Path
 from src.utils.common import set_global_seed
 
 CFG = configparser.ConfigParser()
@@ -87,6 +90,12 @@ class Transcriber:
         
         return transcript, metrics
 
+def transcribe_audio(video_path: str, output_path: str = None) -> dict:
+    """Wrapper function for E2E testing"""
+    transcriber = Transcriber()
+    transcript, metrics = transcriber.transcribe_video(video_path, output_path)
+    return transcript
+
 def transcribe_cli():
     """CLI interface for transcription per blueprint specification"""
     import argparse
@@ -102,13 +111,13 @@ def transcribe_cli():
     transcriber = Transcriber()
     transcript, metrics = transcriber.transcribe_video(video_path, output_path)
     
-    print(f"Transcription complete:")
-    print(f"  Duration: {metrics['duration_s']:.1f}s")
-    print(f"  Processing: {metrics['processing_time_s']:.1f}s")
-    print(f"  Realtime ratio: {metrics['realtime_ratio']:.2f}×")
-    print(f"  Meets requirement (≤{transcriber.speed_target}×): {metrics['meets_requirement']}")
-    print(f"  Language: {transcript['language']}")
-    print(f"  Segments: {len(transcript['segments'])}")
+    logger.info(f"Transcription complete:")
+    logger.info(f"  Duration: {metrics['duration_s']:.1f}s")
+    logger.info(f"  Processing: {metrics['processing_time_s']:.1f}s")
+    logger.info(f"  Realtime ratio: {metrics['realtime_ratio']:.2f}×")
+    logger.info(f"  Meets requirement (≤{transcriber.speed_target}×): {metrics['meets_requirement']}")
+    logger.info(f"  Language: {transcript['language']}")
+    logger.info(f"  Segments: {len(transcript['segments'])}")
 
 if __name__ == "__main__":
     transcribe_cli()

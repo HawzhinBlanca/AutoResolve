@@ -56,8 +56,8 @@ def available_memory_gb():
 def check_memory_available(required_gb: float = 8.0) -> bool:
     """Check if enough memory is available before starting"""
     available = available_memory_gb()
-    current = rss_gb()
-    free = available + (psutil.virtual_memory().total / (1024**3) - psutil.virtual_memory().used / (1024**3))
+    rss_gb()
+    available + (psutil.virtual_memory().total / (1024**3) - psutil.virtual_memory().used / (1024**3))
     
     if available < required_gb:
         import warnings

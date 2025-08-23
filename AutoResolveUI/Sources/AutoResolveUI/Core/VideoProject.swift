@@ -7,8 +7,8 @@ import AVFoundation
 import Combine
 
 // MARK: - Core Video Project Structure
-struct VideoProject: Codable, Identifiable, Equatable {
-    let id = UUID()
+class VideoProject: Codable, Identifiable, ObservableObject, Equatable {
+    let id: UUID
     var name: String
     var createdAt: Date
     var modifiedAt: Date
@@ -17,8 +17,10 @@ struct VideoProject: Codable, Identifiable, Equatable {
     var mediaPool: MediaPool
     var metadata: ProjectMetadata
     var workspaces: [Workspace]
+    var cacheDirectory: URL? = nil
     
     init(name: String = "Untitled Project") {
+        self.id = UUID()
         self.name = name
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -29,13 +31,17 @@ struct VideoProject: Codable, Identifiable, Equatable {
         self.workspaces = [Workspace.default]
     }
     
-    mutating func updateModifiedDate() {
+    func updateModifiedDate() {
         modifiedAt = Date()
+    }
+    
+    static func == (lhs: VideoProject, rhs: VideoProject) -> Bool {
+        lhs.id == rhs.id
     }
 }
 
 // MARK: - Professional Timeline Structure
-struct Timeline: Codable, Equatable {
+class Timeline: Codable, ObservableObject {
     var videoTracks: [VideoTrack] = []
     var audioTracks: [AudioTrack] = []
     var effectTracks: [EffectTrack] = []
@@ -173,19 +179,39 @@ struct TitleClip: Codable, Identifiable, Equatable {
 // MARK: - Project Settings
 struct ProjectSettings: Codable, Equatable {
     var resolution: Resolution = .uhd4K
+    var width: Int = 3840
+    var height: Int = 2160
     var frameRate: FrameRate = .fps23_976
-    var colorSpace: ColorSpace = .rec709
+    var colorSpace: VideoColorSpace = .rec709
     var audioSampleRate: AudioSampleRate = .rate48kHz
     var audioChannels: AudioChannels = .stereo
-    var renderQuality: RenderQuality = .full
+    var audioBitDepth: Int = 24
+    var renderQuality: VideoRenderQuality = .full
+    var previewQuality: VideoRenderQuality = .half
+    var videoFormat: String = "H.264"
+    var renderThreads: Int = 4
+    var pixelAspectRatio: Double = 1.0
+    var audioOutputDevice: String = "Default"
+    var workingColorSpace: VideoColorSpace = .rec709
+    var useGPUAcceleration: Bool = true
+    var masterVolume: Float = 1.0
+    var gamma: Double = 2.2
+    var backgroundRendering: Bool = true
+    var useColorManagement: Bool = true
+    var audioBufferSize: Int = 512
+    var realtimeAudio: Bool = true
+    var motionBlurAmount: Double = 0.5
+    var referenceLevelDB: Double = -20.0
+    var fieldRendering: String = "Progressive"
     var proxySettings: ProxySettings = ProxySettings()
     var autoSave: Bool = true
     var autoSaveInterval: TimeInterval = 300 // 5 minutes
+    var diskCacheLocation: URL? = nil
 }
 
 // MARK: - Media Pool
 struct MediaPool: Codable, Equatable {
-    var mediaItems: [MediaItem] = []
+    var mediaItems: [ProjectMediaItem] = []
     var bins: [MediaBin] = []
     var smartCollections: [String] = [] // Collection IDs - simplified
     
@@ -194,7 +220,7 @@ struct MediaPool: Codable, Equatable {
     }
 }
 
-struct MediaItem: Codable, Identifiable, Equatable {
+struct ProjectMediaItem: Codable, Identifiable, Equatable {
     let id = UUID()
     var name: String
     var url: URL
@@ -257,7 +283,7 @@ enum AspectRatio: String, Codable, CaseIterable {
     case square = "1:1"
 }
 
-enum ColorSpace: String, Codable, CaseIterable {
+enum VideoColorSpace: String, Codable, CaseIterable {
     case rec709 = "Rec. 709"
     case p3 = "Display P3"
     case rec2020 = "Rec. 2020"
@@ -279,7 +305,7 @@ enum AudioChannels: String, Codable, CaseIterable {
     case surround7_1 = "7.1 Surround"
 }
 
-enum RenderQuality: String, Codable, CaseIterable {
+enum VideoRenderQuality: String, Codable, CaseIterable {
     case proxy = "Proxy"
     case half = "Half Resolution"
     case full = "Full Resolution"
@@ -329,8 +355,10 @@ enum WorkspaceLayout: String, Codable, CaseIterable {
 }
 
 struct ProjectMetadata: Codable, Equatable {
+    var creator: String = ""
     var notes: String = ""
     var tags: [String] = []
+    var keywords: String = ""
     var rating: Int = 0
     var customFields: [String: String] = [:]
 }

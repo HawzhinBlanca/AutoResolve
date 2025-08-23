@@ -1,4 +1,6 @@
-import torch, av, numpy as np, hashlib
+import torch
+import av
+import hashlib
 import open_clip
 from PIL import Image
 from src.utils.memory import Budget, enforce_budget, set_seeds

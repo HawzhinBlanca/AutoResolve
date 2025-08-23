@@ -174,7 +174,7 @@ class EnhancedProjectManager: ObservableObject {
             await MainActor.run { loadingProgress = 0.2 }
             
             // Prepare project for saving
-            var projectToSave = project
+            let projectToSave = project
             projectToSave.updateModifiedDate()
             
             await MainActor.run { loadingProgress = 0.4 }
@@ -285,7 +285,7 @@ class EnhancedProjectManager: ObservableObject {
         let templateURL = templatesDirectory.appendingPathComponent("\(name).\(templateExtension)")
         
         // Create template version (remove media references)
-        var template = project
+        let template = project
         template.name = name
         template.mediaPool.mediaItems.removeAll()
         
@@ -390,12 +390,20 @@ class EnhancedProjectManager: ObservableObject {
     
     func exportProject(_ project: VideoProject, to url: URL, format: ExportFormat) async throws {
         switch format {
-        case .finalCutProXML:
+        case .fcpxml:
             try await exportToFinalCutProXML(project, to: url)
-        case .autoResolve:
+        case .drp:
             _ = try await saveProject(project, to: url)
-        case .avidMediaComposer:
+        case .aaf:
             try await exportToAvidMediaComposer(project, to: url)
+        case .edl:
+            throw ProjectError.exportNotSupported("EDL export not yet implemented")
+        case .otio:
+            throw ProjectError.exportNotSupported("OpenTimelineIO export not yet implemented")
+        case .h264_mp4, .h265_mp4, .prores_mov, .dnxhd_mov:
+            throw ProjectError.exportNotSupported("Video format export not supported in this context")
+        case .gif, .image_sequence:
+            throw ProjectError.exportNotSupported("Image format export not supported in this context")
         }
     }
     
@@ -483,19 +491,7 @@ enum ImportFormat: String, CaseIterable {
     }
 }
 
-enum ExportFormat: String, CaseIterable {
-    case autoResolve = "AutoResolve Project"
-    case finalCutProXML = "Final Cut Pro XML"
-    case avidMediaComposer = "Avid Media Composer"
-    
-    var fileExtension: String {
-        switch self {
-        case .autoResolve: return "autoresolve"
-        case .finalCutProXML: return "fcpxml"
-        case .avidMediaComposer: return "aaf"
-        }
-    }
-}
+// Duplicate ExportFormat removed - using the one defined at line 460
 
 enum ProjectError: LocalizedError {
     case loadFailed(Error)

@@ -1,12 +1,14 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 B-roll Module - Selector
 Real implementation meeting ≥0.65 top-3 match rate requirement
 """
-import numpy as np
 import json
 import time
 import os
-from pathlib import Path
 from src.utils.common import set_global_seed, cos
 from src.embedders.vjepa_embedder import VJEPAEmbedder
 from src.embedders.clip_embedder import CLIPEmbedder
@@ -209,7 +211,7 @@ def selector_cli():
     """CLI interface for B-roll selection"""
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python -m src.broll.selector <video_path> [transcript_file] [output_path]")
+        logger.info("Usage: python -m src.broll.selector <video_path> [transcript_file] [output_path]")
         sys.exit(1)
     
     video_path = sys.argv[1]
@@ -227,16 +229,16 @@ def selector_cli():
     selection_data, metrics = selector.select_broll(video_path, transcript_data, output_path)
     
     if "error" in selection_data:
-        print(f"B-roll selection failed: {selection_data['error']}")
+        logger.error(f"B-roll selection failed: {selection_data['error']}")
     else:
-        print(f"B-roll selection complete:")
-        print(f"  Processing time: {metrics['processing_time_s']:.1f}s")
-        print(f"  Total queries: {metrics['total_queries']}")
-        print(f"  Successful matches: {metrics['successful_matches']}")
-        print(f"  Top-3 match rate: {metrics['top3_match_rate']:.3f}")
-        print(f"  Meets requirement (≥{selector.min_match_rate}): {metrics['meets_requirement']}")
-        print(f"  Selections made: {metrics['selections_made']}")
-        print(f"  Output: {output_path}")
+        logger.info(f"B-roll selection complete:")
+        logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
+        logger.info(f"  Total queries: {metrics['total_queries']}")
+        logger.info(f"  Successful matches: {metrics['successful_matches']}")
+        logger.info(f"  Top-3 match rate: {metrics['top3_match_rate']:.3f}")
+        logger.info(f"  Meets requirement (≥{selector.min_match_rate}): {metrics['meets_requirement']}")
+        logger.info(f"  Selections made: {metrics['selections_made']}")
+        logger.info(f"  Output: {output_path}")
 
 if __name__ == "__main__":
     selector_cli()

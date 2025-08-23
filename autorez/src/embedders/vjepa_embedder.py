@@ -13,8 +13,7 @@ import json
 import time
 import hashlib
 import warnings
-from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Tuple, Optional
 import logging
 from pathlib import Path
 
@@ -24,7 +23,6 @@ from src.utils.cache import key, load, save
 # Try to import transformers V-JEPA-2 support
 try:
     from transformers import AutoModel, VideoMAEImageProcessor
-    from safetensors.torch import load_file
     HAS_VJEPA2 = True
 except ImportError:
     HAS_VJEPA2 = False
@@ -814,7 +812,7 @@ class VJEPAEmbedder:
                     if features.dim() == 3:  # (B, seq_len, hidden_dim)
                         B, L, D = features.shape
                         # Assume sqrt(L) patches per frame
-                        num_patches = int(np.sqrt(L))
+                        int(np.sqrt(L))
                         T = 8  # Number of frames
                         features = features.reshape(B, T, -1, D)
             else:

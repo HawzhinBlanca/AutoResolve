@@ -22,7 +22,7 @@ struct AutoResolveApp: App {
     
     var body: some SwiftUI.Scene {
         WindowGroup(id: "main") {
-            CompleteProfessionalTimeline()
+            VideoEditor()
                 .frame(minWidth: 1400, minHeight: 900)
                 .environmentObject(projectStore)
                 .environmentObject(timelineViewModel)
@@ -30,7 +30,7 @@ struct AutoResolveApp: App {
                 .environmentObject(undoManager)
                 .environmentObject(backendService)
                 .environmentObject(unifiedStore)
-                .preferredColorScheme(.dark)
+                .colorScheme(.dark)
                 .onAppear {
                     // Connect timeline to project store
                     timelineViewModel.project = projectStore.currentProject

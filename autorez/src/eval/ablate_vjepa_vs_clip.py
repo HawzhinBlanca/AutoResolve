@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 import json, numpy as np
 from src.embedders.vjepa_embedder import VJEPAEmbedder
 from src.embedders.clip_embedder  import CLIPEmbedder
@@ -128,11 +132,11 @@ def eval_manifest(manifest, fps=1.0, window=16, crop_v=256, kfold=5):
     
     if should_promote:
         update_embeddings_config_to_vjepa()
-        print(f"✅ V-JEPA PROMOTED: Updated embeddings.ini to use V-JEPA")
+        logger.info(f"✅ V-JEPA PROMOTED: Updated embeddings.ini to use V-JEPA")
     else:
-        print(f"❌ V-JEPA NOT PROMOTED: Keeping CLIP as default")
+        logger.info(f"❌ V-JEPA NOT PROMOTED: Keeping CLIP as default")
     
-    print(json.dumps(res, indent=2))
+    logger.info(json.dumps(res, indent=2))
     return res
 
 def promote_vjepa(results, sec_per_min):
@@ -162,6 +166,13 @@ def update_embeddings_config_to_vjepa():
     with open('conf/embeddings.ini', 'w') as f:
         f.writelines(updated_lines)
 
-if __name__ == "__main__":
+def main():
+    """Main function that returns results for E2E testing"""
     import sys
-    eval_manifest(sys.argv[1])
+    manifest_path = sys.argv[1] if len(sys.argv) > 1 else "datasets/broll_pilot/manifest.json"
+    return eval_manifest(manifest_path)
+
+if __name__ == "__main__":
+    results = main()
+    if results:
+        logger.info(json.dumps(results, indent=2))

@@ -114,13 +114,13 @@ class ProfessionalUndoManager: ObservableObject {
     }
     
     // MARK: - Group Commands
-    func beginGroup(_ description: String) -> CommandGroup {
-        CommandGroup(description: description, undoManager: self)
+    func beginGroup(_ description: String) -> UndoCommandGroup {
+        UndoCommandGroup(description: description, undoManager: self)
     }
 }
 
 // MARK: - Command Group for Batch Operations
-class CommandGroup {
+class UndoCommandGroup {
     private let description: String
     private var commands: [UndoableCommand] = []
     private weak var undoManager: ProfessionalUndoManager?
@@ -294,7 +294,7 @@ struct MoveClipCommand: UndoableCommand {
             newTime: otherMove.newTime,
             oldTrackId: oldTrackId,
             newTrackId: otherMove.newTrackId,
-            project: project
+            project: project!
         )
     }
 }
@@ -360,7 +360,7 @@ struct TrimClipCommand: UndoableCommand {
             oldDuration: oldDuration,
             newStartTime: otherTrim.newStartTime,
             newDuration: otherTrim.newDuration,
-            project: project
+            project: project!
         )
     }
 }

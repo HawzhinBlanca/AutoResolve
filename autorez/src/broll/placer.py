@@ -1,12 +1,14 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 """
 Blueprint3 B-roll Module - Placer
 Real implementation meeting <10% placement conflicts requirement
 """
-import numpy as np
 import json
 import time
 import os
-from pathlib import Path
 from src.utils.common import set_global_seed, iou
 
 class BrollPlacer:
@@ -219,7 +221,7 @@ def placer_cli():
     """CLI interface for B-roll placement"""
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python -m src.broll.placer <selection_file> [transcript_file] [output_path]")
+        logger.info("Usage: python -m src.broll.placer <selection_file> [transcript_file] [output_path]")
         sys.exit(1)
     
     selection_file = sys.argv[1]
@@ -228,7 +230,7 @@ def placer_cli():
     
     # Load selection data
     if not os.path.exists(selection_file):
-        print(f"Selection file not found: {selection_file}")
+        logger.info(f"Selection file not found: {selection_file}")
         sys.exit(1)
     
     with open(selection_file) as f:
@@ -245,16 +247,16 @@ def placer_cli():
     placement_data, metrics = placer.place_broll(selection_data, transcript_data, output_path)
     
     if "error" in placement_data:
-        print(f"B-roll placement failed: {placement_data['error']}")
+        logger.error(f"B-roll placement failed: {placement_data['error']}")
     else:
-        print(f"B-roll placement complete:")
-        print(f"  Processing time: {metrics['processing_time_s']:.1f}s")
-        print(f"  Total placements: {metrics['total_placements']}")
-        print(f"  Conflicts: {metrics['conflicts']}")
-        print(f"  Conflict rate: {metrics['conflict_rate']:.3f}")
-        print(f"  Meets requirement (<{placer.max_conflict_rate}): {metrics['meets_requirement']}")
-        print(f"  Protected regions: {metrics['protected_regions']}")
-        print(f"  Output: {output_path}")
+        logger.info(f"B-roll placement complete:")
+        logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
+        logger.info(f"  Total placements: {metrics['total_placements']}")
+        logger.info(f"  Conflicts: {metrics['conflicts']}")
+        logger.info(f"  Conflict rate: {metrics['conflict_rate']:.3f}")
+        logger.info(f"  Meets requirement (<{placer.max_conflict_rate}): {metrics['meets_requirement']}")
+        logger.info(f"  Protected regions: {metrics['protected_regions']}")
+        logger.info(f"  Output: {output_path}")
 
 if __name__ == "__main__":
     placer_cli()

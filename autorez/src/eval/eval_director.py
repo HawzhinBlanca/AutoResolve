@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 Director evaluation module implementing real F1@IoU and PR-AUC metrics
@@ -5,7 +9,6 @@ As per Blueprint.md lines 20-23
 """
 
 import json
-import os
 import sys
 import numpy as np
 from pathlib import Path
@@ -329,7 +332,7 @@ def main(annotations_dir: str):
         # Track overall status
         if results[module]["status"] != "pass":
             all_pass = False
-            print(f"⚠️  Module {module} failed quality gates")
+            logger.error(f"⚠️  Module {module} failed quality gates")
     
     # Add summary
     results["summary"] = {
@@ -345,7 +348,7 @@ def main(annotations_dir: str):
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2)
     
-    print(json.dumps(results, indent=2))
+    logger.info(json.dumps(results, indent=2))
     
     # Emit telemetry
     try:
@@ -359,7 +362,7 @@ def main(annotations_dir: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python -m src.eval.eval_director <annotations_dir>")
+        logger.info("Usage: python -m src.eval.eval_director <annotations_dir>")
         sys.exit(1)
     
     main(sys.argv[1])
