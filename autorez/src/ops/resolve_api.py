@@ -19,20 +19,20 @@ CFG.read(os.getenv("OPS_INI", "conf/ops.ini"))
 class ResolveAPI:
     def __init__(self):
         set_global_seed(1234)
-        self.api_method = CFG.get("resolve", "api_method", fallback="scripting")
+        self.api_method = CFG.get("resolve", "mode", fallback="fcpxml")
         self.fallback = CFG.get("resolve", "fallback", fallback="fcpxml")
         self.timeout_s = int(CFG.get("resolve", "timeout_s", fallback="30"))
-        self.project_name = CFG.get("resolve", "project_name", fallback="AutoResolve_Project")
+        self.project_name = CFG.get("resolve", "project", fallback="AutoResolve_v3")
         
     def create_timeline(self, video_path, cuts_data=None, broll_data=None, transcript_data=None):
         """
         Create timeline in DaVinci Resolve
         Returns: (timeline_data, success_status)
         """
-        time.time()
+        # no-op placeholder removed
         
         # Try primary method (scripting)
-        if self.api_method == "scripting":
+        if self.api_method in ("auto", "script", "scripting"):
             success, timeline_data = self._create_via_scripting(
                 video_path, cuts_data, broll_data, transcript_data
             )
@@ -43,7 +43,7 @@ class ResolveAPI:
             logger.error("Scripting method failed, trying fallback...")
         
         # Try fallback method
-        if self.fallback == "fcpxml":
+        if self.fallback in ("auto", "fcpxml"):
             success, timeline_data = self._create_via_fcpxml(
                 video_path, cuts_data, broll_data, transcript_data
             )
@@ -113,8 +113,8 @@ class ResolveAPI:
             timeline_data = {
                 "method": "fcpxml",
                 "file_path": fcpxml_path,
-                "clips_count": len(cuts_data.get("speech_segments", [])) if cuts_data else 0,
-                "broll_count": len(broll_data.get("placements", [])) if broll_data else 0
+                "clips_count": len((cuts_data or {}).get("keep_windows", [])),
+                "broll_count": len((broll_data or {}).get("placements", []))
             }
             
             return True, timeline_data
@@ -126,7 +126,8 @@ class ResolveAPI:
         """Create timeline using Edit Decision List"""
         try:
             # Generate EDL
-            edl_content = self._generate_edl(video_path, cuts_data, broll_data)
+            transitions = cuts_data.get("transitions", []) if cuts_data else []
+            edl_content = self._generate_edl(video_path, cuts_data, broll_data, transitions)
             
             # Save EDL file
             edl_path = "artifacts/timeline.edl"
@@ -227,16 +228,63 @@ else:
         """Execute Python script in Resolve"""
         try:
             # This would typically use Resolve's Python API
-            # For now, return success if script file exists
-            return os.path.exists(script_path)
-        except:
+            # For now, we'll just execute it as a subprocess
+            result = subprocess.run(["python", script_path], capture_output=True, timeout=self.timeout_s)
+            return result.returncode == 0
+        except Exception as e:
+            logger.error(f"Failed to execute Resolve script: {e}")
             return False
+
+    def apply_color_grade(self, clip_id, grade_data):
+        """Apply color grade to a clip"""
+        script_content = self._generate_color_grade_script(clip_id, grade_data)
+        script_path = "/tmp/resolve_color_grade_script.py"
+        with open(script_path, 'w') as f:
+            f.write(script_content)
+        
+        result = self._execute_resolve_script(script_path)
+        os.remove(script_path)
+        return result
+
+    def _generate_color_grade_script(self, clip_id, grade_data):
+        """Generate Python script for applying color grade"""
+        # This is a simplified example. A real implementation would be more complex.
+        lift_r = grade_data.get("lift", {}).get("r", 0)
+        lift_g = grade_data.get("lift", {}).get("g", 0)
+        lift_b = grade_data.get("lift", {}).get("b", 0)
+        gamma_r = grade_data.get("gamma", {}).get("r", 1)
+        gamma_g = grade_data.get("gamma", {}).get("g", 1)
+        gamma_b = grade_data.get("gamma", {}).get("b", 1)
+        gain_r = grade_data.get("gain", {}).get("r", 1)
+        gain_g = grade_data.get("gain", {}).get("g", 1)
+        gain_b = grade_data.get("gain", {}).get("b", 1)
+
+        return f'''
+import DaVinciResolveScript as dvr_script
+
+resolve = dvr_script.scriptapp("Resolve")
+project = resolve.GetProjectManager().GetCurrentProject()
+timeline = project.GetCurrentTimeline()
+clip = timeline.GetItemListInTrack("Video", 1)[{clip_id}]
+
+if clip:
+    clip.SetLUT(0, "/path/to/lut.cube") # This is a placeholder
+    # A real implementation would use the Resolve API to set the color grade
+    # For example:
+    # grade = clip.GetGrade()
+    # grade["Lift"] = [{lift_r}, {lift_g}, {lift_b}, 0]
+    # grade["Gamma"] = [{gamma_r}, {gamma_g}, {gamma_b}, 0]
+    # grade["Gain"] = [{gain_r}, {gain_g}, {gain_b}, 0]
+    # clip.SetGrade(grade)
+'''
     
     def _generate_fcpxml(self, video_path, cuts_data, broll_data, transcript_data):
         """Generate Final Cut Pro XML"""
-        timeline_duration = 0
-        if cuts_data and "speech_segments" in cuts_data:
-            timeline_duration = sum(end - start for start, end in cuts_data["speech_segments"])
+        timeline_duration = 0.0
+        keep_windows = (cuts_data or {}).get("keep_windows", [])
+        if keep_windows:
+            for w in keep_windows:
+                timeline_duration += float(w.get("end", 0.0)) - float(w.get("start", 0.0))
         
         xml_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE fcpxml>
@@ -252,16 +300,33 @@ else:
                     <spine>
 '''
         
-        # Add clips from cuts data
-        if cuts_data and "speech_segments" in cuts_data:
-            current_time = 0
-            for i, (start, end) in enumerate(cuts_data["speech_segments"]):
-                duration = end - start
-                xml_content += f'''
-                        <clip name="Clip {i+1}" offset="{current_time}s" duration="{duration}s">
+        # Add V1 clips from keep_windows
+        current_time = 0.0
+        for i, w in enumerate(keep_windows or []):
+            start = float(w.get("start", 0.0))
+            end = float(w.get("end", start))
+            duration = max(0.0, end - start)
+            if duration <= 0:
+                continue
+            xml_content += f'''
+                        <clip name="V1 Clip {i+1}" offset="{current_time}s" duration="{duration}s">
                             <video ref="r2" offset="{start}s" duration="{duration}s"/>
                         </clip>'''
-                current_time += duration
+            current_time += duration
+
+        # Add BROLL track clips with simple dissolves
+        placements = (broll_data or {}).get("placements", [])
+        dissolve_s = float(CFG.get("broll", "dissolve_s", fallback="0.25"))
+        for j, p in enumerate(placements):
+            b_s = float(p.get("placement", {}).get("start_time", 0.0))
+            b_e = float(p.get("placement", {}).get("end_time", b_s))
+            b_d = max(0.0, b_e - b_s)
+            if b_d <= 0:
+                continue
+            xml_content += f'''
+                        <title name="BROLL {j+1}" lane="2" offset="{b_s}s" duration="{b_d}s" start="{b_s}s">
+                            <param name="Cross Dissolve" key="transition" value="{dissolve_s}s"/>
+                        </title>'''
         
         xml_content += '''
                     </spine>
@@ -276,16 +341,22 @@ else:
     def _generate_edl(self, video_path, cuts_data, broll_data):
         """Generate Edit Decision List"""
         edl_content = "TITLE: AutoResolve Timeline\nFCM: NON-DROP FRAME\n\n"
-        
-        if cuts_data and "speech_segments" in cuts_data:
-            for i, (start, end) in enumerate(cuts_data["speech_segments"]):
-                event_num = str(i + 1).zfill(3)
-                source_in = self._seconds_to_timecode(start)
-                source_out = self._seconds_to_timecode(end)
-                record_in = self._seconds_to_timecode(i * (end - start))
-                record_out = self._seconds_to_timecode((i + 1) * (end - start))
-                
-                edl_content += f"{event_num}  AX       V     C        {source_in} {source_out} {record_in} {record_out}\n"
+
+        keep_windows = (cuts_data or {}).get("keep_windows", [])
+        rec_cursor = 0.0
+        for i, w in enumerate(keep_windows):
+            start = float(w.get("start", 0.0))
+            end = float(w.get("end", start))
+            dur = max(0.0, end - start)
+            if dur <= 0:
+                continue
+            event_num = str(i + 1).zfill(3)
+            source_in = self._seconds_to_timecode(start)
+            source_out = self._seconds_to_timecode(end)
+            record_in = self._seconds_to_timecode(rec_cursor)
+            record_out = self._seconds_to_timecode(rec_cursor + dur)
+            edl_content += f"{event_num}  AX       V     C        {source_in} {source_out} {record_in} {record_out}\n"
+            rec_cursor += dur
         
         return edl_content
     

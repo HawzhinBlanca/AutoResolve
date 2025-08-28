@@ -29,7 +29,7 @@ public class TimelineBackendBridge: ObservableObject {
     @Published public var autoProcessingSettings = AutoProcessingSettings()
     @Published public var visualizationSettings = VisualizationSettings()
     
-    private let logger = Logger(subsystem: "com.autoresolve", category: "timeline-bridge")
+    private let logger = Logger.shared
     private var cancellables = Set<AnyCancellable>()
     private var debounceTimer: Timer?
     private var currentProcessingTask: ProcessingTask?
@@ -53,11 +53,11 @@ public class TimelineBackendBridge: ObservableObject {
         logger.info("Processing timeline with AutoResolve backend")
         
         guard let primaryVideoClip = getPrimaryVideoClip() else {
-            throw AutoResolveError.processingError("No primary video clip found in timeline")
+            throw AutoResolveServiceError.pipelineError("No primary video clip found in timeline")
         }
         
         guard let videoPath = primaryVideoClip.sourceURL?.path else {
-            throw AutoResolveError.processingError("Primary video clip has no source path")
+            throw AutoResolveServiceError.pipelineError("Video clip has no valid source URL")
         }
         
         // Create processing task
@@ -108,8 +108,11 @@ public class TimelineBackendBridge: ObservableObject {
     }
     
     public func processOnlySilenceDetection() async throws {
-        guard let videoPath = getPrimaryVideoClip()?.sourceURL?.path else {
-            throw AutoResolveError.processingError("No video to process")
+        guard let primaryClip = getPrimaryVideoClip() else {
+            throw AutoResolveServiceError.pipelineError("No video to process")
+        }
+        guard let videoPath = primaryClip.sourceURL?.path else {
+            throw AutoResolveServiceError.pipelineError("Video clip has no valid source URL")
         }
         
         logger.info("Running silence detection only")
@@ -141,13 +144,16 @@ public class TimelineBackendBridge: ObservableObject {
     }
     
     public func processBRollSelection() async throws {
-        guard let videoPath = getPrimaryVideoClip()?.sourceURL?.path else {
-            throw AutoResolveError.processingError("No video to process")
+        guard let primaryClip = getPrimaryVideoClip() else {
+            throw AutoResolveServiceError.pipelineError("No video to process")
+        }
+        guard let videoPath = primaryClip.sourceURL?.path else {
+            throw AutoResolveServiceError.pipelineError("Video clip has no valid source URL")
         }
         
         let cuts = extractTimelineCuts()
         guard !cuts.isEmpty else {
-            throw AutoResolveError.processingError("No cuts found to process")
+            throw AutoResolveServiceError.pipelineError("No cuts found to process")
         }
         
         logger.info("Running B-roll selection for \(cuts.count) cuts")
@@ -184,7 +190,7 @@ public class TimelineBackendBridge: ObservableObject {
     
     public func exportToResolve() async throws -> ResolveProjectResult {
         guard let videoPath = getPrimaryVideoClip()?.sourceURL?.path else {
-            throw AutoResolveError.processingError("No video to export")
+            throw AutoResolveServiceError.pipelineError("No video to export")
         }
         
         let cuts = extractTimelineCuts()
@@ -278,7 +284,7 @@ public class TimelineBackendBridge: ObservableObject {
     
     // MARK: - Timeline Data Extraction
     
-    private func getPrimaryVideoClip() -> TimelineClip? {
+    private func getPrimaryVideoClip() -> SimpleTimelineClip? {
         return timeline.tracks.first?.clips.first
     }
     
@@ -289,12 +295,12 @@ public class TimelineBackendBridge: ObservableObject {
             for clip in track.clips {
                 cuts.append(TimeRange(
                     start: clip.startTime,
-                    end: clip.startTime + clip.duration
+                    end: clip.startTime + clip.duration ?? 0
                 ))
             }
         }
         
-        return cuts.sorted { $0.start < $1.start }
+        return cuts.sorted { (a, b) in a.start < b.start }
     }
     
     private func extractBRollSelections() -> [BRollSelection] {
@@ -306,9 +312,8 @@ public class TimelineBackendBridge: ObservableObject {
                 let selection = BRollSelection(
                     cutIndex: marker.cutIndex,
                     timeRange: marker.timeRange,
-                    brollPath: brollPath,
-                    confidence: marker.confidence,
-                    reason: marker.reason
+                    brollClipPath: brollPath,
+                    confidence: marker.confidence
                 )
                 selections.append(selection)
             }
@@ -367,9 +372,9 @@ public class TimelineBackendBridge: ObservableObject {
                 id: UUID(),
                 cutIndex: selection.cutIndex,
                 timeRange: selection.timeRange,
-                suggestedBRollPath: selection.brollPath,
+                suggestedBRollPath: selection.brollClipPath,
                 confidence: selection.confidence,
-                reason: selection.reason,
+                reason: selection.reason ?? "",
                 visualizationType: visualizationSettings.brollVisualizationType
             )
         }
@@ -397,7 +402,7 @@ public class TimelineBackendBridge: ObservableObject {
         var cuts: [TimeRange] = []
         var lastEnd: Double = 0
         
-        for silence in silenceSegments.sorted(by: { $0.start < $1.start }) {
+        for silence in silenceSegments.sorted { (a, b) in a.start < b.start } {
             if silence.start > lastEnd {
                 cuts.append(TimeRange(start: lastEnd, end: silence.start))
             }
@@ -493,6 +498,17 @@ public struct ProcessingTask: Identifiable {
     public var status: TaskStatus
     public var result: ProcessingResult?
     public var error: Error?
+    
+    public init(id: UUID, type: TaskType, inputPath: String, startTime: Date, status: TaskStatus, endTime: Date? = nil, result: ProcessingResult? = nil, error: Error? = nil) {
+        self.id = id
+        self.type = type
+        self.inputPath = inputPath
+        self.startTime = startTime
+        self.status = status
+        self.endTime = endTime
+        self.result = result
+        self.error = error
+    }
     
     public var processingDuration: TimeInterval? {
         guard let endTime = endTime else { return nil }

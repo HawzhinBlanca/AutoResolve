@@ -37,7 +37,7 @@ class TimelineInteractionManager: ObservableObject {
     
     // Perform ripple edit
     func performRippleEdit(clip: TimelineClip, delta: TimeInterval, in timeline: TimelineModel) {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains(where: { $0.id == clip.id }) }) else { return }
+        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains { $0.id == clip.id } }) else { return }
         
         var track = timeline.tracks[trackIndex]
         guard let clipIndex = track.clips.firstIndex(where: { $0.id == clip.id }) else { return }
@@ -55,7 +55,7 @@ class TimelineInteractionManager: ObservableObject {
     
     // Perform roll edit
     func performRollEdit(clip: TimelineClip, delta: TimeInterval, in timeline: TimelineModel, edge: Edge) {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains(where: { $0.id == clip.id }) }) else { return }
+        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains { $0.id == clip.id } }) else { return }
         
         var track = timeline.tracks[trackIndex]
         guard let clipIndex = track.clips.firstIndex(where: { $0.id == clip.id }) else { return }
@@ -89,7 +89,7 @@ class TimelineInteractionManager: ObservableObject {
     
     // Perform slip edit (change in/out points without moving clip)
     func performSlipEdit(clip: TimelineClip, delta: TimeInterval, in timeline: TimelineModel) {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains(where: { $0.id == clip.id }) }) else { return }
+        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains { $0.id == clip.id } }) else { return }
         guard let clipIndex = timeline.tracks[trackIndex].clips.firstIndex(where: { $0.id == clip.id }) else { return }
         
         var modifiedClip = timeline.tracks[trackIndex].clips[clipIndex]
@@ -108,7 +108,7 @@ class TimelineInteractionManager: ObservableObject {
     
     // Perform slide edit (move clip and adjust neighbors)
     func performSlideEdit(clip: TimelineClip, delta: TimeInterval, in timeline: TimelineModel) {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains(where: { $0.id == clip.id }) }) else { return }
+        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.clips.contains { $0.id == clip.id } }) else { return }
         
         var track = timeline.tracks[trackIndex]
         guard let clipIndex = track.clips.firstIndex(where: { $0.id == clip.id }) else { return }
@@ -141,7 +141,7 @@ struct TimelineSelectionRectangle: View {
     @Binding var endPoint: CGPoint
     @Binding var isSelecting: Bool
     
-    var body: some View {
+    public var body: some View {
         if isSelecting {
             Path { path in
                 let rect = CGRect(
@@ -168,7 +168,7 @@ struct SnapIndicator: View {
     let height: CGFloat
     @Binding var isVisible: Bool
     
-    var body: some View {
+    public var body: some View {
         if isVisible {
             Rectangle()
                 .fill(Color.yellow)
@@ -187,7 +187,7 @@ struct TimelineGrid: View {
     let width: CGFloat
     let height: CGFloat
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             let secondsPerPixel = 1.0 / timeline.zoomLevel
             let gridInterval = getGridInterval(secondsPerPixel: secondsPerPixel)
@@ -244,7 +244,7 @@ struct TimelineGrid: View {
 struct EditModeIndicator: View {
     @ObservedObject var interactionManager: TimelineInteractionManager
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: iconForMode(interactionManager.editMode))
                 .font(.system(size: 14))
@@ -352,7 +352,7 @@ extension TimelineModel {
         guard trackIndex < tracks.count else { return false }
         
         let track = tracks[trackIndex]
-        let endTime = time + clip.duration
+        let endTime = time + clip.duration ?? 0
         
         for existingClip in track.clips {
             if existingClip.id != clip.id {
@@ -370,10 +370,10 @@ extension TimelineModel {
         guard !wouldCollide(clip: clip, at: time, on: trackIndex) else {
             // Find gaps where clip could fit
             let track = tracks[trackIndex]
-            let sortedClips = track.clips.sorted { $0.startTime < $1.startTime }
+            let sortedClips = track.clips.sorted { (a, b) in a.startTime < b.startTime }
             
             // Check before first clip
-            if sortedClips.isEmpty || sortedClips[0].startTime >= clip.duration {
+            if sortedClips.isEmpty || sortedClips[0].startTime >= clip.duration ?? 0 {
                 return 0
             }
             
@@ -383,12 +383,12 @@ extension TimelineModel {
                 let gapEnd = sortedClips[i + 1].startTime
                 let gapSize = gapEnd - gapStart
                 
-                if gapSize >= clip.duration {
+                if gapSize >= clip.duration ?? 0 {
                     // Found a gap
-                    if abs(gapStart - time) < abs(gapEnd - clip.duration - time) {
+                    if abs(gapStart - time) < abs(gapEnd - clip.duration ?? 0 - time) {
                         return gapStart
                     } else {
-                        return gapEnd - clip.duration
+                        return gapEnd - clip.duration ?? 0
                     }
                 }
             }

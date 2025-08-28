@@ -1,3 +1,4 @@
+import AVFoundation
 // AUTORESOLVE V3.0 - DAVINCI RESOLVE STYLE PROFESSIONAL VIDEO EDITOR
 // Complete DaVinci Resolve-Style UI Implementation
 // Designed for Apple Design Award Standards
@@ -13,28 +14,39 @@ import Combine
 import QuartzCore
 
 // MARK: - Main Video Editor (DaVinci Resolve Style)
-struct VideoEditor: View {
-    @EnvironmentObject var store: UnifiedStore
+public struct VideoEditor: View {
+    @EnvironmentObject private var store: UnifiedStore
     @EnvironmentObject var backendService: BackendService
+    @StateObject private var layoutManager = PanelLayoutManager()
     @State private var showingImportDialog = false
     @State private var showingExportSheet = false
     @State private var selectedInspectorTab: InspectorTab = .video
     @State private var neuralTimelineEnabled = true
     @State private var currentEmbedder: EmbedderType = .vjepa
+    @State private var leftPanelWidth: CGFloat = 380
+    @State private var rightPanelWidth: CGFloat = 380
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         VStack(spacing: 0) {
-            // DAVINCI RESOLVE STYLE: STATUS BAR AT TOP
-            DaVinciStatusBar()
-                .frame(height: 32)
-                .background(.black.opacity(0.9))
+            // PROFESSIONAL COMPACT TOOLBAR - DaVinci Resolve Edit Page Style
+            ProfessionalToolbar()
+                .frame(height: 80) // 36px for workspace + 44px for tools
+                .background(Color(white: 0.12))
             
-            // MAIN THREE-PANEL LAYOUT (DAVINCI RESOLVE EXACT)
+            // MAIN THREE-PANEL LAYOUT WITH RESIZABLE PANELS
             HStack(spacing: 0) {
-                // LEFT PANEL (380px FIXED) - MEDIA POOL
-                DaVinciLeftPanel(showingImport: $showingImportDialog)
-                    .frame(width: 380)
-                    .background(Color(red: 0.16, green: 0.16, blue: 0.16)) // #282828 base
+                // LEFT PANEL - PROFESSIONAL MEDIA POOL
+                ResizablePanelView(
+                    edge: .trailing,
+                    width: $leftPanelWidth,
+                    minWidth: 320,
+                    maxWidth: 600
+                ) {
+                    ProfessionalMediaPool()
+                        .background(Color(red: 0.16, green: 0.16, blue: 0.16)) // #282828 base
+                }
                 
                 // CENTER AREA (FLEXIBLE) - DUAL VIEWER + TIMELINE
                 VStack(spacing: 0) {
@@ -68,10 +80,16 @@ struct VideoEditor: View {
                 }
                 .frame(maxWidth: .infinity)
                 
-                // RIGHT PANEL (380px FIXED) - INSPECTOR
-                DaVinciRightPanel(selectedTab: $selectedInspectorTab)
-                    .frame(width: 380)
-                    .background(Color(red: 0.16, green: 0.16, blue: 0.16))
+                // RIGHT PANEL - RESIZABLE ENHANCED INSPECTOR
+                ResizablePanelView(
+                    edge: .leading,
+                    width: $rightPanelWidth,
+                    minWidth: 280,
+                    maxWidth: 500
+                ) {
+                    EnhancedInspector()
+                        .background(Color(red: 0.16, green: 0.16, blue: 0.16))
+                }
             }
         }
         .background(.black)
@@ -84,6 +102,16 @@ struct VideoEditor: View {
             allowsMultipleSelection: true
         ) { result in
             handleMediaImport(result)
+        }
+        .onKeyPress("b") {
+            // Blade tool shortcut (B key)
+            store.timeline.cutAtPlayhead()
+            return .handled
+        }
+        .onKeyPress("B", modifiers: .command) {
+            // Alternative blade shortcut (Cmd+B)
+            store.timeline.cutAtPlayhead()
+            return .handled
         }
     }
     
@@ -102,16 +130,49 @@ struct VideoEditor: View {
         guard url.startAccessingSecurityScopedResource() else { return }
         defer { url.stopAccessingSecurityScopedResource() }
         
-        let asset = AVAsset(url: url)
+        // Create media item immediately for UI feedback
+        let mediaItem = MediaPoolItem(url: url)
+        
+        // Add to media pool immediately (will show loading state)
+        store.mediaItems.append(mediaItem)
+        
+        // Load metadata and generate thumbnail asynchronously
         Task {
             do {
+                // Generate thumbnail
+                await mediaItem.generateThumbnail()
+                
+                // Load video metadata
+                let asset = AVAsset(url: url)
                 let duration = try await asset.load(.duration)
+                let tracks = try await asset.load(.tracks)
+                
                 let videoDuration = CMTimeGetSeconds(duration)
+                let videoTrack = tracks.first(where: { $0.mediaType == .video })
+                
                 await MainActor.run {
-                    store.importVideo(url: url, duration: videoDuration)
+                    // Update media item with metadata
+                    mediaItem.duration = videoDuration
+                    mediaItem.hasVideo = videoTrack != nil
+                    
+                    // Get file size
+                    if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                       let fileSize = attributes[.size] as? Int64 {
+                        mediaItem.fileSize = fileSize
+                    }
+                    
+                    // Show notification
+                    print("✅ Imported: \(url.lastPathComponent)")
+                    
+                    // Auto-add first video to timeline
+                    if store.timeline.tracks.first?.clips.isEmpty == true {
+                        store.importVideo(url: url, duration: videoDuration)
+                    }
                 }
             } catch {
+                print("❌ Import failed: \(error)")
                 await MainActor.run {
+                    // Use fallback duration
                     store.importVideo(url: url, duration: 10.0)
                 }
             }
@@ -121,10 +182,10 @@ struct VideoEditor: View {
 
 // MARK: - DaVinci Status Bar
 struct DaVinciStatusBar: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @EnvironmentObject var backendService: BackendService
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 16) {
             // CURRENT EMBEDDER STATUS
             HStack(spacing: 6) {
@@ -174,10 +235,10 @@ struct DaVinciStatusBar: View {
 // MARK: - LEFT PANEL (Media Pool, Neural Insights, Effects Library)
 struct DaVinciLeftPanel: View {
     @Binding var showingImport: Bool
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var selectedMediaTab: MediaPoolTab = .master
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // HEADER
             VStack(spacing: 12) {
@@ -291,8 +352,9 @@ struct DaVinciLeftPanel: View {
                 
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(store.cuts.suggestions.prefix(6).enumerated()), id: \.element.id) { index, cut in
-                            SmartCutSuggestionRow(cut: cut, index: index + 1)
+                        ForEach(Array(store.cuts.suggestions.prefix(6)).indices, id: \.self) { idx in
+                            let cut = store.cuts.suggestions[idx]
+                            SmartCutSuggestionRow(cut: cut, index: idx + 1)
                         }
                     }
                 }
@@ -308,7 +370,7 @@ struct DaVinciLeftPanel: View {
 
 // MARK: - SOURCE VIEWER (V-JEPA/CLIP EMBEDDING VISUALIZATION)
 struct DaVinciSourceViewer: View {
-    var body: some View {
+    public var body: some View {
         ZStack {
             Rectangle()
                 .fill(.black)
@@ -346,7 +408,7 @@ struct DaVinciSourceViewer: View {
 
 // MARK: - TIMELINE VIEWER (STANDARD PREVIEW WITH NEURAL OVERLAY)
 struct DaVinciTimelineViewer: View {
-    var body: some View {
+    public var body: some View {
         ZStack {
             Rectangle()
                 .fill(.black)
@@ -391,16 +453,18 @@ struct DaVinciTimelineViewer: View {
 struct DaVinciTimelineToolbar: View {
     @Binding var neuralTimelineEnabled: Bool
     @Binding var currentEmbedder: EmbedderType
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 16) {
             // STANDARD RESOLVE TOOLS
             HStack(spacing: 8) {
-                ToolbarButton(icon: "arrow.up.left.and.arrow.down.right", tooltip: "Selection Tool")
-                ToolbarButton(icon: "scissors", tooltip: "Blade Tool")
-                ToolbarButton(icon: "hand.draw", tooltip: "Slip Tool")
-                ToolbarButton(icon: "arrow.left.and.right", tooltip: "Slide Tool")
+                TimelineToolbarButton(icon: "arrow.up.left.and.arrow.down.right", tooltip: "Select")
+                TimelineToolbarButton(icon: "scissors", tooltip: "Blade", action: {
+                    store.timeline.cutAtPlayhead()
+                })
+                TimelineToolbarButton(icon: "hand.draw", tooltip: "Slip")
+                TimelineToolbarButton(icon: "arrow.left.and.right", tooltip: "Slide")
             }
             
             Spacer()
@@ -426,7 +490,7 @@ struct DaVinciTimelineToolbar: View {
             .buttonStyle(.plain)
             
             // AUTO-CUT BUTTON
-            Button(action: { store.silence.detect() }) {
+            Button(action: { store.detectSilence() }) {
                 HStack(spacing: 6) {
                     Image(systemName: "scissors")
                     Text("Auto-Cut")
@@ -480,12 +544,81 @@ struct DaVinciTimelineToolbar: View {
 // MARK: - PROFESSIONAL TIMELINE (DAVINCI RESOLVE EXACT)
 struct DaVinciProfessionalTimeline: View {
     let neuralOverlayEnabled: Bool
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var timelineScale: CGFloat = 100
     
-    var body: some View {
+    private func handleTimelineDrop(_ providers: [NSItemProvider]) {
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.movie.identifier, options: nil) { item, error in
+                    if let url = item as? URL {
+                        DispatchQueue.main.async {
+                            importVideoToTimeline(url)
+                        }
+                    } else if let data = item as? Data {
+                        // Save data to temp file and import
+                        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
+                        do {
+                            try data.write(to: tempURL)
+                            DispatchQueue.main.async {
+                                importVideoToTimeline(tempURL)
+                            }
+                        } catch {
+                            print("Failed to save dropped video: \(error)")
+                        }
+                    }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
+                    if let url = item as? URL {
+                        DispatchQueue.main.async {
+                            importVideoToTimeline(url)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func importVideoToTimeline(_ url: URL) {
+        print("📹 Importing video from drop: \(url.lastPathComponent)")
+        
+        // Create media item
+        let mediaItem = MediaPoolItem(url: url)
+        store.mediaItems.append(mediaItem)
+        
+        // Import to timeline
+        Task {
+            do {
+                // Load metadata
+                let asset = AVAsset(url: url)
+                let duration = try await asset.load(.duration)
+                let videoDuration = CMTimeGetSeconds(duration)
+                
+                await MainActor.run {
+                    // Add to timeline
+                    store.importVideo(url: url, duration: videoDuration)
+                    store.currentVideoURL = url
+                    
+                    // Start backend processing if video URL is set
+                    if store.currentVideoURL != nil {
+                        store.analyzeDirector()
+                    }
+                    
+                    print("✅ Video imported and processing started")
+                }
+            } catch {
+                print("❌ Import failed: \(error)")
+                await MainActor.run {
+                    store.importVideo(url: url, duration: 10.0) // Fallback duration
+                }
+            }
+        }
+    }
+    
+    public var body: some View {
         VStack(spacing: 0) {
-            // TIMELINE TRACKS
+            // TIMELINE TRACKS WITH DRAG-AND-DROP SUPPORT
             ScrollView([.horizontal, .vertical]) {
                 VStack(spacing: 2) {
                     // V3, V2, V1 VIDEO TRACKS
@@ -498,7 +631,7 @@ struct DaVinciProfessionalTimeline: View {
                     }
                     
                     // DIRECTOR TRACK (ENERGY CURVES, TENSION VISUALIZATION)
-                    DaVinciDirectorTrack(beats: store.director.beats)
+                    DaVinciDirectorTrack(beats: store.directorBeats)
                     
                     // TRANSCRIPTION TRACK (WORD-LEVEL TIMING FROM WHISPER)
                     DaVinciTranscriptionTrack(segments: store.transcription.segments)
@@ -514,6 +647,10 @@ struct DaVinciProfessionalTimeline: View {
                 }
                 .frame(width: max(2000, store.timeline.duration * timelineScale))
             }
+            .onDrop(of: [.movie, .mpeg4Movie, .quickTimeMovie, .fileURL], isTargeted: nil) { providers in
+                handleTimelineDrop(providers)
+                return true
+            }
         }
         .background(Color(red: 0.14, green: 0.14, blue: 0.14))
     }
@@ -522,10 +659,10 @@ struct DaVinciProfessionalTimeline: View {
 // MARK: - RIGHT PANEL (INSPECTOR TABS)
 struct DaVinciRightPanel: View {
     @Binding var selectedTab: InspectorTab
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @EnvironmentObject var backendService: BackendService
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // INSPECTOR TAB PICKER
             ScrollView(.horizontal, showsIndicators: false) {
@@ -602,7 +739,7 @@ enum InspectorTab: String, CaseIterable, Identifiable {
     case cuts = "Cuts"
     case shorts = "Shorts"
     
-    var id: String { rawValue }
+    public var id: String { rawValue }
     
     var icon: String {
         switch self {
@@ -618,30 +755,111 @@ enum InspectorTab: String, CaseIterable, Identifiable {
 
 // MARK: - Media Pool Views
 struct MediaPoolMasterView: View {
-    var body: some View {
+    @EnvironmentObject private var store: UnifiedStore
+    
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(0..<3) { i in
-                HStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(.gray.opacity(0.3))
-                        .frame(width: 60, height: 40)
-                    VStack(alignment: .leading) {
-                        Text("Video_\(i+1).mp4")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                        Text("1920x1080, 29.97fps")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
+            if store.mediaItems.isEmpty {
+                // Empty state - show import prompt
+                VStack(spacing: 12) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 40))
+                        .foregroundColor(.gray.opacity(0.5))
+                    Text("No media imported")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Text("Click '+' above to import videos")
+                        .font(.caption2)
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else {
+                // Show real imported media
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(store.mediaItems) { item in
+                            HStack {
+                                // Thumbnail
+                                if let thumbnail = item.thumbnail {
+                                    Image(nsImage: thumbnail)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 60, height: 40)
+                                        .cornerRadius(4)
+                                        .clipped()
+                                } else {
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(.gray.opacity(0.3))
+                                        .frame(width: 60, height: 40)
+                                        .overlay(
+                                            ProgressView()
+                                                .scaleEffect(0.5)
+                                        )
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.name)
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .lineLimit(1)
+                                    HStack(spacing: 4) {
+                                        Text(formatDuration(item.duration ?? 0))
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+                                        Text("•")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray.opacity(0.5))
+                                        Text(formatFileSize(item.fileSize))
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                Spacer()
+                                
+                                // Action buttons
+                                HStack(spacing: 4) {
+                                    Button(action: {
+                                        // Add to timeline
+                                        store.importVideo(url: item.url)
+                                    }) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.blue)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Add to timeline")
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(4)
+                            .onDrag {
+                                NSItemProvider(object: item.url as NSURL)
+                            }
+                        }
                     }
-                    Spacer()
                 }
             }
         }
     }
+    
+    private func formatDuration(_ seconds: Double) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%02d:%02d", mins, secs)
+    }
+    
+    private func formatFileSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
+    }
 }
 
 struct VJEPAEmbeddingsView: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("V-JEPA embeddings loaded")
                 .font(.caption)
@@ -654,7 +872,7 @@ struct VJEPAEmbeddingsView: View {
 }
 
 struct CLIPResultsView: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("CLIP similarity analysis")
                 .font(.caption)
@@ -667,7 +885,7 @@ struct CLIPResultsView: View {
 }
 
 struct BRollLibraryView: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("B-roll suggestions")
                 .font(.caption)
@@ -684,7 +902,7 @@ struct InsightRow: View {
     let text: String
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .foregroundColor(color)
@@ -700,7 +918,7 @@ struct SmartCutSuggestionRow: View {
     let cut: CutSuggestion
     let index: Int
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("#\(index)")
                 .font(.caption2.bold())
@@ -717,12 +935,13 @@ struct SmartCutSuggestionRow: View {
     }
 }
 
-struct ToolbarButton: View {
+struct TimelineToolbarButton: View {
     let icon: String
     let tooltip: String
+    var action: () -> Void = {}
     
-    var body: some View {
-        Button(action: {}) {
+    public var body: some View {
+        Button(action: action) {
             Image(systemName: icon)
                 .foregroundColor(.gray)
                 .frame(width: 32, height: 32)
@@ -736,10 +955,10 @@ struct ToolbarButton: View {
 // MARK: - Timeline Track Views
 struct DaVinciVideoTrack: View {
     let name: String
-    let track: TimelineTrack?
+    let track: UITimelineTrack?
     let neuralOverlay: Bool
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Track header
             Text(name)
@@ -754,7 +973,7 @@ struct DaVinciVideoTrack: View {
                 .overlay(
                     HStack(alignment: .center, spacing: 4) {
                         if let track = track, !track.clips.isEmpty {
-                            ForEach(track.clips.prefix(5), id: \.id) { clip in
+                            ForEach(Array(track.clips.prefix(5)), id: \.id) { clip in
                                 RoundedRectangle(cornerRadius: 4)
                                     .fill(
                                         LinearGradient(
@@ -795,28 +1014,20 @@ struct DaVinciVideoTrack: View {
 struct DaVinciDirectorTrack: View {
     let beats: StoryBeats
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("Director")
                 .font(.system(.caption, weight: .bold))
                 .foregroundColor(.purple)
                 .frame(width: 40)
-            
             Rectangle()
                 .fill(Color.purple.opacity(0.2))
                 .frame(height: 40)
                 .overlay(
                     HStack {
-                        ForEach(beats.all.prefix(8), id: \.id) { beat in
-                            VStack(spacing: 2) {
-                                Circle()
-                                    .fill(beat.color)
-                                    .frame(width: 8, height: 8)
-                                Text(beat.type.label)
-                                    .font(.system(size: 8))
-                                    .foregroundColor(.white)
-                            }
-                        }
+                        Text("Beats: \(beats.all.count)")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white)
                         Spacer()
                     }
                     .padding(.horizontal, 8)
@@ -828,7 +1039,7 @@ struct DaVinciDirectorTrack: View {
 struct DaVinciTranscriptionTrack: View {
     let segments: [TranscriptionSegment]
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("Trans")
                 .font(.system(.caption, weight: .bold))
@@ -854,10 +1065,10 @@ struct DaVinciTranscriptionTrack: View {
 
 struct DaVinciAudioTrack: View {
     let name: String
-    let track: TimelineTrack?
+    let track: UITimelineTrack?
     let showSilenceRegions: Bool
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(name)
                 .font(.system(.caption, weight: .bold))
@@ -899,7 +1110,7 @@ struct DaVinciAudioTrack: View {
 
 // MARK: - Inspector Views
 struct DaVinciVideoInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             InspectorSection(title: "Transform") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -923,7 +1134,7 @@ struct DaVinciVideoInspector: View {
 }
 
 struct DaVinciAudioInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             InspectorSection(title: "Levels") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -939,7 +1150,7 @@ struct DaVinciAudioInspector: View {
 struct DaVinciNeuralAnalysisInspector: View {
     @EnvironmentObject var backendService: BackendService
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             InspectorSection(title: "Model Performance") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -955,75 +1166,30 @@ struct DaVinciNeuralAnalysisInspector: View {
 }
 
 struct DaVinciDirectorInspector: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
             InspectorSection(title: "AI Director") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Energy graph realtime")
+                    Text("Beats: \(store.directorBeats.all.count)")
                         .font(.caption)
                         .foregroundColor(.white)
-                    
-                    Rectangle()
-                        .fill(.blue.opacity(0.3))
-                        .frame(height: 60)
-                        .overlay(
-                            // Energy graph simulation
-                            Path { path in
-                                let points = (0...50).map { i in
-                                    let x = Double(i) / 50.0
-                                    let y = 0.5 + 0.3 * sin(Double(i) * 0.2)
-                                    return CGPoint(x: x, y: 1.0 - y)
-                                }
-                                if let first = points.first {
-                                    path.move(to: first)
-                                    for point in points.dropFirst() {
-                                        path.addLine(to: point)
-                                    }
-                                }
-                            }
-                            .stroke(.blue, lineWidth: 2)
-                        )
-                    
-                    Text("Momentum indicators: Active")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                    
-                    Text("Novelty detection: \(store.director.beats.all.count) beats found")
+                    Text("Insights: \(store.director.insightCount)")
                         .font(.caption)
                         .foregroundColor(.white)
-                    
-                    Text("Emphasis points:")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    
-                    ForEach(store.director.beats.all.prefix(3), id: \.id) { beat in
-                        HStack {
-                            Circle()
-                                .fill(beat.color)
-                                .frame(width: 8, height: 8)
-                            Text(beat.type.label)
-                                .font(.caption2)
-                                .foregroundColor(.white)
-                            Spacer()
-                            Text("\(beat.confidence)%")
-                                .font(.caption2)
-                                .foregroundColor(.gray)
-                        }
-                    }
                 }
             }
         }
-        .padding(16)
+        .padding(12)
     }
 }
 
 struct DaVinciCutsInspector: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var confidenceThreshold: Double = 80.0
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             InspectorSection(title: "Smart Cuts") {
                 VStack(alignment: .leading, spacing: 12) {
@@ -1033,7 +1199,7 @@ struct DaVinciCutsInspector: View {
                             .foregroundColor(.white)
                         Spacer()
                         Button("Detect") {
-                            store.silence.detect()
+                            store.detectSilence()
                         }
                         .buttonStyle(.bordered)
                     }
@@ -1069,9 +1235,9 @@ struct DaVinciCutsInspector: View {
 }
 
 struct DaVinciShortsInspector: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             InspectorSection(title: "Viral Moments") {
                 VStack(alignment: .leading, spacing: 12) {
@@ -1090,7 +1256,7 @@ struct DaVinciShortsInspector: View {
                     }
                     
                     Button("Generate Shorts") {
-                        store.shorts.generate()
+                        store.generateShorts()
                     }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
@@ -1104,7 +1270,7 @@ struct DaVinciShortsInspector: View {
 struct DaVinciExportPanel: View {
     @Environment(\.dismiss) private var dismiss
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Text("Export AutoResolve Project")
                 .font(.title.bold())
@@ -1134,7 +1300,7 @@ struct InspectorSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
@@ -1148,7 +1314,7 @@ struct InspectorSlider: View {
     let label: String
     @Binding var value: Double
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(label)
@@ -1170,7 +1336,7 @@ struct MetricRow: View {
     let value: String
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .font(.caption)
@@ -1187,7 +1353,7 @@ struct PlatformPresetButton: View {
     let platform: String
     let size: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(platform)
                 .font(.caption)
@@ -1210,7 +1376,7 @@ struct ExportFormatRow: View {
     let format: String
     let description: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             VStack(alignment: .leading) {
                 Text(format)

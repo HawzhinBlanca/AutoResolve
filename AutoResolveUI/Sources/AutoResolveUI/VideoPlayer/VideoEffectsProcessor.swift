@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import AVFoundation
 import CoreImage
@@ -8,26 +9,28 @@ import MetalKit
 
 public class VideoEffectsProcessor: ObservableObject {
     @Published var hasActiveEffects: Bool = false
-    @Published var currentEffects: [VideoEffect] = []
+    @Published var currentEffects: [VideoProcessorEffect] = []
     @Published var processingLoad: Double = 0.0
     
     private var player: AVPlayer?
     private var videoOutput: AVPlayerItemVideoOutput?
-    private var displayLink: CVDisplayLink?
+    private var displayTimer: Timer?
     private var metalDevice: MTLDevice?
     private var ciContext: CIContext?
     private var effectChain: [CIFilter] = []
+    private let processingQueue = DispatchQueue(label: "com.autoresolve.effects", qos: .userInitiated)
     
     // Performance metrics
     private var frameProcessingTime: TimeInterval = 0
     private var droppedFrames: Int = 0
+    private var lastProcessedTime: CMTime = .zero
     
     public init() {
         setupMetal()
     }
     
     deinit {
-        CVDisplayLinkStop(displayLink!)
+        stopProcessing()
     }
     
     private func setupMetal() {
@@ -64,19 +67,19 @@ public class VideoEffectsProcessor: ObservableObject {
     
     // MARK: - Effect Management
     
-    public func addEffect(_ effect: VideoEffect) {
+    public func addEffect(_ effect: VideoProcessorEffect) {
         currentEffects.append(effect)
         rebuildEffectChain()
         hasActiveEffects = !currentEffects.isEmpty
     }
     
-    public func removeEffect(_ effect: VideoEffect) {
+    public func removeEffect(_ effect: VideoProcessorEffect) {
         currentEffects.removeAll { $0.id == effect.id }
         rebuildEffectChain()
         hasActiveEffects = !currentEffects.isEmpty
     }
     
-    public func updateEffect(_ effect: VideoEffect) {
+    public func updateEffect(_ effect: VideoProcessorEffect) {
         if let index = currentEffects.firstIndex(where: { $0.id == effect.id }) {
             currentEffects[index] = effect
             rebuildEffectChain()
@@ -89,7 +92,7 @@ public class VideoEffectsProcessor: ObservableObject {
         }
     }
     
-    private func createFilter(for effect: VideoEffect) -> CIFilter? {
+    private func createFilter(for effect: VideoProcessorEffect) -> CIFilter? {
         switch effect.type {
         case .colorCorrection(let settings):
             return createColorCorrectionFilter(settings)
@@ -124,7 +127,7 @@ public class VideoEffectsProcessor: ObservableObject {
     }
     
     private func createLUTFilter(_ lutImage: NSImage) -> CIFilter? {
-        guard let ciImage = CIImage(data: lutImage.tiffRepresentation!) else { return nil }
+        guard lutImage.tiffRepresentation != nil else { return nil }
         
         let filter = CIFilter(name: "CIColorCube")
         filter?.setValue(64, forKey: "inputCubeDimension")
@@ -136,56 +139,72 @@ public class VideoEffectsProcessor: ObservableObject {
     // MARK: - Frame Processing
     
     private func startProcessing() {
-        CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
+        stopProcessing() // Stop any existing timer
         
-        CVDisplayLinkSetOutputCallback(displayLink!, { (displayLink, inNow, inOutputTime, flagsIn, flagsOut, displayLinkContext) -> CVReturn in
-            let processor = Unmanaged<VideoEffectsProcessor>.fromOpaque(displayLinkContext!).takeUnretainedValue()
-            processor.processFrame()
-            return kCVReturnSuccess
-        }, Unmanaged.passUnretained(self).toOpaque())
+        // Use Timer instead of CVDisplayLink for macOS compatibility
+        displayTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
+            self?.processingQueue.async {
+                self?.processFrameAsync()
+            }
+        }
         
-        CVDisplayLinkStart(displayLink!)
-    }
-    
-    private func stopProcessing() {
-        if let displayLink = displayLink {
-            CVDisplayLinkStop(displayLink)
+        // Ensure timer runs on the common run loop
+        if let timer = displayTimer {
+            RunLoop.current.add(timer, forMode: .common)
         }
     }
     
-    private func processFrame() {
+    private func stopProcessing() {
+        displayTimer?.invalidate()
+        displayTimer = nil
+    }
+    
+    private func processFrameAsync() {
         guard let videoOutput = videoOutput,
               let player = player,
               !effectChain.isEmpty else { return }
         
         let currentTime = player.currentTime()
         
-        guard videoOutput.hasNewPixelBuffer(forItemTime: currentTime),
-              let pixelBuffer = videoOutput.copyPixelBuffer(forItemTime: currentTime, itemTimeForDisplay: nil) else {
+        // Skip if we've already processed this frame
+        if currentTime == lastProcessedTime {
             return
         }
         
-        let startTime = CACurrentMediaTime()
-        
-        // Convert to CIImage
-        var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        
-        // Apply effect chain
-        for filter in effectChain {
-            filter.setValue(ciImage, forKey: kCIInputImageKey)
-            if let outputImage = filter.outputImage {
-                ciImage = outputImage
-            }
+        guard videoOutput.hasNewPixelBuffer(forItemTime: currentTime),
+              let pixelBuffer = videoOutput.copyPixelBuffer(forItemTime: currentTime, itemTimeForDisplay: nil) else {
+            droppedFrames += 1
+            return
         }
         
-        // Render back to pixel buffer (in real implementation)
-        // This would update the video display
+        lastProcessedTime = currentTime
+        let startTime = CACurrentMediaTime()
+        
+        autoreleasepool {
+            // Convert to CIImage
+            var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            
+            // Apply effect chain
+            for filter in effectChain {
+                filter.setValue(ciImage, forKey: kCIInputImageKey)
+                if let outputImage = filter.outputImage {
+                    ciImage = outputImage
+                }
+            }
+            
+            // Render back to pixel buffer if we have a context
+            if let context = ciContext {
+                // Create output pixel buffer (in production, reuse buffers)
+                context.render(ciImage, to: pixelBuffer)
+            }
+        }
         
         let endTime = CACurrentMediaTime()
         frameProcessingTime = endTime - startTime
         
-        // Update performance metrics
-        DispatchQueue.main.async {
+        // Update performance metrics on main thread
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             self.processingLoad = min(self.frameProcessingTime * 60, 1.0) // Assuming 60fps
         }
     }
@@ -193,14 +212,14 @@ public class VideoEffectsProcessor: ObservableObject {
 
 // MARK: - Video Effect Model
 
-public struct VideoEffect: Identifiable, Equatable {
+public struct VideoProcessorEffect: Identifiable, Equatable {
     public let id = UUID()
     public var name: String
     public var type: EffectType
     public var intensity: Double = 1.0
     public var enabled: Bool = true
     
-    public static func == (lhs: VideoEffect, rhs: VideoEffect) -> Bool {
+    public nonisolated static func == (lhs: VideoProcessorEffect, rhs: VideoProcessorEffect) -> Bool {
         lhs.id == rhs.id
     }
     
@@ -214,7 +233,7 @@ public struct VideoEffect: Identifiable, Equatable {
         case sharpen(intensity: Double)
         case lut(NSImage)
         
-        public static func == (lhs: EffectType, rhs: EffectType) -> Bool {
+        public nonisolated static func == (lhs: EffectType, rhs: EffectType) -> Bool {
             switch (lhs, rhs) {
             case (.blur(let l), .blur(let r)): return l == r
             case (.brightness(let l), .brightness(let r)): return l == r
@@ -251,7 +270,7 @@ public struct ColorCorrectionSettings: Equatable {
 
 public struct EffectsPreviewPanel: View {
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
-    @State private var selectedEffect: VideoEffect?
+    @State private var selectedEffect: VideoProcessorEffect?
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -310,7 +329,7 @@ public struct EffectsPreviewPanel: View {
         .cornerRadius(8)
     }
     
-    private func iconForEffect(_ effect: VideoEffect) -> String {
+    private func iconForEffect(_ effect: VideoProcessorEffect) -> String {
         switch effect.type {
         case .colorCorrection: return "slider.horizontal.3"
         case .blur: return "drop.circle"
@@ -345,9 +364,9 @@ public class PreviewRenderingPipeline: ObservableObject {
     public func renderPreview(
         from startTime: TimeInterval,
         to endTime: TimeInterval,
-        effects: [VideoEffect],
+        effects: [VideoProcessorEffect],
         completion: @escaping (URL?) -> Void
-    ) {
+    ) async {
         guard let exportSession = exportSession else {
             completion(nil)
             return
@@ -369,7 +388,7 @@ public class PreviewRenderingPipeline: ObservableObject {
         
         // Apply video composition with effects
         if !effects.isEmpty {
-            let composition = createComposition(with: effects, for: exportSession.asset)
+            let composition = await createComposition(with: effects, for: exportSession.asset)
             exportSession.videoComposition = composition
         }
         
@@ -400,17 +419,21 @@ public class PreviewRenderingPipeline: ObservableObject {
         }
     }
     
-    private func createComposition(with effects: [VideoEffect], for asset: AVAsset) -> AVVideoComposition {
+    private func createComposition(with effects: [VideoProcessorEffect], for asset: AVAsset) async -> AVVideoComposition {
         let composition = AVMutableVideoComposition()
         composition.renderSize = CGSize(width: 1920, height: 1080)
         composition.frameDuration = CMTime(value: 1, timescale: 30)
         
         // Create instruction for applying effects
         let instruction = AVMutableVideoCompositionInstruction()
-        instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
+        // Use async loading for duration
+        let duration = try? await asset.load(.duration)
+        instruction.timeRange = CMTimeRange(start: .zero, duration: duration ?? .zero)
         
         // Add layer instruction with Core Image filters
-        if let videoTrack = asset.tracks(withMediaType: .video).first {
+        // Use async loading for video tracks
+        if let videoTracks = try? await asset.loadTracks(withMediaType: .video),
+           let videoTrack = videoTracks.first {
             let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
             
             // Apply transforms or effects here
@@ -435,14 +458,14 @@ public class PreviewRenderingPipeline: ObservableObject {
 }
 
 // Custom video compositor for effects
-class VideoEffectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable {
-    nonisolated var sourcePixelBufferAttributes: [String : Any]? {
+class VideoEffectCompositor: NSObject, AVVideoCompositing {
+    var sourcePixelBufferAttributes: [String : Any]? {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
         ]
     }
     
-    nonisolated var requiredPixelBufferAttributesForRenderContext: [String : Any] {
+    var requiredPixelBufferAttributesForRenderContext: [String : Any] {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
         ]

@@ -4,7 +4,7 @@ import AVFoundation
 // MARK: - Project Settings Inspector
 
 public struct ProjectInspector: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     @State private var selectedTab: ProjectTab = .general
     @State private var showAdvancedSettings = false
     
@@ -85,9 +85,9 @@ public struct ProjectInspector: View {
 // MARK: - General Settings View
 
 struct GeneralSettingsView: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Project Info
             GroupBox("Project Information") {
@@ -213,10 +213,10 @@ struct GeneralSettingsView: View {
 // MARK: - Video Settings View
 
 struct VideoSettingsView: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     let showAdvanced: Bool
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Timeline Settings
             GroupBox("Timeline Settings") {
@@ -292,7 +292,7 @@ struct VideoSettingsView: View {
                             Text("Rec. 709").tag("Rec. 709")
                             Text("Rec. 2020").tag("Rec. 2020")
                             Text("sRGB").tag("sRGB")
-                            Text("Adobe RGB").tag("Adobe RGB")
+                            Text("Adobe RGB").tag(("Adobe RGB"))
                         }
                         .pickerStyle(.menu)
                     }
@@ -355,10 +355,10 @@ struct VideoSettingsView: View {
 // MARK: - Audio Settings View
 
 struct AudioSettingsView: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     let showAdvanced: Bool
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Audio Format
             GroupBox("Audio Format") {
@@ -471,13 +471,13 @@ struct AudioSettingsView: View {
 // MARK: - Performance Settings View
 
 struct PerformanceSettingsView: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     let showAdvanced: Bool
     
     @State private var availableMemory = ProcessInfo.processInfo.physicalMemory
     @State private var cpuCores = ProcessInfo.processInfo.processorCount
     
-    var body: some View {
+    public var body: some View {
         let memoryString = ByteCountFormatter().string(fromByteCount: Int64(availableMemory))
         let gpuInfo = getGPUInfo()
         
@@ -627,13 +627,13 @@ struct PerformanceSettingsView: View {
 // MARK: - Collaboration Settings View
 
 struct CollaborationSettingsView: View {
-    @ObservedObject var project: VideoProject
+    @ObservedObject var project: VideoProjectStore
     
     @State private var shareEnabled = false
     @State private var shareURL = ""
     @State private var permissions = CollaborationPermissions()
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Sharing
             GroupBox("Project Sharing") {
@@ -738,7 +738,7 @@ struct ProjectStatRow: View {
     let label: String
     let value: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .foregroundColor(.secondary)
@@ -750,7 +750,7 @@ struct ProjectStatRow: View {
 
 // MARK: - Supporting Types
 
-public enum VideoFormat: String, CaseIterable {
+public enum VideoFormat: String, CaseIterable, Codable, Sendable {
     case cinema4k = "cinema4k"
     case uhd4k = "uhd4k"
     case hd1080p = "hd1080p"
@@ -770,7 +770,7 @@ public enum VideoFormat: String, CaseIterable {
     }
 }
 
-public enum ColorSpace: String, CaseIterable {
+public enum ColorSpace: String, CaseIterable, Codable, Sendable {
     case rec709 = "rec709"
     case rec2020 = "rec2020"
     case srgb = "srgb"
@@ -788,14 +788,14 @@ public enum ColorSpace: String, CaseIterable {
     }
 }
 
-public enum RenderQuality: String, CaseIterable {
+public enum RenderQuality: String, CaseIterable, Codable, Sendable {
     case draft = "draft"
     case good = "good"
     case better = "better"
     case best = "best"
 }
 
-public enum PreviewQuality: String, CaseIterable {
+public enum PreviewQuality: String, CaseIterable, Codable, Sendable {
     case quarter = "quarter"
     case half = "half"
     case full = "full"

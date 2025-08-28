@@ -5,7 +5,7 @@ import Combine
 
 public struct KeyframeEditor: View {
     @ObservedObject var timeline: TimelineModel
-    @State private var selectedProperty: AnimatableProperty?
+    @State private var selectedProperty: UIAnimatableProperty?
     @State private var selectedKeyframes: Set<UUID> = []
     @State private var zoomLevel: Double = 1.0
     @State private var timelineOffset: Double = 0
@@ -64,14 +64,14 @@ public struct KeyframeEditor: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
     
-    private var animatableProperties: [AnimatableProperty] {
+    private var animatableProperties: [UIAnimatableProperty] {
         // Get all animatable properties from selected clips
         guard let clipId = timeline.selectedClips.first,
               let clip = timeline.tracks.flatMap({ $0.clips }).first(where: { $0.id == clipId }) else {
             return []
         }
         
-        return AnimatableProperty.propertiesForClip(clip)
+        return UIAnimatableProperty.propertiesForClip(clip)
     }
 }
 
@@ -82,7 +82,7 @@ struct KeyframeEditorHeader: View {
     @Binding var interpolationMode: InterpolationMode
     let selectedKeyframes: Set<UUID>
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("Keyframe Editor")
                 .font(.headline)
@@ -153,11 +153,11 @@ struct KeyframeEditorHeader: View {
 // MARK: - Property List View
 
 struct PropertyListView: View {
-    let properties: [AnimatableProperty]
-    @Binding var selectedProperty: AnimatableProperty?
+    let properties: [UIAnimatableProperty]
+    @Binding var selectedProperty: UIAnimatableProperty?
     let showOnlyAnimated: Bool
     
-    var body: some View {
+    public var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(filteredProperties) { property in
@@ -172,7 +172,7 @@ struct PropertyListView: View {
         .background(Color(NSColor.windowBackgroundColor))
     }
     
-    private var filteredProperties: [AnimatableProperty] {
+    private var filteredProperties: [UIAnimatableProperty] {
         if showOnlyAnimated {
             return properties.filter { !$0.keyframes.isEmpty }
         }
@@ -183,14 +183,14 @@ struct PropertyListView: View {
 // MARK: - Property Row
 
 struct PropertyRow: View {
-    let property: AnimatableProperty
+    let property: UIAnimatableProperty
     let isSelected: Bool
     let onSelect: () -> Void
     
     @State private var isExpanded = false
     @State private var currentValue: Double = 0
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // Main property row
             HStack {
@@ -249,8 +249,8 @@ struct PropertyRow: View {
 // MARK: - Keyframe Timeline View
 
 struct KeyframeTimelineView: View {
-    let properties: [AnimatableProperty]
-    @Binding var selectedProperty: AnimatableProperty?
+    let properties: [UIAnimatableProperty]
+    @Binding var selectedProperty: UIAnimatableProperty?
     @Binding var selectedKeyframes: Set<UUID>
     @Binding var zoomLevel: Double
     @Binding var timelineOffset: Double
@@ -262,7 +262,7 @@ struct KeyframeTimelineView: View {
     
     private let keyframeHeight: CGFloat = 40
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background
@@ -340,7 +340,7 @@ struct TimeGrid: View {
     let offset: Double
     @ObservedObject var timeline: TimelineModel
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             let pixelsPerSecond = zoomLevel * 50 // Base: 50 pixels per second
             let secondsVisible = size.width / pixelsPerSecond
@@ -397,7 +397,7 @@ struct TimeGrid: View {
 // MARK: - Keyframe Track View
 
 struct KeyframeTrackView: View {
-    let property: AnimatableProperty
+    let property: UIAnimatableProperty
     let width: CGFloat
     let isSelected: Bool
     @Binding var selectedKeyframes: Set<UUID>
@@ -408,7 +408,7 @@ struct KeyframeTrackView: View {
     
     private let keyframeHeight: CGFloat = 60
     
-    var body: some View {
+    public var body: some View {
         ZStack(alignment: .leading) {
             // Track background
             Rectangle()
@@ -450,7 +450,7 @@ struct KeyframeTrackView: View {
         return CGFloat((time - offset) * pixelsPerSecond)
     }
     
-    private func toggleKeyframeSelection(_ keyframe: Keyframe) {
+    private func toggleKeyframeSelection(_ keyframe: UIKeyframe) {
         if selectedKeyframes.contains(keyframe.id) {
             selectedKeyframes.remove(keyframe.id)
         } else {
@@ -458,7 +458,7 @@ struct KeyframeTrackView: View {
         }
     }
     
-    private func moveKeyframe(_ keyframe: Keyframe, to newTime: TimeInterval) {
+    private func moveKeyframe(_ keyframe: UIKeyframe, to newTime: TimeInterval) {
         // Update keyframe time
     }
 }
@@ -466,8 +466,8 @@ struct KeyframeTrackView: View {
 // MARK: - Keyframe View
 
 struct KeyframeView: View {
-    let keyframe: Keyframe
-    let property: AnimatableProperty
+    let keyframe: UIKeyframe
+    let property: UIAnimatableProperty
     let isSelected: Bool
     let interpolationMode: InterpolationMode
     let onSelect: () -> Void
@@ -475,7 +475,7 @@ struct KeyframeView: View {
     
     @State private var isDragging = false
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             // Keyframe diamond shape
             KeyframeDiamond(
@@ -520,7 +520,7 @@ struct KeyframeDiamond: View {
     let interpolationMode: InterpolationMode
     let isSelected: Bool
     
-    var body: some View {
+    public var body: some View {
         Path { path in
             path.move(to: CGPoint(x: 6, y: 0))
             path.addLine(to: CGPoint(x: 12, y: 6))
@@ -549,18 +549,18 @@ struct KeyframeDiamond: View {
 // MARK: - Animation Curve View
 
 struct AnimationCurveView: View {
-    let keyframes: [Keyframe]
-    let property: AnimatableProperty
+    let keyframes: [UIKeyframe]
+    let property: UIAnimatableProperty
     let width: CGFloat
     let zoomLevel: Double
     let offset: Double
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             guard keyframes.count > 1 else { return }
             
             let pixelsPerSecond = zoomLevel * 50
-            let sortedKeyframes = keyframes.sorted { $0.time < $1.time }
+            let sortedKeyframes = keyframes.sorted { (a, b) in a.time < b.time }
             
             // Draw curves between keyframes
             for i in 0..<sortedKeyframes.count - 1 {
@@ -620,7 +620,7 @@ struct PlayheadIndicator: View {
     let zoomLevel: Double
     let offset: Double
     
-    var body: some View {
+    public var body: some View {
         let pixelsPerSecond = zoomLevel * 50
         let x = CGFloat((position - offset) * pixelsPerSecond)
         
@@ -636,12 +636,12 @@ struct PlayheadIndicator: View {
 // MARK: - Keyframe Controls
 
 struct KeyframeControls: View {
-    let selectedProperty: AnimatableProperty?
+    let selectedProperty: UIAnimatableProperty?
     let selectedKeyframes: Set<UUID>
     @Binding var interpolationMode: InterpolationMode
     @ObservedObject var timeline: TimelineModel
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Property info
             if let property = selectedProperty {
@@ -711,7 +711,7 @@ struct SelectionRectangle: View {
     let start: CGPoint
     let end: CGPoint
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .stroke(Color.accentColor, lineWidth: 1)
             .background(Color.accentColor.opacity(0.1))
@@ -728,15 +728,15 @@ struct SelectionRectangle: View {
 
 // MARK: - Models
 
-public struct AnimatableProperty: Identifiable {
+public struct UIAnimatableProperty: Identifiable {
     public let id = UUID()
     public let name: String
     public let icon: String
     public let minValue: Double
     public let maxValue: Double
     public let unit: String
-    public var keyframes: [Keyframe] = []
-    public var subProperties: [AnimatableProperty] = []
+    public var keyframes: [UIKeyframe] = []
+    public var subProperties: [UIAnimatableProperty] = []
     
     public var hasKeyframes: Bool {
         !keyframes.isEmpty || subProperties.contains { $0.hasKeyframes }
@@ -754,59 +754,59 @@ public struct AnimatableProperty: Identifiable {
         }
     }
     
-    public static func propertiesForClip(_ clip: TimelineClip) -> [AnimatableProperty] {
+    public static func propertiesForClip(_ clip: TimelineClip) -> [UIAnimatableProperty] {
         [
             // Transform properties
-            AnimatableProperty(
+            UIAnimatableProperty(
                 name: "Transform",
                 icon: "move.3d",
                 minValue: 0,
                 maxValue: 1,
                 unit: "",
                 subProperties: [
-                    AnimatableProperty(name: "Position X", icon: "arrow.left.and.right", minValue: -1920, maxValue: 1920, unit: "px"),
-                    AnimatableProperty(name: "Position Y", icon: "arrow.up.and.down", minValue: -1080, maxValue: 1080, unit: "px"),
-                    AnimatableProperty(name: "Scale X", icon: "arrow.left.and.right.square", minValue: 0, maxValue: 500, unit: "%"),
-                    AnimatableProperty(name: "Scale Y", icon: "arrow.up.and.down.square", minValue: 0, maxValue: 500, unit: "%"),
-                    AnimatableProperty(name: "Rotation", icon: "rotate.3d", minValue: -360, maxValue: 360, unit: "°")
+                    UIAnimatableProperty(name: "Position X", icon: "arrow.left.and.right", minValue: -1920, maxValue: 1920, unit: "px"),
+                    UIAnimatableProperty(name: "Position Y", icon: "arrow.up.and.down", minValue: -1080, maxValue: 1080, unit: "px"),
+                    UIAnimatableProperty(name: "Scale X", icon: "arrow.left.and.right.square", minValue: 0, maxValue: 500, unit: "%"),
+                    UIAnimatableProperty(name: "Scale Y", icon: "arrow.up.and.down.square", minValue: 0, maxValue: 500, unit: "%"),
+                    UIAnimatableProperty(name: "Rotation", icon: "rotate.right", minValue: -360, maxValue: 360, unit: "°")
                 ]
             ),
             
             // Opacity
-            AnimatableProperty(name: "Opacity", icon: "eye", minValue: 0, maxValue: 100, unit: "%"),
+            UIAnimatableProperty(name: "Opacity", icon: "eye", minValue: 0, maxValue: 100, unit: "%"),
             
             // Audio properties
-            AnimatableProperty(
+            UIAnimatableProperty(
                 name: "Audio",
                 icon: "waveform",
                 minValue: 0,
                 maxValue: 1,
                 unit: "",
                 subProperties: [
-                    AnimatableProperty(name: "Volume", icon: "speaker.wave.3", minValue: -60, maxValue: 12, unit: "dB"),
-                    AnimatableProperty(name: "Pan", icon: "speaker.zzz", minValue: -100, maxValue: 100, unit: "")
+                    UIAnimatableProperty(name: "Volume", icon: "speaker.wave.2", minValue: -60, maxValue: 12, unit: "dB"),
+                    UIAnimatableProperty(name: "Pan", icon: "speaker.wave.2.bubble.left.and.bubble.right", minValue: -100, maxValue: 100, unit: "")
                 ]
             ),
             
             // Color properties
-            AnimatableProperty(
+            UIAnimatableProperty(
                 name: "Color",
                 icon: "paintpalette",
                 minValue: 0,
                 maxValue: 1,
                 unit: "",
                 subProperties: [
-                    AnimatableProperty(name: "Brightness", icon: "sun.max", minValue: -100, maxValue: 100, unit: "%"),
-                    AnimatableProperty(name: "Contrast", icon: "circle.lefthalf.filled", minValue: 0, maxValue: 200, unit: "%"),
-                    AnimatableProperty(name: "Saturation", icon: "paintpalette", minValue: 0, maxValue: 200, unit: "%"),
-                    AnimatableProperty(name: "Hue", icon: "circle.grid.hex", minValue: -180, maxValue: 180, unit: "°")
+                    UIAnimatableProperty(name: "Brightness", icon: "sun.max", minValue: -100, maxValue: 100, unit: "%"),
+                    UIAnimatableProperty(name: "Contrast", icon: "circle.lefthalf.filled", minValue: 0, maxValue: 200, unit: "%"),
+                    UIAnimatableProperty(name: "Saturation", icon: "drop.fill", minValue: 0, maxValue: 200, unit: "%"),
+                    UIAnimatableProperty(name: "Hue", icon: "paintpalette", minValue: -180, maxValue: 180, unit: "°")
                 ]
             )
         ]
     }
 }
 
-public struct Keyframe: Identifiable {
+public struct UIKeyframe: Identifiable {
     public let id = UUID()
     public var time: TimeInterval
     public var value: Double

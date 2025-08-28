@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import AVFoundation
 import AVKit
@@ -6,7 +7,7 @@ import AVKit
 public struct BRollSelectionView: View {
     @StateObject private var viewModel = BRollSelectionViewModel()
     @EnvironmentObject var timeline: TimelineModel
-    @EnvironmentObject var statusMonitor: PipelineStatusMonitor
+    @EnvironmentObject var telemetry: PipelineStatusMonitor
     
     @State private var selectedBRollClips: Set<BRollClip.ID> = []
     @State private var showPreview = false
@@ -230,7 +231,7 @@ public struct BRollSelectionView: View {
                         GroupBox("Information") {
                             VStack(alignment: .leading, spacing: 8) {
                                 InfoRow(label: "Name", value: clip.name)
-                                InfoRow(label: "Duration", value: formatDuration(clip.duration))
+                                InfoRow(label: "Duration", value: formatDuration(clip.duration ?? 0))
                                 InfoRow(label: "Category", value: clip.category)
                                 InfoRow(label: "Tags", value: clip.tags.joined(separator: ", "))
                                 InfoRow(label: "Confidence", value: "\(Int(clip.relevanceScore * 100))%")
@@ -357,22 +358,22 @@ public struct BRollSelectionView: View {
         viewModel.applyBRollToTimeline(clips: clips, timeline: timeline)
         selectedBRollClips.removeAll()
         
-        statusMonitor.addMessage(.info, "Applied \(clips.count) B-roll clips to timeline")
+        telemetry.addMessage(.info, "Applied \(clips.count) B-roll clips to timeline")
     }
     
     private func acceptSuggestion(_ suggestion: BRollSuggestion) {
         viewModel.acceptSuggestion(suggestion, timeline: timeline)
-        statusMonitor.addMessage(.info, "Accepted B-roll suggestion at \(formatTimecode(suggestion.timeRange.lowerBound))")
+        telemetry.addMessage(.info, "Accepted B-roll suggestion at \(formatTimecode(suggestion.timeRange.lowerBound))")
     }
     
     private func rejectSuggestion(_ suggestion: BRollSuggestion) {
         viewModel.rejectSuggestion(suggestion)
-        statusMonitor.addMessage(.info, "Rejected B-roll suggestion")
+        telemetry.addMessage(.info, "Rejected B-roll suggestion")
     }
     
     private func insertBRollAt(clip: BRollClip, time: TimeInterval) {
         viewModel.insertBRollClip(clip, at: time, timeline: timeline)
-        statusMonitor.addMessage(.info, "Inserted \(clip.name) at \(formatTimecode(time))")
+        telemetry.addMessage(.info, "Inserted \(clip.name) at \(formatTimecode(time))")
     }
     
     private func insertBRollAtPlayhead(clip: BRollClip) {
@@ -385,7 +386,7 @@ public struct BRollSelectionView: View {
             if selection.start > 0 || selection.end > 0 {
                 let range = selection.start...selection.end
                 viewModel.replacetimeRange(range, with: clip, timeline: timeline)
-                statusMonitor.addMessage(.info, "Replaced selection with \(clip.name)")
+                telemetry.addMessage(.info, "Replaced selection with \(clip.name)")
             }
         }
     }
@@ -418,7 +419,7 @@ struct BRollThumbnailView: View {
     @State private var thumbnail: NSImage?
     @State private var isHovering = false
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 4) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
@@ -452,7 +453,7 @@ struct BRollThumbnailView: View {
                                 .foregroundColor(.white)
                                 .font(.title2)
                             Spacer()
-                            Text(formatDuration(clip.duration))
+                            Text(formatDuration(clip.duration ?? 0))
                                 .font(.caption)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 4)
@@ -535,7 +536,7 @@ struct TimelineBRollOverlay: View {
     let timeline: TimelineModel
     let onSuggestionTap: (BRollSuggestion) -> Void
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ForEach(suggestions) { suggestion in
                 BRollSuggestionMarker(
@@ -557,7 +558,7 @@ struct BRollSuggestionMarker: View {
     
     @State private var isHovering = false
     
-    var body: some View {
+    public var body: some View {
         let xPosition = CGFloat(suggestion.timeRange.lowerBound / timeline.duration) * geometry.size.width
         let width = CGFloat((suggestion.timeRange.upperBound - suggestion.timeRange.lowerBound) / timeline.duration) * geometry.size.width
         
@@ -589,7 +590,7 @@ struct BRollSuggestionDetailView: View {
     let onAccept: () -> Void
     let onReject: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 16) {
             // Thumbnail
             if let thumbnail = suggestion.thumbnail {
@@ -654,7 +655,7 @@ struct BRollClipPreview: View {
     let clip: BRollClip
     @State private var player: AVPlayer?
     
-    var body: some View {
+    public var body: some View {
         VideoPlayer(player: player)
             .onAppear {
                 player = AVPlayer(url: clip.url)
@@ -682,7 +683,7 @@ struct BRollPreviewSheet: View {
     let clip: BRollClip
     @Environment(\.dismiss) var dismiss
     
-    var body: some View {
+    public var body: some View {
         VStack {
             Text(clip.name)
                 .font(.title2)
@@ -707,7 +708,7 @@ struct InfoRow: View {
     let label: String
     let value: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label + ":")
                 .font(.caption)
@@ -724,22 +725,12 @@ struct InfoRow: View {
 struct TimelineVisualizationView: View {
     let timeline: TimelineModel
     
-    var body: some View {
+    public var body: some View {
         // Simplified timeline visualization
         GeometryReader { geometry in
             VStack(spacing: 2) {
-                // Video track
                 ForEach(timeline.videoTracks) { track in
-                    HStack(spacing: 2) {
-                        ForEach(track.clips) { clip in
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.blue.opacity(0.3))
-                                .frame(width: clipWidth(clip.duration, in: geometry.size.width))
-                        }
-                        Spacer()
-                    }
-                    .frame(height: 40)
-                    .background(Color.gray.opacity(0.1))
+                    TrackView(track: track, totalWidth: geometry.size.width)
                 }
             }
             .padding()
@@ -748,5 +739,23 @@ struct TimelineVisualizationView: View {
     
     private func clipWidth(_ duration: TimeInterval, in totalWidth: CGFloat) -> CGFloat {
         CGFloat(duration / timeline.duration) * totalWidth
+    }
+}
+
+struct TrackView: View {
+    let track: UITimelineTrack
+    let totalWidth: CGFloat
+    
+    public var body: some View {
+        HStack(spacing: 2) {
+            ForEach(track.clips) { clip in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.blue.opacity(0.3))
+                    .frame(width: CGFloat(clip.duration ?? 0) * (totalWidth / 120.0))
+            }
+            Spacer()
+        }
+        .frame(height: 20)
+        .background(Color.gray.opacity(0.1))
     }
 }

@@ -57,13 +57,13 @@ def analyze_tension(video_path: str, fps=None, window=None):
     Returns:
         Dictionary with tension_peaks, release_moments, sustained_tension, and curve
     """
-    fps = fps or CFG.getfloat("global","fps", fallback=2.0)
-    window = window or CFG.getint("global","window", fallback=16)
-    wp = CFG.getfloat("emotion","w_posture", fallback=0.3)
-    wg = CFG.getfloat("emotion","w_gesture", fallback=0.4)
-    wx = CFG.getfloat("emotion","w_prox",    fallback=0.3)
-    peak = CFG.getfloat("emotion","tension_peak", fallback=0.7)
-    plateau_len = CFG.getint("emotion","tension_plateau_len", fallback=3)
+    fps = fps or CFG.getfloat("emotion","fps", fallback=2.0)
+    window = window or CFG.getint("emotion","window", fallback=16)
+    wp = CFG.getfloat("emotion","w_posture")
+    wg = CFG.getfloat("emotion","w_gesture")
+    wx = CFG.getfloat("emotion","w_prox")
+    peak = CFG.getfloat("emotion","tension_peak")
+    plateau_len = CFG.getint("emotion","tension_plateau_len")
 
     # Use V-JEPA to get embeddings with frame_cls
     try:

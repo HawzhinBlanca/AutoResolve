@@ -10,9 +10,11 @@ import numpy as np
 import json
 import time
 import os
+import subprocess
 import configparser
 from src.utils.common import set_global_seed
 from src.embedders.vjepa_embedder import VJEPAEmbedder
+from src.director.creative_director import analyze_footage
 
 CFG = configparser.ConfigParser()
 CFG.read(os.getenv("OPS_INI", "conf/ops.ini"))
@@ -29,6 +31,23 @@ class Shortsify:
         # Initialize V-JEPA for content analysis
         self.embedder = VJEPAEmbedder(use_real_vjepa2=True, memory_safe_mode=True)
         
+    def _nms(self, spans, iou_thresh=0.5):
+        """Non-maximum suppression over (start, end, score) spans."""
+        if not spans:
+            return []
+        spans = sorted(spans, key=lambda x: x[2], reverse=True)
+        kept = []
+        def iou(a, b):
+            s1, e1, _ = a
+            s2, e2, _ = b
+            inter = max(0.0, min(e1, e2) - max(s1, s2))
+            u = (e1 - s1) + (e2 - s2) - inter
+            return inter / u if u > 0 else 0.0
+        for span in spans:
+            if all(iou(span, k) < iou_thresh for k in kept):
+                kept.append(span)
+        return kept
+
     def find_hooks(self, video_path):
         """
         Find compelling moments for short-form content using V-JEPA-2
@@ -49,6 +68,13 @@ class Shortsify:
         
         hooks = []
         
+        # Director signals for scoring
+        director = analyze_footage(video_path)
+        narrative = director.get("narrative", {})
+        emotion = director.get("emotion", {})
+        emphasis = director.get("emphasis", {})
+        rhythm = director.get("rhythm", {})
+
         # Analyze each segment for hook potential
         for i, segment in enumerate(segments):
             # Get frame-level features if available
@@ -66,19 +92,31 @@ class Shortsify:
                 else:
                     novelty_score = 0.5
                 
-                # Combined hook score
-                hook_score = 0.6 * activity_score + 0.4 * novelty_score
+                # Blueprint scoring fusion
+                content_score = 0.5 * activity_score + 0.5 * novelty_score
+                narrative_score = float(narrative.get("strength", 0.5))
+                tension_score = float(emotion.get("tension", 0.5))
+                emphasis_score = float(emphasis.get("saliency", 0.5))
+                rhythm_penalty = float(rhythm.get("penalty", 0.0))
+                hook_score = (
+                    0.45 * content_score +
+                    0.25 * narrative_score +
+                    0.15 * tension_score +
+                    0.10 * emphasis_score -
+                    0.05 * rhythm_penalty
+                )
                 
                 # Duration check
                 segment_duration = segment['t1'] - segment['t0']
                 if self.min_hook_duration <= segment_duration <= self.max_hook_duration:
                     hooks.append((segment['t0'], segment['t1'], hook_score))
         
-        # Sort by score and return top candidates
+        # NMS @ 50% and top candidates
+        hooks = self._nms(hooks, iou_thresh=0.5)
         hooks.sort(key=lambda x: x[2], reverse=True)
-        return hooks[:10]  # Top 10 hooks
+        return hooks[:10]
     
-    def generate_shorts(self, video_path, output_dir=None, recipe=None):
+    def generate_shorts(self, video_path, output_dir=None, recipe=None, progress_callback=None):
         """
         Generate short-form content meeting blueprint performance requirements
         Returns: (shorts_data, performance_metrics)
@@ -93,13 +131,16 @@ class Shortsify:
         
         os.makedirs(output_dir, exist_ok=True)
         
-        # Get video duration for performance calculation
+        if progress_callback:
+            progress_callback(0.1, "Getting video duration...")
         duration = self._get_video_duration(video_path)
         
-        # Find compelling hooks
+        if progress_callback:
+            progress_callback(0.2, "Finding compelling hooks...")
         hooks = self.find_hooks(video_path)
         
-        # Generate shorts from hooks
+        if progress_callback:
+            progress_callback(0.5, "Generating shorts from hooks...")
         shorts = []
         for i, (start, end, score) in enumerate(hooks[:5]):  # Top 5 shorts
             # Extend to target duration if needed
@@ -120,8 +161,14 @@ class Shortsify:
             }
             
             # Generate the actual short video
-            self._create_short_video(video_path, short_data)
-            shorts.append(short_data)
+            if self._create_short_video(video_path, short_data):
+                shorts.append(short_data)
+            
+            if progress_callback:
+                progress_callback(0.5 + (i + 1) * 0.1, f"Generated short {i+1}...")
+
+        if progress_callback:
+            progress_callback(0.9, "Finalizing shorts...")
         
         elapsed = time.time() - start_time
         
@@ -159,8 +206,9 @@ class Shortsify:
     
     def _get_video_duration(self, video_path):
         """Get video duration in seconds"""
-        import av
         try:
+            import importlib
+            av = importlib.import_module("av")  # type: ignore
             container = av.open(video_path)
             duration = float(container.duration) / 1000000.0 if container.duration else 60.0
             container.close()
@@ -192,10 +240,13 @@ class Shortsify:
             output_file
         ]
         
-        # Run ffmpeg
-        result = os.system(" ".join([f"'{arg}'" for arg in cmd]) + " 2>/dev/null")
-        
-        return result == 0
+        # Run ffmpeg securely without shell
+        try:
+            with open(os.devnull, "wb") as devnull:
+                subprocess.run(cmd, check=True, stdout=devnull, stderr=devnull, timeout=180)
+            return True
+        except Exception:
+            return False
 
 def shortsify_cli():
     """CLI interface for shortsify"""

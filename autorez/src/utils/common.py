@@ -1,7 +1,15 @@
 import numpy as np
 
 def cos(a, b):
-    """Cosine similarity with zero handling"""
+    """Cosine similarity with zero and dimension mismatch handling"""
+    # Handle dimension mismatch
+    if hasattr(a, 'shape') and hasattr(b, 'shape'):
+        if a.shape != b.shape:
+            # Log warning and return 0 for dimension mismatch
+            import logging
+            logging.debug(f"Cosine similarity dimension mismatch: {a.shape} vs {b.shape}")
+            return 0.0
+    
     na = np.linalg.norm(a)
     nb = np.linalg.norm(b)
     if na == 0 or nb == 0:

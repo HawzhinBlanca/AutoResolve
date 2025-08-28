@@ -43,6 +43,23 @@ class ResolveIntegrationTest:
             "installed": False,
             "path": None
         }
+
+    def launch_resolve(self):
+        """Attempt to launch DaVinci Resolve"""
+        if self.resolve_available:
+            try:
+                from src.ops.resolve_api import ResolveAPI
+                resolve_api = ResolveAPI()
+                if not resolve_api._is_resolve_running():
+                    logger.info("Attempting to launch DaVinci Resolve...")
+                    resolve_api._start_resolve()
+                    time.sleep(15) # Wait for Resolve to start
+                    return resolve_api._is_resolve_running()
+                return True
+            except Exception as e:
+                logger.error(f"Failed to launch Resolve: {e}")
+                return False
+        return False
     
     def check_scripting_api(self) -> Dict:
         """Check if Resolve scripting API is available"""
@@ -222,28 +239,34 @@ class ResolveIntegrationTest:
             logger.warning("  ⚠️ Resolve not available, skipping import test")
             return {"skipped": True, "reason": "Resolve not installed"}
         
+        if not self.launch_resolve():
+            logger.warning("  ⚠️ Failed to launch Resolve, skipping import test")
+            return {"skipped": True, "reason": "Failed to launch Resolve"}
+
         # If API is available, try to import
         if self.api_available:
             try:
-                import DaVinciResolveScript as dvr
-                resolve = dvr.scriptapp("Resolve")
-                
-                if resolve:
-                    pm = resolve.GetProjectManager()
-                    project = pm.GetCurrentProject()
-                    
-                    if project:
-                        media_pool = project.GetMediaPool()
-                        
-                        # Try to import the file
-                        success = media_pool.ImportTimelineFromFile(file_path)
-                        
-                        if success:
-                            logger.info(f"  ✅ Successfully imported {file_path}")
-                            return {"success": True, "method": "api"}
-                        else:
-                            logger.warning(f"  ⚠️ Import failed via API")
-                            return {"success": False, "method": "api", "error": "Import failed"}
+                from src.ops.resolve_api import ResolveAPI
+                resolve_api = ResolveAPI()
+                script_content = f"""import DaVinciResolveScript as dvr_script
+resolve = dvr_script.scriptapp('Resolve')
+project = resolve.GetProjectManager().GetCurrentProject()
+media_pool = project.GetMediaPool()
+media_pool.ImportTimelineFromFile('{file_path}')
+"""
+                script_path = "/tmp/resolve_import_script.py"
+                with open(script_path, 'w') as f:
+                    f.write(script_content)
+
+                success = resolve_api._execute_resolve_script(script_path)
+                os.remove(script_path)
+
+                if success:
+                    logger.info(f"  ✅ Successfully imported {file_path}")
+                    return {"success": True, "method": "api"}
+                else:
+                    logger.warning(f"  ⚠️ Import failed via API")
+                    return {"success": False, "method": "api", "error": "Import failed"}
             except Exception as e:
                 logger.warning(f"  ⚠️ API import error: {e}")
         

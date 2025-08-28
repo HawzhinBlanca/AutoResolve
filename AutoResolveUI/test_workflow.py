@@ -11,6 +11,10 @@ import requests
 import json
 from pathlib import Path
 
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8081")
+API_KEY = os.getenv("API_KEY")
+HEADERS = {"x-api-key": API_KEY} if API_KEY else {}
+
 def print_test(name, passed):
     """Print test result with emoji"""
     emoji = "✅" if passed else "❌"
@@ -20,7 +24,7 @@ def print_test(name, passed):
 def test_backend_connection():
     """Test 1: Backend Connection"""
     try:
-        response = requests.get("http://localhost:8081/health")
+        response = requests.get(f"{BASE_URL}/health", headers=HEADERS)
         if response.status_code == 200:
             data = response.json()
             print_test("Backend Health Check", True)
@@ -44,14 +48,26 @@ def test_import_functionality():
     # Create test MP4 file using ffmpeg
     mp4_file = test_dir / "test_video.mp4"
     if not mp4_file.exists():
-        cmd = f'ffmpeg -f lavfi -i "testsrc=duration=5:size=1920x1080:rate=30" -c:v libx264 "{mp4_file}" -y 2>/dev/null'
-        subprocess.run(cmd, shell=True)
+        cmd = [
+            'ffmpeg', '-f', 'lavfi', '-i', 'testsrc=duration=5:size=1920x1080:rate=30',
+            '-c:v', 'libx264', str(mp4_file), '-y'
+        ]
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            print_test("MP4 Test File Created", False)
     
     # Create test MOV file
     mov_file = test_dir / "test_video.mov"
     if not mov_file.exists():
-        cmd = f'ffmpeg -f lavfi -i "testsrc=duration=5:size=1920x1080:rate=30" -c:v libx264 -f mov "{mov_file}" -y 2>/dev/null'
-        subprocess.run(cmd, shell=True)
+        cmd = [
+            'ffmpeg', '-f', 'lavfi', '-i', 'testsrc=duration=5:size=1920x1080:rate=30',
+            '-c:v', 'libx264', '-f', 'mov', str(mov_file), '-y'
+        ]
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            print_test("MOV Test File Created", False)
     
     # Test file existence
     tests_passed = 0
@@ -75,8 +91,8 @@ def test_import_functionality():
     if test_files:
         try:
             # Validate configuration with first file
-            response = requests.post("http://localhost:8081/api/validate", 
-                                    json={"input_file": test_files[0]})
+            response = requests.post(f"{BASE_URL}/api/validate", 
+                                    json={"input_file": test_files[0]}, headers=HEADERS)
             if response.status_code == 200:
                 print_test("File Validation API", True)
                 tests_passed += 1
@@ -124,8 +140,8 @@ def test_ai_pipeline(test_files):
     
     try:
         # Start pipeline
-        response = requests.post("http://localhost:8081/api/pipeline/start",
-                                json={"input_file": test_files[0], "options": {}})
+        response = requests.post(f"{BASE_URL}/api/pipeline/start",
+                                json={"video_path": test_files[0], "settings": {}}, headers=HEADERS)
         if response.status_code == 200:
             task_id = response.json()["task_id"]
             print_test("Pipeline Start", True)
@@ -134,7 +150,7 @@ def test_ai_pipeline(test_files):
             
             # Check status
             time.sleep(1)
-            response = requests.get(f"http://localhost:8081/api/pipeline/status/{task_id}")
+            response = requests.get(f"{BASE_URL}/api/pipeline/status/{task_id}", headers=HEADERS)
             if response.status_code == 200:
                 status = response.json()
                 print_test("Pipeline Status Check", True)
@@ -145,7 +161,7 @@ def test_ai_pipeline(test_files):
                 print_test("Pipeline Status Check", False)
             
             # Test cancel
-            response = requests.post(f"http://localhost:8081/api/pipeline/cancel/{task_id}")
+            response = requests.post(f"{BASE_URL}/api/pipeline/cancel/{task_id}", headers=HEADERS)
             if response.status_code == 200:
                 print_test("Pipeline Cancel", True)
                 tests_passed += 1
@@ -188,7 +204,7 @@ def test_presets():
     
     try:
         # Get presets
-        response = requests.get("http://localhost:8081/api/presets")
+        response = requests.get(f"{BASE_URL}/api/presets", headers=HEADERS)
         if response.status_code == 200:
             presets = response.json()["presets"]
             print_test("Get Presets", True)
@@ -198,8 +214,8 @@ def test_presets():
             print_test("Get Presets", False)
             
         # Save preset
-        response = requests.post("http://localhost:8081/api/presets",
-                                json={"name": "test_preset", "settings": {"quality": "high"}})
+        response = requests.post(f"{BASE_URL}/api/presets",
+                                json={"name": "test_preset", "settings": {"quality": "high"}}, headers=HEADERS)
         if response.status_code == 200:
             print_test("Save Preset", True)
             tests_passed += 1

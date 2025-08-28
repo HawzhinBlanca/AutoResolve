@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import AVFoundation
 import Accelerate
 import SwiftUI
@@ -309,7 +310,7 @@ public struct AudioLevelMeter: View {
 
 // MARK: - Audio Analysis
 
-public class AudioAnalyzer: ObservableObject {
+public class AudioLevelAnalyzer: ObservableObject {
     @Published var currentLevel: Float = 0
     @Published var peakLevel: Float = 0
     @Published var isClipping = false

@@ -8,7 +8,7 @@ import Combine
 
 // MARK: - PROFESSIONAL VIDEO PLAYER
 struct ProfessionalVideoPlayer: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @StateObject private var playerController = ProfessionalPlayerController()
     @State private var isPlaying = false
     @State private var currentTime: TimeInterval = 0
@@ -18,7 +18,7 @@ struct ProfessionalVideoPlayer: View {
     @State private var showOverlays = true
     @State private var isFullscreen = false
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // PROFESSIONAL VIDEO CANVAS
@@ -110,7 +110,7 @@ struct ProfessionalVideoCanvas: View {
     let showSafeAreas: Bool
     let onTimeUpdate: (TimeInterval) -> Void
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             // AVPlayer View
             if let player = player {
@@ -171,7 +171,7 @@ struct ProfessionalTransportControls: View {
     let onSeek: (TimeInterval) -> Void
     let onJumpFrame: (Int) -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 12) {
             // FRAME NAVIGATION
             HStack(spacing: 4) {
@@ -250,7 +250,7 @@ struct ProfessionalTimecodeDisplay: View {
     let currentTime: TimeInterval
     let duration: TimeInterval
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 4) {
             // Current / Duration
             HStack(spacing: 8) {
@@ -301,7 +301,7 @@ enum ViewerScale: CaseIterable {
 
 // MARK: - SAFE AREA OVERLAYS
 struct SafeAreaOverlays: View {
-    var body: some View {
+    public var body: some View {
         ZStack {
             // ACTION SAFE (90%)
             Rectangle()
@@ -333,7 +333,7 @@ struct ProfessionalViewerOverlay: View {
     let scale: ViewerScale
     let showSafeAreas: Bool
     
-    var body: some View {
+    public var body: some View {
         VStack {
             // TOP OVERLAY
             HStack {

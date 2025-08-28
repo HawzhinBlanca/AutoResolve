@@ -51,7 +51,7 @@ public class SilenceDetectionViewModel: ObservableObject {
             do {
                 // Extract audio from video
                 let asset = AVAsset(url: url)
-                guard let audioTrack = try await asset.loadTracks(withMediaType: .audio).first else {
+                guard let _ = try await asset.loadTracks(withMediaType: .audio).first else {
                     print("No audio track found in video")
                     return
                 }
@@ -146,9 +146,10 @@ public class SilenceDetectionViewModel: ObservableObject {
             
             let results = try await backendService.detectSilence(
                 videoPath: url.path,
-                settings: SilenceDetectionSettings(
+                settings: BackendSilenceDetectionSettings(
                     threshold: settings.threshold,
-                    minDuration: settings.minDuration
+                    minDuration: settings.minDuration,
+                    padding: settings.paddingAfter
                 )
             )
             
@@ -159,6 +160,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                     endTime: range.end,
                     duration: range.end - range.start,
                     averageLevel: silenceThresholdDB,
+                    confidence: 0.8,
                     isSelected: false
                 )
             }
@@ -233,6 +235,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                                 endTime: paddedEnd,
                                 duration: paddedEnd - paddedStart,
                                 averageLevel: linearToDb(rms),
+                                confidence: 0.8,
                                 isSelected: false
                             ))
                         }
@@ -253,6 +256,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                         endTime: silenceEnd,
                         duration: duration,
                         averageLevel: silenceThresholdDB,
+                        confidence: 0.8,
                         isSelected: false
                     ))
                 }
@@ -312,6 +316,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                     endTime: nextRegion.endTime,
                     duration: nextRegion.endTime - currentRegion.startTime,
                     averageLevel: (currentRegion.averageLevel + nextRegion.averageLevel) / 2,
+                    confidence: (currentRegion.confidence + nextRegion.confidence) / 2,
                     isSelected: false
                 )
             } else {
@@ -389,7 +394,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                 if clip.startTime >= endTime {
                     // Shift clips after the silence region
                     timeline.tracks[trackIndex].clips[clipIndex].startTime -= duration
-                } else if clip.startTime + clip.duration > startTime && clip.startTime < endTime {
+                } else if clip.startTime + clip.duration ?? 0 > startTime && clip.startTime < endTime {
                     // Clip overlaps with silence region
                     if clip.startTime >= startTime {
                         // Clip starts within silence - remove it
@@ -409,11 +414,7 @@ public class SilenceDetectionViewModel: ObservableObject {
     public func applySilenceDetectionToTimeline(timeline: TimelineModel) {
         // Mark silence regions on timeline without removing them
         for region in detectedSilenceRegions {
-            let marker = TimelineMarker(
-                time: region.startTime,
-                type: .silence,
-                name: "Silence"
-            )
+            let marker = UITimelineMarker(time: region.startTime, type: .silence, name: "Silence")
             timeline.markers.append(marker)
         }
     }
@@ -468,22 +469,9 @@ public class SilenceDetectionViewModel: ObservableObject {
 
 // MARK: - Data Models
 
-public struct SilenceRegion: Identifiable, Hashable {
-    public let id = UUID()
-    public let startTime: TimeInterval
-    public let endTime: TimeInterval
-    public let duration: TimeInterval
-    public let averageLevel: Double
-    public var isSelected: Bool
-    
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-    
-    public static func == (lhs: SilenceRegion, rhs: SilenceRegion) -> Bool {
-        lhs.id == rhs.id
-    }
-}
+// SilenceRegion is now defined in AnalysisTypes.swift
+// Additional properties for UI state
+// SilenceRegion now includes id/averageLevel/isSelected in AnalysisTypes
 
 public enum ProcessingQuality: String, CaseIterable {
     case fast = "Fast"

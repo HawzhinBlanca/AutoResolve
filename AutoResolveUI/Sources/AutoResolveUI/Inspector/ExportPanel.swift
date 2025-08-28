@@ -148,7 +148,7 @@ struct FormatSelectionSection: View {
     @Binding var exportPreset: ExportPreset
     @Binding var useCustomSettings: Bool
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Format & Quality")
                 .font(.subheadline.bold())
@@ -192,7 +192,7 @@ struct FormatSelectionSection: View {
 struct CustomSettingsSection: View {
     @Binding var settings: CustomExportSettings
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Custom Settings")
                 .font(.subheadline.bold())
@@ -285,7 +285,7 @@ struct CustomSettingsSection: View {
 struct PresetDetailsSection: View {
     let preset: ExportPreset
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Preset Details")
                 .font(.subheadline.bold())
@@ -310,7 +310,7 @@ struct PresetDetailRow: View {
     let label: String
     let value: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .foregroundColor(.secondary)
@@ -328,7 +328,7 @@ struct ExportRangeSection: View {
     @Binding var customEndTime: TimeInterval
     @ObservedObject var timeline: TimelineModel
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Export Range")
                 .font(.subheadline.bold())
@@ -382,7 +382,7 @@ struct OutputSettingsSection: View {
     @Binding var outputDirectory: URL?
     @Binding var filename: String
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Output Settings")
                 .font(.subheadline.bold())
@@ -455,7 +455,7 @@ struct AdvancedExportOptions: View {
     @State private var colorSpace = "Rec. 709"
     @State private var encodeInBackground = false
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Advanced Options")
                 .font(.subheadline.bold())
@@ -493,7 +493,7 @@ struct ExportControlsSection: View {
     let filename: String
     let onStartExport: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Export summary
             VStack(alignment: .leading, spacing: 2) {
@@ -557,7 +557,7 @@ struct ExportProgressView: View {
     let timeRemaining: TimeInterval
     let onCancel: () -> Void
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 16) {
             Text("Exporting...")
                 .font(.headline)
@@ -603,7 +603,7 @@ struct ResolutionPicker: View {
         "1280×720", "854×480", "640×360"
     ]
     
-    var body: some View {
+    public var body: some View {
         LabeledField("Resolution") {
             Picker("", selection: $resolution) {
                 ForEach(commonResolutions, id: \.self) { res in
@@ -621,7 +621,7 @@ struct BitrateControl: View {
     @Binding var targetBitrate: Int
     @Binding var maxBitrate: Int
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             LabeledField("Bitrate Mode") {
                 Picker("", selection: $mode) {
@@ -693,7 +693,7 @@ struct TimecodeField: View {
     @Binding var time: TimeInterval
     @ObservedObject var timeline: TimelineModel
     
-    var body: some View {
+    public var body: some View {
         TextField("00:00:00:00", text: Binding(
             get: { timeline.timecode(for: time) },
             set: { newValue in
@@ -725,49 +725,7 @@ struct TimecodeField: View {
 
 // MARK: - Export Models
 
-public enum ExportFormat: String, CaseIterable {
-    case h264_mp4 = "h264_mp4"
-    case h265_mp4 = "h265_mp4"
-    case prores_mov = "prores_mov"
-    case dnxhd_mov = "dnxhd_mov"
-    case gif = "gif"
-    case image_sequence = "image_sequence"
-    case fcpxml = "fcpxml"
-    case drp = "drp"
-    case aaf = "aaf"
-    case edl = "edl"
-    case otio = "otio"
-    
-    var displayName: String {
-        switch self {
-        case .h264_mp4: return "H.264 (MP4)"
-        case .h265_mp4: return "H.265 (MP4)"
-        case .prores_mov: return "ProRes (MOV)"
-        case .dnxhd_mov: return "DNxHD (MOV)"
-        case .gif: return "Animated GIF"
-        case .image_sequence: return "Image Sequence"
-        case .fcpxml: return "Final Cut Pro XML"
-        case .drp: return "DaVinci Resolve Project"
-        case .aaf: return "Advanced Authoring Format"
-        case .edl: return "Edit Decision List"
-        case .otio: return "OpenTimelineIO"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .h264_mp4, .h265_mp4: return "play.rectangle"
-        case .prores_mov, .dnxhd_mov: return "film"
-        case .gif: return "photo.on.rectangle.angled"
-        case .image_sequence: return "photo.stack"
-        case .fcpxml: return "doc.text"
-        case .drp: return "doc.badge.gearshape"
-        case .aaf: return "doc.richtext"
-        case .edl: return "doc.plaintext"
-        case .otio: return "doc.badge.arrow.up.arrow.down"
-        }
-    }
-}
+// Use global ExportFormat defined in Core/swift
 
 public enum ExportPreset: String, CaseIterable {
     case youtube4k = "youtube4k"

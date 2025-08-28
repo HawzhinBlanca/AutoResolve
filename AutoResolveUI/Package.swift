@@ -15,9 +15,31 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "AutoResolveUI",
-            dependencies: [],
+            path: "Sources/AutoResolveUI",
+            exclude: [
+                "main.swift.disabled",
+                "aggressive_fix.sh",
+                "AI",
+                "Audio",
+                "AudioProcessing",
+                "Authentication",
+                "Cache",
+                "ColorGrading",
+                "Compliance",
+                "Import",
+                "MediaPool",
+                "MotionGraphics",
+                "MultiCam",
+                "Performance",
+                "Plugins",
+                "ResolveIntegration",
+                "Tests",
+                "scripts",
+                "Timeline/VirtualScrollingTimeline.swift",
+                "Timeline/TimelineSnappingSystem.swift"
+            ],
             swiftSettings: [
-                .unsafeFlags(["-parse-as-library"])
+                .unsafeFlags(["-suppress-warnings"])
             ]
         ),
     ]

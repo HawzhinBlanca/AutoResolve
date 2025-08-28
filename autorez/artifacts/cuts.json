@@ -1,13 +1,19 @@
 {
   "version": "3.0",
   "source_video": "assets/pilots/art_painting.mp4",
-  "speech_segments": [
-    [
-      0,
-      180.00108843537416
-    ]
-  ],
   "total_segments": 1,
   "original_duration": 180.0,
-  "estimated_new_duration": 180.00108843537416
+  "estimated_new_duration": 180.00108843537416,
+  "keep_windows": [
+    {
+      "start": 0.0,
+      "end": 180.00108843537416
+    }
+  ],
+  "params": {
+    "rms_thresh_db": -34,
+    "min_silence_s": 0.35,
+    "min_keep_s": 0.4,
+    "pad_s": 0.05
+  }
 }

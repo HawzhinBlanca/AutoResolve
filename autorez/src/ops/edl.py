@@ -27,7 +27,8 @@ def generate_edl(
     cuts: List[Dict],
     fps: int = 30,
     video_path: str = None,
-    output_path: str = None
+    output_path: str = None,
+    transitions: List[Dict] = None
 ) -> str:
     """
     Generate EDL from cuts data
@@ -37,6 +38,7 @@ def generate_edl(
         fps: Frame rate
         video_path: Optional path to source video
         output_path: Optional output EDL path
+        transitions: Optional list of transitions
         
     Returns:
         EDL content as string
@@ -58,7 +60,7 @@ def generate_edl(
     event_num = 1
     timeline_pos = 0.0
     
-    for region in cuts.get("keep", []):
+    for i, region in enumerate(cuts.get("keep", [])):
         t0 = region["t0"]
         t1 = region["t1"]
         duration = t1 - t0
@@ -71,9 +73,22 @@ def generate_edl(
         tl_in = timecode_from_seconds(timeline_pos, fps)
         tl_out = timecode_from_seconds(timeline_pos + duration, fps)
         
+        # Check for transition
+        transition_info = "C"
+        transition_duration = 0
+        if transitions:
+            for t in transitions:
+                if t.get("clip_index") == i:
+                    if t.get("type") == "dissolve":
+                        transition_info = "D"
+                        transition_duration = int(t.get("duration_frames", 0))
+                        break
+
         # EDL event line
-        # Format: EVENT# REEL# TRACK TYPE TRANS DUR SRC_IN SRC_OUT TL_IN TL_OUT
-        line = f"{event_num:03d}  {video_name[:8]:8s} V     C        {src_in} {src_out} {tl_in} {tl_out}"
+        line = f"{event_num:03d}  {video_name[:8]:8s} V     {transition_info}        {src_in} {src_out} {tl_in} {tl_out}"
+        if transition_info == "D":
+            line = f"{event_num:03d}  {video_name[:8]:8s} V     {transition_info}  {transition_duration:03d}  {src_in} {src_out} {tl_in} {tl_out}"
+
         lines.append(line)
         
         # Add source file reference

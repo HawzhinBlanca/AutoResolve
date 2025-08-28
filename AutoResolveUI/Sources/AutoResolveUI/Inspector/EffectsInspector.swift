@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import AVFoundation
 
@@ -6,7 +7,7 @@ import AVFoundation
 public struct EffectsInspector: View {
     @ObservedObject var timeline: TimelineModel
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
-    @State private var selectedEffect: VideoEffect?
+    @State private var selectedEffect: VideoProcessorEffect?
     @State private var showEffectBrowser = false
     @State private var searchText = ""
     
@@ -82,7 +83,7 @@ public struct EffectsInspector: View {
         }
     }
     
-    private func toggleEffect(_ effect: VideoEffect) {
+    private func toggleEffect(_ effect: VideoProcessorEffect) {
         var updatedEffect = effect
         updatedEffect.enabled.toggle()
         effectsProcessor.updateEffect(updatedEffect)
@@ -92,13 +93,13 @@ public struct EffectsInspector: View {
 // MARK: - Effect Row
 
 struct EffectRow: View {
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     let isSelected: Bool
     let onSelect: () -> Void
     let onRemove: () -> Void
     let onToggle: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 8) {
             // Enable/Disable toggle
             Button(action: onToggle) {
@@ -140,7 +141,7 @@ struct EffectRow: View {
         }
     }
     
-    private func iconForEffect(_ effect: VideoEffect) -> String {
+    private func iconForEffect(_ effect: VideoProcessorEffect) -> String {
         switch effect.type {
         case .colorCorrection: return "slider.horizontal.3"
         case .blur: return "drop.circle"
@@ -157,10 +158,10 @@ struct EffectRow: View {
 // MARK: - Effect Controls
 
 struct EffectControls: View {
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
-    var body: some View {
+    public var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 // Effect header
@@ -256,7 +257,7 @@ struct EffectControls: View {
 
 struct ColorCorrectionControls: View {
     let settings: ColorCorrectionSettings
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var temperature: Double
@@ -268,7 +269,7 @@ struct ColorCorrectionControls: View {
     @State private var blacks: Double
     @State private var vibrance: Double
     
-    init(settings: ColorCorrectionSettings, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(settings: ColorCorrectionSettings, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.settings = settings
         self.effect = effect
         self.effectsProcessor = effectsProcessor
@@ -283,7 +284,7 @@ struct ColorCorrectionControls: View {
         _vibrance = State(initialValue: settings.vibrance)
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 12) {
             GroupBox("Basic") {
                 VStack(spacing: 8) {
@@ -339,19 +340,19 @@ struct ColorCorrectionControls: View {
 
 struct BlurControls: View {
     let radius: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var blurRadius: Double
     
-    init(radius: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(radius: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.radius = radius
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _blurRadius = State(initialValue: radius)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Blur") {
             SliderControl("Radius", value: $blurRadius, range: 0...100, format: "px")
                 .onChange(of: blurRadius) { newValue in
@@ -365,19 +366,19 @@ struct BlurControls: View {
 
 struct BrightnessControls: View {
     let amount: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var brightness: Double
     
-    init(amount: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(amount: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.amount = amount
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _brightness = State(initialValue: amount)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Brightness") {
             SliderControl("Amount", value: $brightness, range: -1...1)
                 .onChange(of: brightness) { newValue in
@@ -391,19 +392,19 @@ struct BrightnessControls: View {
 
 struct ContrastControls: View {
     let amount: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var contrast: Double
     
-    init(amount: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(amount: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.amount = amount
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _contrast = State(initialValue: amount)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Contrast") {
             SliderControl("Amount", value: $contrast, range: 0...2)
                 .onChange(of: contrast) { newValue in
@@ -417,19 +418,19 @@ struct ContrastControls: View {
 
 struct SaturationControls: View {
     let amount: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var saturation: Double
     
-    init(amount: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(amount: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.amount = amount
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _saturation = State(initialValue: amount)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Saturation") {
             SliderControl("Amount", value: $saturation, range: 0...2)
                 .onChange(of: saturation) { newValue in
@@ -443,19 +444,19 @@ struct SaturationControls: View {
 
 struct VignetteControls: View {
     let intensity: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var vignetteIntensity: Double
     
-    init(intensity: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(intensity: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.intensity = intensity
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _vignetteIntensity = State(initialValue: intensity)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Vignette") {
             SliderControl("Intensity", value: $vignetteIntensity, range: 0...3)
                 .onChange(of: vignetteIntensity) { newValue in
@@ -469,19 +470,19 @@ struct VignetteControls: View {
 
 struct SharpenControls: View {
     let intensity: Double
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var sharpenIntensity: Double
     
-    init(intensity: Double, effect: VideoEffect, effectsProcessor: VideoEffectsProcessor) {
+    init(intensity: Double, effect: VideoProcessorEffect, effectsProcessor: VideoEffectsProcessor) {
         self.intensity = intensity
         self.effect = effect
         self.effectsProcessor = effectsProcessor
         _sharpenIntensity = State(initialValue: intensity)
     }
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Sharpen") {
             SliderControl("Intensity", value: $sharpenIntensity, range: 0...2)
                 .onChange(of: sharpenIntensity) { newValue in
@@ -495,13 +496,13 @@ struct SharpenControls: View {
 
 struct LUTControls: View {
     let lutImage: NSImage
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     @ObservedObject var effectsProcessor: VideoEffectsProcessor
     
     @State private var intensity: Double = 1.0
     @State private var showLUTBrowser = false
     
-    var body: some View {
+    public var body: some View {
         GroupBox("LUT") {
             VStack(spacing: 8) {
                 HStack {
@@ -529,12 +530,12 @@ struct LUTControls: View {
 // MARK: - Keyframe Section
 
 struct KeyframeSection: View {
-    let effect: VideoEffect
+    let effect: VideoProcessorEffect
     
     @State private var showKeyframes = false
     @State private var keyframes: [EffectKeyframe] = []
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Animation") {
             VStack(spacing: 8) {
                 HStack {
@@ -603,7 +604,7 @@ struct EffectBrowser: View {
         }
     }
     
-    var body: some View {
+    public var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Search bar
@@ -681,7 +682,7 @@ struct SliderControl: View {
         self.format = format
     }
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .frame(width: 80, alignment: .leading)
@@ -698,7 +699,7 @@ struct SliderControl: View {
 struct SearchBar: View {
     @Binding var text: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
@@ -723,7 +724,7 @@ struct EffectCard: View {
     let effectDefinition: EffectDefinition
     let onAdd: () -> Void
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             // Effect preview thumbnail
             Rectangle()
@@ -757,11 +758,11 @@ struct EffectCard: View {
 // MARK: - Effect Definitions
 
 struct EffectDefinition: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     let name: String
     let description: String
     let icon: String
-    let createEffect: () -> VideoEffect
+    let createEffect: () -> VideoProcessorEffect
     
     static let allEffects: [EffectDefinition] = colorEffects + blurEffects + stylizeEffects + distortionEffects + generatorEffects
     
@@ -771,7 +772,7 @@ struct EffectDefinition: Identifiable {
             description: "Adjust color temperature, tint, and exposure",
             icon: "slider.horizontal.3"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Color Correction",
                 type: .colorCorrection(ColorCorrectionSettings())
             )
@@ -781,7 +782,7 @@ struct EffectDefinition: Identifiable {
             description: "Adjust image brightness",
             icon: "sun.max"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Brightness",
                 type: .brightness(amount: 0.0)
             )
@@ -791,7 +792,7 @@ struct EffectDefinition: Identifiable {
             description: "Adjust image contrast",
             icon: "circle.lefthalf.filled"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Contrast",
                 type: .contrast(amount: 1.0)
             )
@@ -801,7 +802,7 @@ struct EffectDefinition: Identifiable {
             description: "Adjust color saturation",
             icon: "paintpalette"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Saturation",
                 type: .saturation(amount: 1.0)
             )
@@ -814,7 +815,7 @@ struct EffectDefinition: Identifiable {
             description: "Apply blur effect",
             icon: "drop.circle"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Gaussian Blur",
                 type: .blur(radius: 5.0)
             )
@@ -824,7 +825,7 @@ struct EffectDefinition: Identifiable {
             description: "Enhance image sharpness",
             icon: "sparkles"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Sharpen",
                 type: .sharpen(intensity: 0.5)
             )
@@ -837,7 +838,7 @@ struct EffectDefinition: Identifiable {
             description: "Add dark edges to image",
             icon: "camera.filters"
         ) {
-            VideoEffect(
+            VideoProcessorEffect(
                 name: "Vignette",
                 type: .vignette(intensity: 1.0)
             )
@@ -851,7 +852,7 @@ struct EffectDefinition: Identifiable {
 // MARK: - Keyframe Models
 
 struct EffectKeyframe: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     var time: TimeInterval
     var value: Double
 }
@@ -859,7 +860,7 @@ struct EffectKeyframe: Identifiable {
 struct KeyframeTimeline: View {
     @Binding var keyframes: [EffectKeyframe]
     
-    var body: some View {
+    public var body: some View {
         // Simplified keyframe timeline view
         Rectangle()
             .fill(Color.black.opacity(0.1))

@@ -173,7 +173,7 @@ struct MediaBrowserHeader: View {
     let onImport: () -> Void
     let onCreateFolder: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Import button
             Button(action: onImport) {
@@ -243,7 +243,7 @@ struct MediaFolderSidebar: View {
     @Binding var selectedFolder: MediaFolder?
     let onCreateFolder: () -> Void
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Sidebar header
             HStack {
@@ -298,7 +298,7 @@ struct SidebarItem: View {
     let isSelected: Bool
     let onSelect: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Image(systemName: icon)
                 .foregroundColor(isSelected ? .accentColor : .secondary)
@@ -327,7 +327,7 @@ struct SidebarFolderItem: View {
     let isSelected: Bool
     let onSelect: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Circle()
                 .fill(folder.color)
@@ -360,7 +360,7 @@ struct MediaContentView: View {
     let viewMode: MediaBrowser.ViewMode
     let onAddToTimeline: (MediaItem) -> Void
     
-    var body: some View {
+    public var body: some View {
         if mediaItems.isEmpty {
             EmptyMediaView()
         } else {
@@ -397,13 +397,13 @@ struct MediaGridView: View {
     
     private let columns = Array(repeating: GridItem(.flexible()), count: 4)
     
-    var body: some View {
+    public var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(items) { item in
                     MediaGridCard(
                         item: item,
-                        isSelected: selectedItems.contains(where: { $0.id == item.id }),
+                        isSelected: selectedItems.contains { $0.id == item.id },
                         onSelect: { toggleSelection(item) },
                         onAddToTimeline: { onAddToTimeline(item) }
                     )
@@ -428,7 +428,7 @@ struct MediaGridCard: View {
     let onSelect: () -> Void
     let onAddToTimeline: () -> Void
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             // Thumbnail
             AsyncImage(url: item.thumbnailURL) { image in
@@ -453,12 +453,12 @@ struct MediaGridCard: View {
             .overlay(
                 // Duration badge
                 Group {
-                    if item.duration > 0 {
+                    if item.duration ?? 0 > 0 {
                         VStack {
                             Spacer()
                             HStack {
                                 Spacer()
-                                Text(formatDuration(item.duration))
+                                Text(formatDuration(item.duration ?? 0))
                                     .font(.caption)
                                     .padding(.horizontal, 4)
                                     .padding(.vertical, 2)
@@ -523,7 +523,7 @@ struct MediaListView: View {
     @Binding var selectedItems: [MediaItem]
     let onAddToTimeline: (MediaItem) -> Void
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
@@ -547,92 +547,20 @@ struct MediaListView: View {
             Divider()
             
             // Items
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(items) { item in
-                        MediaListRow(
-                            item: item,
-                            isSelected: selectedItems.contains(where: { $0.id == item.id }),
-                            onSelect: { toggleSelection(item) },
-                            onAddToTimeline: { onAddToTimeline(item) }
-                        )
-                    }
-                }
+//             ScrollView {
+//                 LazyVStack(spacing: 0) {
+//                     ForEach(items) { item in
+//                         MediaListRow(
+//                             item: item,
+//                             isSelected: selectedItems.contains { $0.id == item.id },
+//                             onSelect: { toggleSelection(item) },
+//                             onAddToTimeline: { onAddToTimeline(item) }
+//                         )
+//                     }
+//                 }
             }
         }
     }
-    
-    private func toggleSelection(_ item: MediaItem) {
-        if let index = selectedItems.firstIndex(where: { $0.id == item.id }) {
-            selectedItems.remove(at: index)
-        } else {
-            selectedItems.append(item)
-        }
-    }
-}
-
-struct MediaListRow: View {
-    let item: MediaItem
-    let isSelected: Bool
-    let onSelect: () -> Void
-    let onAddToTimeline: () -> Void
-    
-    var body: some View {
-        HStack {
-            // Thumbnail
-            AsyncImage(url: item.thumbnailURL) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.3))
-                    .overlay(
-                        Image(systemName: item.type.icon)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    )
-            }
-            .frame(width: 40, height: 24)
-            .clipShape(RoundedRectangle(cornerRadius: 2))
-            
-            // Name
-            Text(item.name)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // Duration
-            Text(item.duration > 0 ? formatDuration(item.duration) : "—")
-                .font(.caption.monospacedDigit())
-                .frame(width: 80)
-            
-            // Size
-            Text(item.formattedFileSize)
-                .font(.caption.monospacedDigit())
-                .frame(width: 80)
-            
-            // Type
-            Text(item.type.rawValue.uppercased())
-                .font(.caption)
-                .frame(width: 60)
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 4)
-        .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
-        .onTapGesture(count: 2) {
-            onAddToTimeline()
-        }
-        .onTapGesture(count: 1) {
-            onSelect()
-        }
-    }
-    
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return "\(minutes):\(String(format: "%02d", seconds))"
-    }
-}
 
 // MARK: - Media Thumbnail View
 
@@ -643,13 +571,13 @@ struct MediaThumbnailView: View {
     
     private let columns = Array(repeating: GridItem(.flexible()), count: 6)
     
-    var body: some View {
+    public var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(items) { item in
                     MediaThumbnailCard(
                         item: item,
-                        isSelected: selectedItems.contains(where: { $0.id == item.id }),
+                        isSelected: selectedItems.contains { $0.id == item.id },
                         onSelect: { toggleSelection(item) },
                         onAddToTimeline: { onAddToTimeline(item) }
                     )
@@ -674,7 +602,7 @@ struct MediaThumbnailCard: View {
     let onSelect: () -> Void
     let onAddToTimeline: () -> Void
     
-    var body: some View {
+    public var body: some View {
         AsyncImage(url: item.thumbnailURL) { image in
             image
                 .resizable()
@@ -707,7 +635,7 @@ struct MediaThumbnailCard: View {
 // MARK: - Empty Media View
 
 struct EmptyMediaView: View {
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "photo.on.rectangle.angled")
                 .font(.system(size: 48))
@@ -737,7 +665,7 @@ struct MediaSelectionBar: View {
     let onAddToTimeline: () -> Void
     let onDelete: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("\(selectedItems.count) item\(selectedItems.count == 1 ? "" : "s") selected")
                 .font(.caption)
@@ -776,7 +704,7 @@ struct MediaImportSheet: View {
     @State private var isImporting = false
     @State private var importProgress: Double = 0
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Text("Import Media")
                 .font(.headline)
@@ -931,7 +859,7 @@ public class MediaManager: ObservableObject {
         return MediaItem(
             name: url.deletingPathExtension().lastPathComponent,
             url: url,
-            type: MediaType.from(url: url),
+            type: AutoResolveUILib.MediaType.from(url: url),
             duration: duration,
             fileSize: fileSize(of: url),
             dateAdded: Date(),
@@ -962,12 +890,12 @@ public struct MediaItem: Identifiable, Hashable {
     public let id = UUID()
     public let name: String
     public let url: URL
-    public let type: MediaType
+    public let type: AutoResolveUILib.MediaType
     public let duration: TimeInterval
     public let fileSize: Int64
     public let dateAdded: Date
     public let dateModified: Date
-    public var metadata = MediaMetadata()
+    public var metadata = MediaBrowserMetadata()
     
     public var thumbnailURL: URL? {
         // Generate or retrieve thumbnail URL
@@ -1020,9 +948,18 @@ public enum MediaType: String, CaseIterable {
     }
 }
 
-public struct MediaMetadata: Hashable, Equatable {
+public struct MediaBrowserMetadata: Hashable, Equatable {
     public var keywords: [String] = []
     public var description = ""
     public var rating: Int = 0
     public var colorLabel = ""
+    public var duration: TimeInterval? = nil
+    public var resolution: CGSize? = nil
+    public var frameRate: Double? = nil
+}
+
+extension MediaMetadata {
+    var resolution: CGSize {
+        CGSize(width: 1920, height: 1080) // Default
+    }
 }

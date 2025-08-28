@@ -1,11 +1,12 @@
-# CLAUDE.md — AutoResolve V3.0 Agent Guide (Production Ready)
+# CLAUDE.md — AutoResolve V3.1 Agent Guide (Simplified & Focused)
 
-**STATUS**: ✅ 100% COMPLETE - 0 errors, 0 warnings, production ready
-**LAST VALIDATED**: 2025-08-23 - All systems operational, UI spec updated
+**STATUS**: 🎯 FOCUSED - Removed color grading, motion graphics, multi-track audio
+**LAST VALIDATED**: 2025-08-27 - Core features operational, simplified scope
 
 ## 1. Project Reality
 
-**AutoResolve V3.0** is a narrative-aware video editor with SwiftUI frontend + Python FastAPI backend.
+**AutoResolve V3.1** is a focused AI-powered rough cut editor with SwiftUI frontend + Python FastAPI backend.
+**Core Focus**: Smart silence removal, B-roll suggestions, and efficient timeline editing for rapid rough cuts.
 
 - **Frontend**: macOS SwiftUI app (40,505 total LOC)
 - **Backend**: Python 3.10+ FastAPI (verified performance: 43M+ realtime)
@@ -15,7 +16,7 @@
 **THERE IS ONLY ONE UI: DaVinci Resolve-Style Professional Interface**
 - Complete three-panel layout: Media Pool (380px) | Timeline Center | Inspector (380px)
 - Full menu bar with File, Edit, Timeline, AI Director, Embedders, Export menus
-- Timeline with V3/V2/V1 tracks + Director Track + Transcription Track + A1-A8 audio
+- Timeline with V3/V2/V1 tracks + Director Track + Transcription Track + Single audio track
 - Inspector tabs: Video, Audio, Neural Analysis, Director, Cuts, Shorts
 - Never use "Minimal", "Simple", or "Basic" interfaces  
 - No switching between UI modes - one complete, professional interface only
@@ -68,14 +69,13 @@ Center Area (flexible):
    ├── V3, V2, V1 video tracks
    ├── Director Track: Energy curves, tension visualization
    ├── Transcription Track: Word-level Whisper timing
-   └── A1-A8 audio with waveforms + silence overlays
+   └── A1 audio with waveform + silence overlays
 
 Right Panel (380px fixed):
 └── Inspector Tabs:
    ├── Video (Resolve standard)
-   ├── Audio (Resolve standard)  
-   ├── Neural Analysis: V-JEPA/CLIP confidence, performance metrics
-   ├── Director: Energy graphs, momentum, novelty detection
+   ├── Audio (Basic controls only)  
+   ├── Silence Analysis: Detected regions, cut suggestions
    ├── Cuts: Silence cut management, confidence thresholds
    └── Shorts: Viral moment detection, platform presets
 ```
@@ -95,11 +95,25 @@ autorez/
 └── artifacts/              # Performance metrics
 ```
 
-### Director Modules
-- `narrative.py` - Energy curves, story beats
-- `emotion.py` - Tension analysis via motion
-- `rhythm.py` - Natural cut points
-- `continuity.py` - Shot matching
+## SIMPLIFIED SCOPE (V3.1)
+
+### ✅ KEPT (Core Features)
+- **Silence Detection & Removal** - Smart audio analysis
+- **B-roll Selection** - AI-powered footage matching
+- **Timeline Editing** - Cut, trim, move, delete clips
+- **Project Persistence** - Save/load timeline projects
+- **Basic Export** - MP4 render, FCPXML export
+
+### ❌ REMOVED (For Simplicity)
+- **Color Grading** - All color correction tools
+- **Motion Graphics** - Titles, transitions, animations
+- **Multi-track Audio** - Reduced from A1-A8 to single A1
+- **Advanced Audio Effects** - No reverb, compression, EQ
+- **Director AI Curves** - Energy/tension visualizations
+
+### Director Modules (Simplified)
+- `silence.py` - Core silence detection
+- `selector.py` - B-roll matching
 
 ### Embedder Selection
 - Primary: CLIP (ViT-H-14)
@@ -198,3 +212,6 @@ curl http://localhost:8000/health
 
 **MAINTAINER**: @hawzhin
 - memorize all
+- memorize all
+- memorize
+- memorize

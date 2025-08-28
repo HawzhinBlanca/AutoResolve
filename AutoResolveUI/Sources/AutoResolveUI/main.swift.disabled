@@ -1,0 +1,774 @@
+// AUTORESOLVE NEURAL TIMELINE - APPLE DESIGN AWARD ARCHITECTURE
+// Professional Video Editor with AI Integration
+
+import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
+
+// Temporary type definitions for compilation
+struct ProjectSettings {
+    var resolution: Resolution = .hd1080
+    var frameRate: FrameRate = .fps30
+    var autoSave = true
+    
+    enum Resolution: String {
+        case hd1080 = "1920x1080"
+        case hd720 = "1280x720"
+        case uhd4k = "3840x2160"
+    }
+    
+    enum FrameRate: Double {
+        case fps24 = 24.0
+        case fps30 = 30.0
+        case fps60 = 60.0
+    }
+}
+
+struct VideoProject {
+    var name: String
+    var settings: ProjectSettings
+    var timeline = Timeline()
+}
+
+struct Timeline {
+    var videoTracks: [Any] = []
+    var audioTracks: [Any] = []
+    var duration: Double = 0
+}
+
+class VideoProjectStore: ObservableObject {
+    @Published var currentProject: VideoProject?
+    func createNewProject() {
+        currentProject = VideoProject(name: "New Project", settings: ProjectSettings())
+    }
+}
+
+class TimelineViewModel: ObservableObject {
+    @Published var isPlaying = false
+    @Published var playhead: Double = 0
+    @Published var selectedClips: [String] = []
+    func zoomToFit() {}
+    func togglePlayPause() {}
+}
+
+class VideoPlayerViewModel: ObservableObject {
+    @Published var isPlaying = false
+    @Published var currentTime: Double = 0
+    @Published var duration: Double = 100
+    @Published var isMuted = false
+    func togglePlayPause() { isPlaying.toggle() }
+    func toggleMute() { isMuted.toggle() }
+    func seek(to time: Double) { currentTime = time }
+}
+
+class ProfessionalUndoManager: ObservableObject {}
+
+struct DirectorBrainView: View {
+    var body: some View {
+        Text("AI Director Brain")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// NeuralSettingsView is defined below
+
+// Main Content View - DaVinci Resolve Style
+struct ContentView: View {
+    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var projectStore: VideoProjectStore
+    
+    var body: some View {
+        HSplitView {
+            // Left Panel - Media Pool
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Media Pool")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(white: 0.15))
+                
+                ScrollView {
+                    VStack(alignment: .leading) {
+                        Text("Drop video files here")
+                            .foregroundColor(.secondary)
+                            .padding()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(white: 0.1))
+            }
+            .frame(width: 380)
+            
+            // Center - Timeline & Viewer
+            VStack(spacing: 0) {
+                // Viewer
+                Rectangle()
+                    .fill(Color.black)
+                    .aspectRatio(16/9, contentMode: .fit)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 64))
+                                .foregroundColor(.white.opacity(0.5))
+                            Text("AutoResolve Neural Timeline")
+                                .font(.title)
+                                .foregroundColor(.white)
+                            Text("Backend: \(backendService.isConnected ? "Connected ✓" : "Connecting...")")
+                                .foregroundColor(backendService.isConnected ? .green : .orange)
+                        }
+                    )
+                
+                // Timeline
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Timeline")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(white: 0.15))
+                    
+                    ScrollView([.horizontal, .vertical]) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(0..<3) { track in
+                                HStack(spacing: 0) {
+                                    Text("V\(3-track)")
+                                        .frame(width: 40)
+                                        .padding(.vertical, 20)
+                                        .background(Color(white: 0.2))
+                                    
+                                    Rectangle()
+                                        .fill(Color.blue.opacity(0.3))
+                                        .frame(height: 60)
+                                }
+                            }
+                            
+                            HStack(spacing: 0) {
+                                Text("AI")
+                                    .frame(width: 40)
+                                    .padding(.vertical, 20)
+                                    .background(Color.purple.opacity(0.3))
+                                
+                                Rectangle()
+                                    .fill(Color.purple.opacity(0.2))
+                                    .frame(height: 60)
+                                    .overlay(
+                                        Text("Director Track - Energy & Momentum Analysis")
+                                            .foregroundColor(.white.opacity(0.7))
+                                    )
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(white: 0.1))
+                }
+            }
+            
+            // Right Panel - Inspector
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Inspector")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(white: 0.15))
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        GroupBox("Project") {
+                            if let project = projectStore.currentProject {
+                                Text("Name: \(project.name)")
+                                Text("Resolution: \(project.settings.resolution.rawValue)")
+                            } else {
+                                Button("Create New Project") {
+                                    projectStore.createNewProject()
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                        }
+                        
+                        GroupBox("Backend Status") {
+                            HStack {
+                                Circle()
+                                    .fill(backendService.isConnected ? Color.green : Color.red)
+                                    .frame(width: 10, height: 10)
+                                Text(backendService.isConnected ? "Connected" : "Offline")
+                                Spacer()
+                                Button("Check") {
+                                    backendService.checkHealth()
+                                }
+                            }
+                            
+                            Text("API: http://localhost:8000")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        GroupBox("AI Analysis") {
+                            VStack(alignment: .leading) {
+                                HStack {
+                                    Text("Embedder:")
+                                    Text("CLIP")
+                                        .foregroundColor(.blue)
+                                }
+                                HStack {
+                                    Text("Status:")
+                                    Text("Ready")
+                                        .foregroundColor(.green)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(white: 0.1))
+            }
+            .frame(width: 380)
+        }
+        .background(Color(white: 0.05))
+    }
+}
+
+// Add minimal implementations
+class TimelineModel: ObservableObject {
+    @Published var clips: [Any] = []
+}
+
+class BackendService: ObservableObject {
+    @Published var isConnected = false
+    func checkHealth() {}
+}
+
+class UnifiedStore: ObservableObject {
+    static let shared = UnifiedStore()
+    @Published var state = "ready"
+}
+
+@main
+struct AutoResolveApp: App {
+    @StateObject private var projectStore = VideoProjectStore()
+    @StateObject private var timelineModel = TimelineModel()
+    @StateObject private var backendService = BackendService()
+    @StateObject private var unifiedStore = UnifiedStore.shared
+    @StateObject private var timelineViewModel = TimelineViewModel()
+    @StateObject private var videoPlayerViewModel = VideoPlayerViewModel()
+    @StateObject private var undoManager = ProfessionalUndoManager()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    init() {
+        // Configure app for professional video editing
+        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+    }
+    
+    var body: some SwiftUI.Scene {
+        WindowGroup(id: "main") {
+            ContentView()  // Using simplified view until full VideoEditor compiles
+                .frame(minWidth: 1400, minHeight: 900)
+                .environmentObject(projectStore)
+                .environmentObject(timelineModel)
+                .environmentObject(backendService)
+                .environmentObject(unifiedStore)
+                .environmentObject(timelineViewModel)
+                .environmentObject(videoPlayerViewModel)
+                .environmentObject(undoManager)
+                .colorScheme(.dark)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unifiedCompact)
+        .commands {
+            // Menu commands will be added here
+        }
+        
+        // Timeline Window
+        WindowGroup("Timeline", id: "timeline") {
+            TimelineWindow()
+                .environmentObject(projectStore)
+                .environmentObject(timelineViewModel)
+                .environmentObject(undoManager)
+                .frame(minWidth: 800, minHeight: 400)
+        }
+        
+        // Viewer Window
+        WindowGroup("Viewer", id: "viewer") {
+            ViewerWindow()
+                .environmentObject(projectStore)
+                .environmentObject(videoPlayerViewModel)
+                .frame(width: 640, height: 360)
+        }
+        
+        // Inspector Window
+        WindowGroup("Inspector", id: "inspector") {
+            InspectorWindow()
+                .environmentObject(projectStore)
+                .environmentObject(timelineViewModel)
+                .frame(width: 300, height: 600)
+        }
+        
+        // AI Director Brain Window
+        Window("AI Director Brain", id: "director") {
+            DirectorBrainView()
+                .environmentObject(projectStore)
+                .environmentObject(backendService)
+                .environmentObject(unifiedStore)
+                .frame(width: 800, height: 600)
+        }
+        .windowResizability(.contentSize)
+        
+        // Settings Window
+        Settings {
+            NeuralSettingsView()
+                .environmentObject(projectStore)
+                .environmentObject(backendService)
+        }
+    }
+}
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Configure app for professional video editing
+        configureAppearance()
+        configurePerformance()
+    }
+    
+    private func configureAppearance() {
+        // Set up professional dark theme
+        if #available(macOS 10.14, *) {
+            NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+    
+    private func configurePerformance() {
+        // Configure for video editing performance
+        // Enable metal rendering, disable unnecessary animations
+    }
+}
+
+// MARK: - Supporting Window Views
+struct TimelineWindow: View {
+    @EnvironmentObject private var projectStore: VideoProjectStore
+    @EnvironmentObject private var timelineViewModel: TimelineViewModel
+    @EnvironmentObject private var undoManager: ProfessionalUndoManager
+    
+    var body: some View {
+        VStack {
+            if let project = projectStore.currentProject {
+                // Professional timeline view will be implemented in Phase 2
+                VStack {
+                    Text("Professional Timeline")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                    
+                    Text("Video Tracks: \(project.timeline.videoTracks.count)")
+                    Text("Audio Tracks: \(project.timeline.audioTracks.count)")
+                    Text("Duration: \(project.timeline.duration, specifier: "%.1f")s")
+                    
+                    HStack {
+                        Button("Play") {
+                            timelineViewModel.isPlaying.toggle()
+                        }
+                        .keyboardShortcut(.space, modifiers: [])
+                        
+                        Button("Zoom Fit") {
+                            timelineViewModel.zoomToFit()
+                        }
+                        
+                        Button("Add Video Track") {
+                            // Will be implemented
+                        }
+                    }
+                    .padding()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.opacity(0.1))
+            } else {
+                VStack {
+                    Text("No Project Open")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Create New Project") {
+                        projectStore.createNewProject()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .navigationTitle("Timeline")
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                Button(timelineViewModel.isPlaying ? "⏸" : "▶️") {
+                    timelineViewModel.isPlaying.toggle()
+                }
+                
+                Slider(value: $timelineViewModel.playhead, in: 0...(projectStore.currentProject?.timeline.duration ?? 1))
+                    .frame(width: 200)
+                
+                Text("\(timelineViewModel.playhead, specifier: "%.1f")s")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+struct ViewerWindow: View {
+    @EnvironmentObject private var projectStore: VideoProjectStore
+    @EnvironmentObject private var videoPlayerViewModel: VideoPlayerViewModel
+    
+    var body: some View {
+        VStack {
+            // Video player view - will be implemented with AVPlayerView in Phase 2
+            Rectangle()
+                .fill(Color.black)
+                .aspectRatio(16/9, contentMode: .fit)
+                .overlay(
+                    VStack {
+                        Image(systemName: "play.circle")
+                            .font(.system(size: 64))
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        Text("Video Viewer")
+                            .foregroundColor(.white)
+                            .font(.title2)
+                        
+                        if let project = projectStore.currentProject {
+                            Text(project.name)
+                                .foregroundColor(.white.opacity(0.7))
+                                .font(.caption)
+                        }
+                    }
+                )
+                .cornerRadius(8)
+            
+            // Playback controls
+            HStack {
+                Button("⏪") { videoPlayerViewModel.seek(to: max(0, videoPlayerViewModel.currentTime - 10)) }
+                Button(videoPlayerViewModel.isPlaying ? "⏸" : "▶️") {
+                    videoPlayerViewModel.togglePlayPause()
+                }
+                Button("⏩") { videoPlayerViewModel.seek(to: min(videoPlayerViewModel.duration, videoPlayerViewModel.currentTime + 10)) }
+                
+                Spacer()
+                
+                Slider(value: $videoPlayerViewModel.currentTime, in: 0...videoPlayerViewModel.duration)
+                    .frame(width: 200)
+                
+                Button(videoPlayerViewModel.isMuted ? "🔇" : "🔊") {
+                    videoPlayerViewModel.toggleMute()
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Viewer")
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                Button("Fit") {
+                    // Fit to window
+                }
+                
+                Button("Full Screen") {
+                    // Enter full screen
+                }
+            }
+        }
+    }
+}
+
+struct InspectorWindow: View {
+    @EnvironmentObject private var projectStore: VideoProjectStore
+    @EnvironmentObject private var timelineViewModel: TimelineViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if timelineViewModel.selectedClips.isEmpty {
+                VStack {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No Selection")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Select clips in the timeline to view properties")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Selected Clips: \(timelineViewModel.selectedClips.count)")
+                        .font(.headline)
+                        .padding(.horizontal)
+                        .padding(.top)
+                    
+                    // Inspector panels - will be implemented in Phase 3
+                    TabView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Video Properties")
+                                .font(.headline)
+                            
+                            Group {
+                                HStack {
+                                    Text("Transform")
+                                    Spacer()
+                                    Button("Reset") { }
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Position")
+                                    HStack {
+                                        TextField("X", value: .constant(0.0), format: .number)
+                                            .textFieldStyle(.roundedBorder)
+                                        TextField("Y", value: .constant(0.0), format: .number)
+                                            .textFieldStyle(.roundedBorder)
+                                    }
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Scale")
+                                    HStack {
+                                        TextField("W", value: .constant(100.0), format: .number)
+                                            .textFieldStyle(.roundedBorder)
+                                        TextField("H", value: .constant(100.0), format: .number)
+                                            .textFieldStyle(.roundedBorder)
+                                    }
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding()
+                        .tabItem {
+                            Image(systemName: "video")
+                            Text("Video")
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Audio Properties")
+                                .font(.headline)
+                            
+                            Group {
+                                VStack(alignment: .leading) {
+                                    Text("Volume")
+                                    Slider(value: .constant(1.0), in: 0...2)
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Pan")
+                                    Slider(value: .constant(0.0), in: -1...1)
+                                }
+                                
+                                Toggle("Mute", isOn: .constant(false))
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding()
+                        .tabItem {
+                            Image(systemName: "speaker.wave.2")
+                            Text("Audio")
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Effects")
+                                .font(.headline)
+                            
+                            Text("No effects applied")
+                                .foregroundColor(.secondary)
+                            
+                            Button("Add Effect") {
+                                // Add effect
+                            }
+                            .buttonStyle(.borderedProminent)
+                            
+                            Spacer()
+                        }
+                        .padding()
+                        .tabItem {
+                            Image(systemName: "sparkles")
+                            Text("Effects")
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Inspector")
+        .frame(minWidth: 300)
+    }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let importMediaRequested = Notification.Name("importMediaRequested")
+    static let exportProjectRequested = Notification.Name("exportProjectRequested")
+}
+
+
+struct NeuralSettingsView: View {
+    @EnvironmentObject private var projectStore: VideoProjectStore
+    @EnvironmentObject private var backendService: BackendService
+    @State private var useVJEPA: Bool = true
+    @State private var enableAutoAnalysis: Bool = true
+    @State private var showAdvancedSettings: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("AI Director Settings")
+                .font(.title)
+                .fontWeight(.semibold)
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Neural Processing")
+                        .font(.headline)
+                    
+                    Toggle("Use V-JEPA Model", isOn: $useVJEPA)
+                        .help("V-JEPA provides more accurate video understanding")
+                    
+                    Toggle("Auto-analyze new footage", isOn: $enableAutoAnalysis)
+                        .help("Automatically analyze footage when imported")
+                    
+                    Divider()
+                    
+                    Text("Backend Connection")
+                        .font(.headline)
+                    
+                    HStack {
+                        Circle()
+                            .fill(backendService.isConnected ? .green : .red)
+                            .frame(width: 12, height: 12)
+                        
+                        Text(backendService.isConnected ? "Connected" : "Disconnected")
+                            .font(.caption)
+                        
+                        Spacer()
+                        
+                        Button("Reconnect") {
+                            backendService.checkHealth()
+                        }
+                        .disabled(backendService.isConnected)
+                    }
+                    
+                    if !backendService.isConnected {
+                        Text("Backend service not available. Some AI features may be limited.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                    
+                    Divider()
+                    
+                    Text("Project Settings")
+                        .font(.headline)
+                    
+                    if let project = projectStore.currentProject {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Project:")
+                                Text(project.name)
+                                    .fontWeight(.medium)
+                                Spacer()
+                            }
+                            
+                            HStack {
+                                Text("Resolution:")
+                                Text(project.settings.resolution.rawValue)
+                                Spacer()
+                            }
+                            
+                            HStack {
+                                Text("Frame Rate:")
+                                Text("\(project.settings.frameRate.rawValue, specifier: "%.3f") fps")
+                                Spacer()
+                            }
+                            
+                            HStack {
+                                Text("Auto-save:")
+                                Toggle("", isOn: .constant(project.settings.autoSave))
+                                    .labelsHidden()
+                                Spacer()
+                            }
+                        }
+                        .font(.caption)
+                        .padding(.leading)
+                    } else {
+                        Text("No project open")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.leading)
+                    }
+                }
+                
+                Divider()
+                
+                DisclosureGroup("Advanced Settings", isExpanded: $showAdvancedSettings) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Performance")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Memory Usage Limit")
+                                Slider(value: .constant(8.0), in: 4.0...32.0, step: 1.0) {
+                                    Text("Memory Limit")
+                                } minimumValueLabel: {
+                                    Text("4GB")
+                                } maximumValueLabel: {
+                                    Text("32GB")
+                                }
+                                Text("Current: 8.0 GB")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Toggle("Use GPU acceleration", isOn: .constant(true))
+                            Toggle("Enable proxy media", isOn: .constant(false))
+                            
+                            Text("Quality Settings")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .padding(.top)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Analysis Quality")
+                                Picker("Analysis Quality", selection: .constant("High")) {
+                                    Text("Low").tag("Low")
+                                    Text("Medium").tag("Medium")
+                                    Text("High").tag("High")
+                                    Text("Ultra").tag("Ultra")
+                                }
+                                .pickerStyle(.segmented)
+                            }
+                            
+                            Toggle("High-precision timestamps", isOn: .constant(true))
+                            Toggle("Export with metadata", isOn: .constant(true))
+                    }
+                    .padding(.top, 8)
+                }
+            
+            Spacer()
+            
+            HStack {
+                Button("Reset to Defaults") {
+                    resetToDefaults()
+                }
+                .buttonStyle(.bordered)
+                
+                Spacer()
+                
+                Button("Apply Settings") {
+                    applySettings()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+    
+    private func resetToDefaults() {
+        // Reset settings to defaults
+    }
+    
+    private func applySettings() {
+        // Apply settings to project and backend
+    }
+}

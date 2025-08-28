@@ -6,7 +6,7 @@ import Accelerate
 public struct SilenceDetectionView: View {
     @StateObject private var viewModel = SilenceDetectionViewModel()
     @EnvironmentObject var timeline: TimelineModel
-    @EnvironmentObject var statusMonitor: PipelineStatusMonitor
+    @EnvironmentObject var telemetry: PipelineStatusMonitor
     
     @State private var selectedSilenceRegion: SilenceRegion?
     @State private var showAdvancedSettings = false
@@ -315,15 +315,15 @@ public struct SilenceDetectionView: View {
     
     private func detectSilence() {
         isProcessing = true
-        statusMonitor.currentStatus = .detectingSilence
+        telemetry.currentStatus = .detectingSilence
         
         Task {
             await viewModel.detectSilence()
             
             await MainActor.run {
                 isProcessing = false
-                statusMonitor.currentStatus = .idle
-                statusMonitor.addMessage(.info, "Detected \(viewModel.detectedSilenceRegions.count) silence regions")
+                telemetry.currentStatus = .idle
+                telemetry.addMessage(.info, "Detected \(viewModel.detectedSilenceRegions.count) silence regions")
                 
                 if autoRemoveSilence && !viewModel.detectedSilenceRegions.isEmpty {
                     removeSelectedSilence()
@@ -336,12 +336,12 @@ public struct SilenceDetectionView: View {
         let selectedCount = viewModel.selectedRegions.count
         viewModel.removeSelectedSilenceFromTimeline(timeline: timeline)
         
-        statusMonitor.addMessage(.info, "Removed \(selectedCount) silence regions from timeline")
+        telemetry.addMessage(.info, "Removed \(selectedCount) silence regions from timeline")
     }
     
     private func applyToTimeline() {
         viewModel.applySilenceDetectionToTimeline(timeline: timeline)
-        statusMonitor.addMessage(.info, "Applied silence detection to timeline")
+        telemetry.addMessage(.info, "Applied silence detection to timeline")
     }
     
     private func previewRegion(_ region: SilenceRegion) {
@@ -357,7 +357,7 @@ public struct SilenceDetectionView: View {
         
         if panel.runModal() == .OK, let url = panel.url {
             viewModel.exportEDL(to: url)
-            statusMonitor.addMessage(.info, "Exported EDL to \(url.lastPathComponent)")
+            telemetry.addMessage(.info, "Exported EDL to \(url.lastPathComponent)")
         }
     }
     
@@ -380,7 +380,7 @@ struct SilenceWaveformView: View {
     
     @State private var hoveredRegion: SilenceRegion?
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Waveform
@@ -452,7 +452,7 @@ struct SilenceRegionOverlay: View {
     let isSelected: Bool
     let isHovered: Bool
     
-    var body: some View {
+    public var body: some View {
         let startX = CGFloat(region.startTime / totalDuration) * geometry.size.width
         let width = CGFloat(region.duration / totalDuration) * geometry.size.width
         
@@ -470,7 +470,7 @@ struct SilenceRegionOverlay: View {
 struct TimelineRulerOverlay: View {
     let duration: TimeInterval
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             VStack {
                 HStack(alignment: .top, spacing: 0) {
@@ -507,7 +507,7 @@ struct SilenceRegionRow: View {
     let onToggle: () -> Void
     let onPreview: () -> Void
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Selection Checkbox
             Button(action: onToggle) {
@@ -575,7 +575,7 @@ struct SilenceDetectionSettingsView: View {
     @ObservedObject var viewModel: SilenceDetectionViewModel
     @Environment(\.dismiss) var dismiss
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Text("Advanced Silence Detection Settings")
                 .font(.headline)

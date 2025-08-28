@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct PipelineStatusView: View {
-    @StateObject private var statusMonitor = PipelineStatusMonitor()
+    @StateObject private var telemetry = PipelineStatusMonitor()
     @State private var isExpanded = false
     @State private var selectedTab = 0
     
@@ -14,7 +14,7 @@ public struct PipelineStatusView: View {
                 // Detailed Status Panel
                 TabView(selection: $selectedTab) {
                     // Overview Tab
-                    OverviewTab(statusMonitor: statusMonitor)
+                    OverviewTab(telemetry: telemetry)
                         .tabItem {
                             Image(systemName: "chart.line.uptrend.xyaxis")
                             Text("Overview")
@@ -22,7 +22,7 @@ public struct PipelineStatusView: View {
                         .tag(0)
                     
                     // Jobs Tab
-                    JobsTab(statusMonitor: statusMonitor)
+                    JobsTab(telemetry: telemetry)
                         .tabItem {
                             Image(systemName: "list.bullet.rectangle")
                             Text("Jobs")
@@ -30,7 +30,7 @@ public struct PipelineStatusView: View {
                         .tag(1)
                     
                     // Performance Tab
-                    PerformanceTab(statusMonitor: statusMonitor)
+                    PerformanceTab(telemetry: telemetry)
                         .tabItem {
                             Image(systemName: "speedometer")
                             Text("Performance")
@@ -38,7 +38,7 @@ public struct PipelineStatusView: View {
                         .tag(2)
                     
                     // Logs Tab
-                    LogsTab(statusMonitor: statusMonitor)
+                    LogsTab(telemetry: telemetry)
                         .tabItem {
                             Image(systemName: "terminal")
                             Text("Logs")
@@ -57,15 +57,15 @@ public struct PipelineStatusView: View {
         HStack {
             // Status Indicator
             HStack(spacing: 8) {
-                StatusIndicator(status: statusMonitor.currentStatus)
+                StatusIndicator(status: telemetry.currentStatus)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(statusMonitor.currentStatus.displayName)
+                    Text(telemetry.currentStatus.displayName)
                         .font(.headline)
-                        .foregroundColor(statusMonitor.currentStatus.color)
+                        .foregroundColor(telemetry.currentStatus.color)
                     
-                    if !statusMonitor.currentOperation.isEmpty {
-                        Text(statusMonitor.currentOperation)
+                    if !telemetry.currentOperation.isEmpty {
+                        Text(telemetry.currentOperation)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -75,19 +75,19 @@ public struct PipelineStatusView: View {
             Spacer()
             
             // Progress and Stats
-            if statusMonitor.isProcessing {
+            if telemetry.isProcessing {
                 VStack(alignment: .trailing, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text("\(Int(statusMonitor.progressPercentage * 100))%")
+                        Text("\(Int(telemetry.progressPercentage * 100))%")
                             .font(.caption)
                             .monospacedDigit()
                         
-                        ProgressView(value: statusMonitor.progressPercentage)
+                        ProgressView(value: telemetry.progressPercentage)
                             .frame(width: 80)
                     }
                     
-                    if statusMonitor.estimatedTimeRemaining > 0 {
-                        Text("ETA: \(formatTimeInterval(statusMonitor.estimatedTimeRemaining))")
+                    if telemetry.estimatedTimeRemaining > 0 {
+                        Text("ETA: \(formatTimeInterval(telemetry.estimatedTimeRemaining))")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -95,13 +95,13 @@ public struct PipelineStatusView: View {
             }
             
             // Active Jobs Badge
-            if statusMonitor.activeJobCount > 0 {
-                StatusBadge(count: statusMonitor.activeJobCount, color: .blue)
+            if telemetry.activeJobCount > 0 {
+                StatusBadge(count: telemetry.activeJobCount, color: .blue)
             }
             
             // Error Badge
-            if statusMonitor.hasErrors {
-                StatusBadge(count: statusMonitor.errorMessages.count, color: .red)
+            if telemetry.hasErrors {
+                StatusBadge(count: telemetry.errorMessages.count, color: .red)
             }
             
             // Expand/Collapse Button
@@ -124,7 +124,7 @@ public struct PipelineStatusView: View {
 // MARK: - Tab Views
 
 private struct OverviewTab: View {
-    @ObservedObject var statusMonitor: PipelineStatusMonitor
+    @ObservedObject var telemetry: PipelineStatusMonitor
     
     var body: some View {
         ScrollView {
@@ -136,15 +136,15 @@ private struct OverviewTab: View {
                 // Current Status Card
                 StatusCard(
                     title: "Current Status",
-                    value: statusMonitor.currentStatus.displayName,
-                    color: statusMonitor.currentStatus.color,
+                    value: telemetry.currentStatus.displayName,
+                    color: telemetry.currentStatus.color,
                     icon: "play.circle"
                 )
                 
                 // Progress Card
                 StatusCard(
                     title: "Progress",
-                    value: "\(Int(statusMonitor.progressPercentage * 100))%",
+                    value: "\(Int(telemetry.progressPercentage * 100))%",
                     color: .blue,
                     icon: "chart.line.uptrend.xyaxis"
                 )
@@ -152,7 +152,7 @@ private struct OverviewTab: View {
                 // Active Jobs Card
                 StatusCard(
                     title: "Active Jobs",
-                    value: "\(statusMonitor.activeJobCount)",
+                    value: "\(telemetry.activeJobCount)",
                     color: .green,
                     icon: "gearshape.2"
                 )
@@ -160,15 +160,15 @@ private struct OverviewTab: View {
                 // Memory Usage Card
                 StatusCard(
                     title: "Memory",
-                    value: "\(Int(statusMonitor.performanceMetrics.memoryUsedMB)) MB",
-                    color: statusMonitor.performanceMetrics.memoryUsagePercent > 80 ? .red : .orange,
+                    value: "\(Int(telemetry.performanceMetrics.memoryUsedMB)) MB",
+                    color: telemetry.performanceMetrics.memoryUsagePercent > 80 ? .red : .orange,
                     icon: "memorychip"
                 )
                 
                 // Throughput Card
                 StatusCard(
                     title: "Throughput",
-                    value: "\(String(format: "%.1f", statusMonitor.throughputMBps)) MB/s",
+                    value: "\(String(format: "%.1f", telemetry.throughputMBps)) MB/s",
                     color: .purple,
                     icon: "speedometer"
                 )
@@ -176,7 +176,7 @@ private struct OverviewTab: View {
                 // Completed Jobs Card
                 StatusCard(
                     title: "Completed",
-                    value: "\(statusMonitor.totalJobsCompleted)",
+                    value: "\(telemetry.totalJobsCompleted)",
                     color: .green,
                     icon: "checkmark.circle"
                 )
@@ -187,9 +187,9 @@ private struct OverviewTab: View {
 }
 
 private struct JobsTab: View {
-    @ObservedObject var statusMonitor: PipelineStatusMonitor
+    @ObservedObject var telemetry: PipelineStatusMonitor
     
-    var body: some View {
+    public var body: some View {
         VStack {
             // Jobs Header
             HStack {
@@ -199,14 +199,14 @@ private struct JobsTab: View {
                 Spacer()
                 
                 Button("Clear Completed") {
-                    statusMonitor.clearCompletedJobs()
+                    telemetry.clearCompletedJobs()
                 }
-                .disabled(statusMonitor.totalJobsCompleted == 0)
+                .disabled(telemetry.totalJobsCompleted == 0)
             }
             .padding(.horizontal)
             
             // Jobs List
-            if statusMonitor.activeJobs.isEmpty {
+            if telemetry.activeJobs.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "tray")
                         .font(.system(size: 48))
@@ -216,7 +216,7 @@ private struct JobsTab: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(statusMonitor.activeJobs) { job in
+                List(telemetry.activeJobs) { job in
                     JobRowView(job: job)
                 }
                 .listStyle(PlainListStyle())
@@ -226,7 +226,7 @@ private struct JobsTab: View {
 }
 
 private struct PerformanceTab: View {
-    @ObservedObject var statusMonitor: PipelineStatusMonitor
+    @ObservedObject var telemetry: PipelineStatusMonitor
     
     var body: some View {
         ScrollView {
@@ -235,15 +235,15 @@ private struct PerformanceTab: View {
                 HStack(spacing: 16) {
                     PerformanceChart(
                         title: "Memory Usage",
-                        value: statusMonitor.performanceMetrics.memoryUsagePercent,
-                        color: statusMonitor.performanceMetrics.memoryUsagePercent > 80 ? .red : .blue,
+                        value: telemetry.performanceMetrics.memoryUsagePercent,
+                        color: telemetry.performanceMetrics.memoryUsagePercent > 80 ? .red : .blue,
                         unit: "%"
                     )
                     
                     PerformanceChart(
                         title: "CPU Usage",
-                        value: statusMonitor.performanceMetrics.cpuUsagePercent,
-                        color: statusMonitor.performanceMetrics.cpuUsagePercent > 80 ? .red : .green,
+                        value: telemetry.performanceMetrics.cpuUsagePercent,
+                        color: telemetry.performanceMetrics.cpuUsagePercent > 80 ? .red : .green,
                         unit: "%"
                     )
                 }
@@ -252,19 +252,19 @@ private struct PerformanceTab: View {
                 HStack(spacing: 16) {
                     MetricView(
                         title: "Disk Read",
-                        value: "\(String(format: "%.1f", statusMonitor.performanceMetrics.diskReadMBps)) MB/s",
+                        value: "\(String(format: "%.1f", telemetry.performanceMetrics.diskReadMBps)) MB/s",
                         icon: "internaldrive"
                     )
                     
                     MetricView(
                         title: "Disk Write",
-                        value: "\(String(format: "%.1f", statusMonitor.performanceMetrics.diskWriteMBps)) MB/s",
+                        value: "\(String(format: "%.1f", telemetry.performanceMetrics.diskWriteMBps)) MB/s",
                         icon: "externaldrive"
                     )
                     
                     MetricView(
                         title: "Frames/sec",
-                        value: "\(String(format: "%.0f", statusMonitor.performanceMetrics.framesProcessedPerSecond))",
+                        value: "\(String(format: "%.0f", telemetry.performanceMetrics.framesProcessedPerSecond))",
                         icon: "play.rectangle"
                     )
                 }
@@ -275,10 +275,10 @@ private struct PerformanceTab: View {
 }
 
 private struct LogsTab: View {
-    @ObservedObject var statusMonitor: PipelineStatusMonitor
+    @ObservedObject var telemetry: PipelineStatusMonitor
     @State private var selectedLogLevel: PipelineStatusMonitor.StatusMessage.LogLevel = .info
     
-    var body: some View {
+    public var body: some View {
         VStack {
             // Log Level Filter
             HStack {
@@ -296,7 +296,7 @@ private struct LogsTab: View {
                 Spacer()
                 
                 Button("Clear") {
-                    statusMonitor.recentMessages.removeAll()
+                    telemetry.recentMessages.removeAll()
                 }
             }
             .padding(.horizontal)
@@ -309,8 +309,8 @@ private struct LogsTab: View {
                     }
                 }
                 .listStyle(PlainListStyle())
-                .onChange(of: statusMonitor.recentMessages.count) { _, _ in
-                    if let lastMessage = statusMonitor.recentMessages.last {
+                .onChange(of: telemetry.recentMessages.count) { _, _ in
+                    if let lastMessage = telemetry.recentMessages.last {
                         proxy.scrollTo(lastMessage.id)
                     }
                 }
@@ -319,7 +319,7 @@ private struct LogsTab: View {
     }
     
     private var filteredMessages: [PipelineStatusMonitor.StatusMessage] {
-        statusMonitor.recentMessages.filter { message in
+        telemetry.recentMessages.filter { message in
             switch selectedLogLevel {
             case .debug:
                 return true
@@ -339,7 +339,7 @@ private struct LogsTab: View {
 private struct StatusIndicator: View {
     let status: PipelineStatusMonitor.PipelineStatus
     
-    var body: some View {
+    public var body: some View {
         Circle()
             .fill(status.color)
             .frame(width: 12, height: 12)
@@ -356,7 +356,7 @@ private struct StatusBadge: View {
     let count: Int
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         Text("\(count)")
             .font(.caption2)
             .fontWeight(.bold)
@@ -374,7 +374,7 @@ private struct StatusCard: View {
     let color: Color
     let icon: String
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             HStack {
                 Image(systemName: icon)
@@ -404,7 +404,7 @@ private struct StatusCard: View {
 private struct JobRowView: View {
     let job: PipelineStatusMonitor.ProcessingJob
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(job.jobType)
@@ -455,7 +455,7 @@ private struct PerformanceChart: View {
     let color: Color
     let unit: String
     
-    var body: some View {
+    public var body: some View {
         VStack {
             Text(title)
                 .font(.caption)
@@ -488,7 +488,7 @@ private struct MetricView: View {
     let value: String
     let icon: String
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title2)
@@ -512,7 +512,7 @@ private struct MetricView: View {
 private struct LogMessageRow: View {
     let message: PipelineStatusMonitor.StatusMessage
     
-    var body: some View {
+    public var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Circle()
                 .fill(message.level.color)
@@ -544,12 +544,6 @@ private struct LogMessageRow: View {
 
 // MARK: - Utilities
 
-private func formatTimeInterval(_ interval: TimeInterval) -> String {
-    let formatter = DateComponentsFormatter()
-    formatter.allowedUnits = [.hour, .minute, .second]
-    formatter.unitsStyle = .abbreviated
-    return formatter.string(from: interval) ?? "0s"
-}
 
 private extension DateFormatter {
     static let timeOnlyFormatter: DateFormatter = {

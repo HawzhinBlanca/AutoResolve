@@ -1,3 +1,20 @@
+import json, os, time
+
+def _read_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+def test_schema_cuts_transcript_exist():
+    # Validate existence and basic schema keys
+    assert os.path.exists('artifacts/cuts.json'), 'Missing artifacts/cuts.json'
+    cuts = _read_json('artifacts/cuts.json')
+    assert 'keep_windows' in cuts and isinstance(cuts['keep_windows'], list)
+    assert 'params' in cuts
+
+    assert os.path.exists('artifacts/transcript.json'), 'Missing artifacts/transcript.json'
+    tr = _read_json('artifacts/transcript.json')
+    assert 'language' in tr and 'segments' in tr and 'meta' in tr
+
 """
 End-to-End Compliance Test for AutoResolve v3.0
 Complete workflow validation ensuring 100% blueprint compliance

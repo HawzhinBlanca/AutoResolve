@@ -1,0 +1,20 @@
+{
+  "ffmpeg": {
+    "regions_found": 0,
+    "processing_time_s": 1.7376821041107178
+  },
+  "custom_rms": {
+    "silence_regions": [],
+    "total_silence_s": 0,
+    "total_duration_s": 1800.034125,
+    "silence_percentage": 0.0,
+    "num_silence_regions": 0
+  },
+  "false_cut_analysis": {
+    "total_segments": 1,
+    "false_cuts": 0,
+    "false_cut_rate": 0.0,
+    "passes_gate": true
+  },
+  "passed": true
+}

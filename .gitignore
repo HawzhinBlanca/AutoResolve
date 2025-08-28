@@ -1,77 +1,81 @@
 # Build artifacts
-.build/
-DerivedData/
-build/
-dist/
-*.egg-info/
-
-# Python
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv*/
-ENV/
-.pytest_cache/
-.coverage
-.mypy_cache/
-.ruff_cache/
-
-# Swift
-.swiftpm/
 .build/
-Package.resolved
-*.xcodeproj/
-*.xcworkspace/
-xcuserdata/
-
-# System
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-.idea/
-.vscode/
-
-# Logs
+.swiftpm/
 *.log
-logs/
 
-# Environment
+# Virtual environments
+venv/
+.venv/
+*-venv/
+env/
+.env/
+
+# Cache
+artifacts/cache/
+artifacts/*.json
+!artifacts/VERSIONS.json
+*.npz
+
+# Temporary
+temp/
+*.tmp
+.DS_Store
+*.swp
+*~
+
+# Exports (keep locally, don't commit)
+exports/
+proof_pack/
+autoresolve_output/
+*.edl
+*.fcpxml
+
+# Config with secrets
 .env
-.env.*
-!.env.example
+*_api_key*
+secrets/
 
-# Models (large files)
-models/*.bin
-models/*.pth
-models/*.onnx
-*.weights
+# IDE
+.vscode/
+.idea/
+*.xcworkspace/
+*.xcuserdata/
 
-# Media
+# Test outputs
+test-logs/
+test_output/
+*_test_output/
+
+# Backups
+*.backup
+*.bak
+*_old.*
+backup/
+
+# Documentation archives
+docs/archive/
+
+# Media files (too large for git)
 *.mp4
 *.mov
 *.avi
-test_video_*.mp4
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.flac
+assets/pilots/*.mp4
+assets/videos/
 
-# Generated caches and artifacts
-artifacts/
-autorez/artifacts/
+# Models (download separately)
+models/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
 
-# Virtual environments
-.autopsy-venv/
-autorez/venv/
-
-# Local media datasets
-autorez/assets/pilots/
-
-# Temporary
-tmp/
-temp/
-.tmp/
-
-# Application Support
-~/Library/Application Support/AutoResolve/models/*
-~/Library/Caches/AutoResolve/*
+# Debug
+.gdb_history
+core

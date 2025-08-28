@@ -10,7 +10,7 @@ public class PipelineIntegrationManager: ObservableObject {
     // Core dependencies
     @Published public var autoResolveService: AutoResolveService
     @Published public var timeline: TimelineModel
-    @Published internal var project: VideoProject
+    @Published internal var project: VideoProjectStore
     
     // Pipeline state
     @Published public var isProcessingVideo = false
@@ -28,16 +28,16 @@ public class PipelineIntegrationManager: ObservableObject {
     
     // Status and monitoring
     @Published public var systemStatus: SystemStatus?
-    @Published public var performanceMetrics = PipelinePerformanceMetrics()
+    @Published public var performanceMetrics = LocalPipelinePerformanceMetrics()
     @Published public var processingHistory: [ProcessingHistoryItem] = []
     
-    private let logger = Logger(subsystem: "com.autoresolve", category: "pipeline")
+    private let logger = Logger.shared
     private var cancellables = Set<AnyCancellable>()
     
     internal init(
         autoResolveService: AutoResolveService,
         timeline: TimelineModel,
-        project: VideoProject
+        project: VideoProjectStore
     ) {
         self.autoResolveService = autoResolveService
         self.timeline = timeline
@@ -54,7 +54,7 @@ public class PipelineIntegrationManager: ObservableObject {
         outputDirectory: String
     ) async throws -> ProcessingResult {
         
-        logger.info("Starting full AutoResolve pipeline for: \(inputVideoPath)")
+        logger.info("Starting full AutoResolve pipeline for: \(inputVideoPath)", category: .pipeline)
         
         isProcessingVideo = true
         processingProgress = 0
@@ -98,8 +98,17 @@ public class PipelineIntegrationManager: ObservableObject {
                     videoPath: inputVideoPath,
                     cuts: generatedCuts
                 )
-                brollSelections = brollResult.selections
-                await applyBRollSelections(brollResult.selections)
+                // Convert BackendBRollSelection to BRollSelection
+                let convertedSelections = brollResult.selections.map { backend in
+                    BRollSelection(
+                        cutIndex: backend.cutIndex,
+                        timeRange: backend.timeRange,
+                        brollClipPath: backend.brollClipPath,
+                        confidence: backend.confidence
+                    )
+                }
+                brollSelections = convertedSelections
+                await applyBRollSelections(convertedSelections)
                 
                 processingProgress = 0.75
             }
@@ -139,11 +148,11 @@ public class PipelineIntegrationManager: ObservableObject {
             lastProcessingResult = result
             updateProcessingHistory(result, inputPath: inputVideoPath)
             
-            logger.info("Pipeline completed in \(processingTime) seconds")
+            logger.info("Pipeline completed in \(processingTime) seconds", category: .pipeline)
             return result
             
         } catch {
-            logger.error("Pipeline failed: \(error)")
+            logger.error("Pipeline failed: \(error)", category: .pipeline)
             processingStatus = "Processing failed: \(error.localizedDescription)"
             
             let failedResult = ProcessingResult(
@@ -167,9 +176,9 @@ public class PipelineIntegrationManager: ObservableObject {
     // MARK: - Individual Pipeline Steps
     
     public func detectSilenceInVideo(_ videoPath: String) async throws -> SilenceDetectionResult {
-        logger.info("Detecting silence in video: \(videoPath)")
+        logger.info("Detecting silence in video: \(videoPath)", category: .pipeline)
         
-        let settings = SilenceDetectionSettings(
+        let settings = BackendSilenceDetectionSettings(
             threshold: pipelineSettings.silenceThreshold,
             minDuration: pipelineSettings.minSilenceDuration,
             padding: pipelineSettings.silencePadding
@@ -185,18 +194,20 @@ public class PipelineIntegrationManager: ObservableObject {
         videoPath: String,
         cuts: [TimeRange]
     ) async throws -> BRollSelectionResult {
-        logger.info("Selecting B-roll for \(cuts.count) cuts")
+        logger.info("Selecting B-roll for \(cuts.count) cuts", category: .pipeline)
         
-        let settings = BRollSettings(
+        let backendCuts = cuts.map { BackendTimeRange(start: $0.start, end: $0.end) }
+        
+        let settings = BackendBRollSettings(
             brollDirectory: pipelineSettings.brollDirectory,
             maxResults: pipelineSettings.maxBRollResults,
-            confidenceThreshold: pipelineSettings.brollConfidenceThreshold,
+            confidenceThreshold: 0.7,
             enableVJEPA: pipelineSettings.enableVJEPA
         )
         
         return try await autoResolveService.selectBRoll(
             videoPath: videoPath,
-            cuts: cuts,
+            cuts: backendCuts,
             settings: settings
         )
     }
@@ -206,28 +217,38 @@ public class PipelineIntegrationManager: ObservableObject {
         cuts: [TimeRange],
         brollSelections: [BRollSelection]? = nil
     ) async throws -> ResolveProjectResult {
-        logger.info("Creating DaVinci Resolve project")
+        logger.info("Creating DaVinci Resolve project", category: .pipeline)
         
         let timelineName = generateTimelineName(for: inputVideoPath)
+        let backendCuts = cuts.map { BackendTimeRange(start: $0.start, end: $0.end) }
+        let backendBRoll = brollSelections?.map { 
+            BackendBRollSelection(
+                cutIndex: $0.cutIndex,
+                timeRange: $0.timeRange,
+                brollPath: $0.brollClipPath,
+                confidence: $0.confidence,
+                reason: "Selected B-roll"
+            )
+        }
         
         return try await autoResolveService.createResolveProject(
             timelineName: timelineName,
             videoPath: inputVideoPath,
-            cuts: cuts,
-            brollSelections: brollSelections
+            cuts: backendCuts,
+            brollSelections: backendBRoll
         )
     }
     
     // MARK: - Timeline Integration
     
     private func applyCutsToTimeline(_ cuts: [TimeRange], videoPath: String) async {
-        logger.info("Applying \(cuts.count) cuts to timeline")
+        logger.info("Applying \(cuts.count) cuts to timeline", category: .pipeline)
         
         // Clear existing clips
         timeline.tracks.removeAll()
         
         // Create video track
-        var videoTrack = TimelineTrack(
+        var videoTrack = UITimelineTrack(
             name: "V1",
             type: .video
         )
@@ -241,16 +262,14 @@ public class PipelineIntegrationManager: ObservableObject {
             let clipName = "Segment \(index + 1)"
             let duration = cut.duration
             
-            var clip = TimelineClip(
+            let clip = SimpleTimelineClip(id: UUID(), 
                 name: clipName,
                 trackIndex: 0,
                 startTime: currentTime,
-                duration: duration
+                duration: duration,
+                sourceURL: URL(fileURLWithPath: videoPath),
+                inPoint: cut.start
             )
-            
-            clip.sourceURL = URL(fileURLWithPath: videoPath)
-            clip.inPoint = cut.start
-            clip.outPoint = cut.end
             
             // Add to track
             var updatedTrack = videoTrack
@@ -266,38 +285,35 @@ public class PipelineIntegrationManager: ObservableObject {
     }
     
     private func applyBRollSelections(_ selections: [BRollSelection]) async {
-        logger.info("Applying \(selections.count) B-roll selections")
+        logger.info("Applying \(selections.count) B-roll selections", category: .pipeline)
         
         // Create or get B-roll track
-        var brollTrack: TimelineTrack
+        var brollTrack: UITimelineTrack
         if timeline.tracks.count > 1 {
             brollTrack = timeline.tracks[1]
         } else {
-            var track = TimelineTrack(
+            brollTrack = UITimelineTrack(
                 name: "B-roll",
                 type: .video
             )
-            track.height = 60
-            track.isEnabled = true
-            brollTrack = track
+            brollTrack.height = 60
+            brollTrack.isEnabled = true
             timeline.tracks.append(brollTrack)
         }
         
         // Add B-roll clips
         for selection in selections {
-            let brollClip = TimelineClip(
+            let brollClip = SimpleTimelineClip(id: UUID(), 
                 name: "B-roll \(selection.cutIndex + 1)",
                 trackIndex: 1,
                 startTime: selection.timeRange.start,
-                duration: selection.timeRange.duration
+                duration: selection.timeRange.duration,
+                sourceURL: URL(fileURLWithPath: selection.brollClipPath),
+                inPoint: 0
             )
             
-            // Set source URL for B-roll
-            if let brollURL = URL(string: selection.brollPath) {
-                var clip = brollClip
-                clip.sourceURL = brollURL
-                brollTrack.clips.append(clip)
-            }
+            // Add B-roll clip to track
+            brollTrack.clips.append(brollClip)
         }
         
         // Update timeline
@@ -317,11 +333,11 @@ public class PipelineIntegrationManager: ObservableObject {
                 
                 await MainActor.run {
                     self.availableBRollClips = brollClips
-                    logger.info("Loaded \(brollClips.count) B-roll clips")
+                    logger.info("Loaded \(brollClips.count) B-roll clips", category: .media)
                 }
                 
             } catch {
-                logger.error("Failed to load B-roll library: \(error)")
+                logger.error("Failed to load B-roll library: \(error)", category: .media)
             }
         }
     }
@@ -329,33 +345,42 @@ public class PipelineIntegrationManager: ObservableObject {
     public func addBRollClip(_ url: URL) async throws {
         let brollClip = try await createBRollClip(from: url)
         availableBRollClips.append(brollClip)
-        logger.info("Added B-roll clip: \(url.lastPathComponent)")
+        logger.info("Added B-roll clip: \(url.lastPathComponent)", category: .media)
     }
     
     public func removeBRollClip(_ clipId: UUID) {
         availableBRollClips.removeAll { $0.id == clipId }
-        logger.info("Removed B-roll clip")
+        logger.info("Removed B-roll clip", category: .media)
     }
     
     // MARK: - Settings and Configuration
     
     public func updatePipelineSettings(_ newSettings: PipelineSettings) {
         pipelineSettings = newSettings
-        logger.info("Updated pipeline settings")
+        logger.info("Updated pipeline settings", category: .pipeline)
     }
     
     public func resetToDefaults() {
         pipelineSettings = PipelineSettings()
-        logger.info("Reset pipeline settings to defaults")
+        logger.info("Reset pipeline settings to defaults", category: .pipeline)
     }
     
     // MARK: - Status and Monitoring
     
     public func refreshSystemStatus() async {
         do {
-            systemStatus = try await autoResolveService.getSystemStatus()
+            let backendStatus = try await autoResolveService.getSystemStatus()
+            systemStatus = SystemStatus(
+                status: backendStatus.status,
+                version: backendStatus.version,
+                uptime: backendStatus.uptime,
+                memoryUsage: backendStatus.memoryUsage,
+                gpuInfo: backendStatus.gpuInfo,
+                diskSpace: backendStatus.diskSpace,
+                activeOperations: backendStatus.activeOperations
+            )
         } catch {
-            logger.error("Failed to refresh system status: \(error)")
+            logger.error("Failed to refresh system status: \(error)", category: .pipeline)
         }
     }
     
@@ -363,16 +388,15 @@ public class PipelineIntegrationManager: ObservableObject {
         do {
             let telemetry = try await autoResolveService.getTelemetryData()
             
-            performanceMetrics = PipelinePerformanceMetrics(
-                averageProcessingSpeed: telemetry.averageProcessingSpeed,
-                totalVideosProcessed: telemetry.totalVideosProcessed,
-                successRate: telemetry.successRate,
-                memoryEfficiency: telemetry.performanceMetrics.memoryEfficiency,
-                lastUpdateTime: Date()
-            )
+            performanceMetrics = LocalPipelinePerformanceMetrics()
+            performanceMetrics.averageProcessingSpeed = telemetry.averageProcessingSpeed
+            performanceMetrics.totalVideosProcessed = telemetry.totalVideosProcessed
+            performanceMetrics.successRate = telemetry.successRate
+            performanceMetrics.memoryEfficiency = telemetry.performanceMetrics.memoryEfficiency
+            performanceMetrics.lastUpdateTime = Date()
             
         } catch {
-            logger.error("Failed to update performance metrics: \(error)")
+            logger.error("Failed to update performance metrics: \(error)", category: .performance)
         }
     }
     
@@ -407,12 +431,12 @@ public class PipelineIntegrationManager: ObservableObject {
         let url = URL(fileURLWithPath: path)
         
         guard FileManager.default.fileExists(atPath: path) else {
-            throw AutoResolveError.fileNotFound("Input file not found: \(path)")
+            throw AutoResolveServiceError.fileNotFound("Input file not found: \(path)")
         }
         
         let asset = AVAsset(url: url)
         guard asset.isReadable else {
-            throw AutoResolveError.processingError("Cannot read input file: \(path)")
+            throw AutoResolveServiceError.processingError("Cannot read input file: \(path)")
         }
     }
     
@@ -421,7 +445,7 @@ public class PipelineIntegrationManager: ObservableObject {
         var cuts: [TimeRange] = []
         var lastEndTime: Double = 0
         
-        for silence in silenceSegments.sorted(by: { $0.start < $1.start }) {
+        for silence in silenceSegments.sorted { (a, b) in a.start < b.start } {
             if silence.start > lastEndTime {
                 cuts.append(TimeRange(start: lastEndTime, end: silence.start))
             }
@@ -446,7 +470,7 @@ public class PipelineIntegrationManager: ObservableObject {
         let directoryURL = URL(fileURLWithPath: directory)
         
         guard FileManager.default.fileExists(atPath: directory) else {
-            logger.warning("B-roll directory does not exist: \(directory)")
+            logger.warning("B-roll directory does not exist: \(directory)", category: .media)
             return []
         }
         
@@ -458,7 +482,7 @@ public class PipelineIntegrationManager: ObservableObject {
             includingPropertiesForKeys: resourceKeys,
             options: [.skipsHiddenFiles]
         ) else {
-            throw AutoResolveError.processingError("Cannot enumerate B-roll directory")
+            throw AutoResolveServiceError.pipelineError("Cannot enumerate B-roll directory")
         }
         
         var brollClips: [BRollClip] = []
@@ -507,23 +531,19 @@ public class PipelineIntegrationManager: ObservableObject {
         let processingTime = endTime.timeIntervalSince(startTime)
         
         return ProcessingTelemetry(
-            startTime: startTime,
-            endTime: endTime,
-            peakMemoryMB: Double(systemStatus?.memoryUsage.used ?? 0) / 1_000_000,
-            rtfSpeed: timeline.duration > 0 ? processingTime / timeline.duration : 1.0,
-            operations: [
-                "silence_detection",
-                pipelineSettings.enableBRollSelection ? "broll_selection" : nil,
-                pipelineSettings.createResolveProject ? "resolve_export" : nil
-            ].compactMap { $0 }
+            processingTime: processingTime,
+            realtimeFactor: timeline.duration > 0 ? processingTime / timeline.duration : 1.0,
+            memoryUsed: Double(systemStatus?.memoryUsage.used ?? 0) / 1_000_000,
+            cpuUsage: 0.5 // Default CPU usage estimate
         )
     }
     
     private func updateProcessingHistory(_ result: ProcessingResult, inputPath: String) {
         let historyItem = ProcessingHistoryItem(
-            inputPath: inputPath,
-            result: result,
-            timestamp: Date()
+            date: Date(),
+            status: result.success ? "Completed" : "Failed",
+            processingTime: result.processingTime,
+            videoName: URL(fileURLWithPath: inputPath).lastPathComponent
         )
         
         processingHistory.insert(historyItem, at: 0)
@@ -541,7 +561,7 @@ public class PipelineIntegrationManager: ObservableObject {
             return
         }
         
-        logger.info("Triggering auto-processing for timeline changes")
+        logger.info("Triggering auto-processing for timeline changes", category: .pipeline)
         
         do {
             _ = try await processFullPipeline(
@@ -549,7 +569,7 @@ public class PipelineIntegrationManager: ObservableObject {
                 outputDirectory: FileManager.default.temporaryDirectory.path
             )
         } catch {
-            logger.error("Auto-processing failed: \(error)")
+            logger.error("Auto-processing failed: \(error)", category: .pipeline)
         }
     }
 }
@@ -588,7 +608,7 @@ public struct PipelineBRollSuggestion: Identifiable {
     public let reason: String
 }
 
-public struct PipelinePerformanceMetrics {
+public struct LocalPipelinePerformanceMetrics {
     public var averageProcessingSpeed: Double = 0
     public var totalVideosProcessed: Int = 0
     public var successRate: Double = 1.0
@@ -596,12 +616,7 @@ public struct PipelinePerformanceMetrics {
     public var lastUpdateTime: Date = Date()
 }
 
-public struct ProcessingHistoryItem: Identifiable {
-    public let id = UUID()
-    public let inputPath: String
-    public let result: ProcessingResult
-    public let timestamp: Date
-}
+// ProcessingHistoryItem is defined in BackendTypes.swift to avoid duplication
 
 // MARK: - Pipeline Status Extensions
 
@@ -631,7 +646,7 @@ extension PipelineIntegrationManager {
         }
         
         if result.success {
-            let rtf = result.processingTime / (result.telemetry?.rtfSpeed ?? 1.0)
+            let rtf = result.telemetry?.realtimeFactor ?? 1.0
             return "Last: \(String(format: "%.1fx", rtf)) RTF, \(result.silenceSegments?.count ?? 0) cuts"
         } else {
             return "Last: Failed - \(result.message)"

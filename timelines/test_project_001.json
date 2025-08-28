@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "project_name": "test_project_001",
+  "saved_at": "2025-08-27T23:07:16.935812",
+  "clips": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "Clip 1",
+      "trackIndex": 0,
+      "startTime": 0,
+      "duration": 10.5,
+      "sourceURL": "/Users/hawzhin/Videos/test.mp4"
+    },
+    {
+      "id": "223e4567-e89b-12d3-a456-426614174001",
+      "name": "Clip 2",
+      "trackIndex": 0,
+      "startTime": 10.5,
+      "duration": 15.0,
+      "sourceURL": "/Users/hawzhin/Videos/test2.mp4"
+    }
+  ],
+  "metadata": {
+    "creator": "AutoResolve",
+    "created": "2025-08-27"
+  },
+  "settings": {}
+}

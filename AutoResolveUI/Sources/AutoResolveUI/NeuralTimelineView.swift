@@ -14,7 +14,7 @@ import Combine
 enum NavigationItem: String, CaseIterable, Identifiable {
     case importMedia, timeline, director, transcription
     
-    var id: String { rawValue }
+    public var id: String { rawValue }
     
     var label: String {
         switch self {
@@ -37,14 +37,14 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
 // MARK: - PRIMARY INTERFACE - NEURAL TIMELINE
 struct NeuralTimelineView: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var timelineScale: CGFloat = 100
     @State private var inspectorWidth: CGFloat = 340
     @State private var sidebarSelection: NavigationItem? = .timeline
     @State private var isProcessing = false
     @Namespace private var animation
     
-    var body: some View {
+    public var body: some View {
         NavigationSplitView(
             columnVisibility: .constant(.all),
             preferredCompactColumn: .constant(.sidebar)
@@ -97,11 +97,11 @@ struct NeuralTimelineView: View {
 // MARK: - INTELLIGENT SIDEBAR
 struct IntelligentSidebar: View {
     @Binding var selection: NavigationItem?
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var searchText = ""
     @State private var isHovering = false
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // NEURAL SEARCH
             HStack {
@@ -149,7 +149,7 @@ struct IntelligentSidebar: View {
             
             // STORY BEATS
             Section("Story Structure") {
-                StoryBeatsVisualizer(beats: store.director.beats)
+                StoryBeatsVisualizer(beats: store.directorBeats)
                     .frame(height: 120)
                     .padding(.horizontal)
             }
@@ -175,13 +175,13 @@ struct IntelligentSidebar: View {
 // MARK: - TIMELINE CANVAS - CORE INNOVATION
 struct TimelineCanvas: View {
     @Binding var scale: CGFloat
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var selection = Set<ClipID>()
     @State private var currentTime: TimeInterval = 0
     @State private var isDragging = false
     @GestureState private var magnification: CGFloat = 1.0
     
-    var body: some View {
+    public var body: some View {
         ScrollViewReader { proxy in
             ScrollView([.horizontal, .vertical]) {
                 ZStack(alignment: .topLeading) {
@@ -199,7 +199,7 @@ struct TimelineCanvas: View {
                     
                     // DIRECTOR ANNOTATIONS LAYER
                     DirectorAnnotationsLayer(
-                        beats: store.director.beats,
+                        beats: store.directorBeats,
                         emphasis: store.director.emphasis,
                         height: 40,
                         offset: CGPoint(x: 0, y: 60)
@@ -259,11 +259,11 @@ struct TimelineCanvas: View {
 
 // MARK: - DIRECTOR'S BRAIN VIEW
 struct DirectorBrainView: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var selectedInsight: DirectorInsight?
     @State private var visualizationMode: VisualizationMode = .energy
     
-    var body: some View {
+    public var body: some View {
         HSplitView {
             // INSIGHTS LIST
             insightsList
@@ -286,7 +286,7 @@ struct DirectorBrainView: View {
     
     private var narrativeSection: some View {
         Section("Narrative Structure") {
-            ForEach(store.director.beats.all) { beat in
+            ForEach(store.directorBeats.all, id: \.timestamp) { beat in
                 beatRow(beat)
             }
         }
@@ -320,7 +320,7 @@ struct DirectorBrainView: View {
                 .frame(width: 8)
             
             VStack(alignment: .leading) {
-                Text(beat.type.label)
+                Text(String(describing: beat.type))
                     .font(.headline)
                 Text("Time Range")
                     .font(.caption)
@@ -390,7 +390,7 @@ struct DirectorBrainView: View {
             case .energy:
                 EnergyVisualization(
                     data: store.director.energyCurve,
-                    beats: store.director.beats,
+                    beats: store.directorBeats,
                     size: size
                 )
             case .motion:
@@ -423,10 +423,10 @@ struct DirectorBrainView: View {
 
 // MARK: - NEURAL TOOLBAR
 struct NeuralToolbar: ToolbarContent {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var showingExportOptions = false
     
-    var body: some ToolbarContent {
+    public var body: some ToolbarContent {
         ToolbarItemGroup(placement: .principal) {
             // PLAYBACK CONTROLS
             PlaybackControls()
@@ -448,7 +448,7 @@ struct NeuralToolbar: ToolbarContent {
                 }
                 
                 Button {
-                    store.shorts.generate()
+                    store.generateShorts()
                 } label: {
                     Label("Generate Shorts", systemImage: "rectangle.stack")
                 }
@@ -462,7 +462,7 @@ struct NeuralToolbar: ToolbarContent {
                 }
                 
                 Button {
-                    store.silence.detect()
+                    store.detectSilence()
                 } label: {
                     Label("Remove Silence", systemImage: "waveform.badge.minus")
                 }
@@ -502,10 +502,10 @@ struct NeuralToolbar: ToolbarContent {
 
 // MARK: - ADAPTIVE INSPECTOR
 struct AdaptiveInspector: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     @State private var selectedTab: InspectorTab = .video
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // TAB SELECTOR
             Picker("Inspector", selection: $selectedTab) {
@@ -550,22 +550,50 @@ enum VisualizationMode: CaseIterable {
 
 // InspectorTab enum moved to VideoEditor.swift to avoid duplication
 
-enum DirectorInsight: Hashable {
+enum DirectorInsight: Hashable, Equatable {
     case beat(StoryBeat)
     case tension(TensionPeak)
     case emphasis(EmphasisMoment)
+    
+    nonisolated static func == (lhs: DirectorInsight, rhs: DirectorInsight) -> Bool {
+        switch (lhs, rhs) {
+        case (.beat(let a), .beat(let b)):
+            return a.timestamp == b.timestamp && a.type == b.type
+        case (.tension(let a), .tension(let b)):
+            return a.id == b.id
+        case (.emphasis(let a), .emphasis(let b)):
+            return a.id == b.id
+        default:
+            return false
+        }
+    }
+    
+    nonisolated func hash(into hasher: inout Hasher) {
+        switch self {
+        case .beat(let b):
+            hasher.combine("beat")
+            hasher.combine(b.timestamp)
+            hasher.combine(b.type.rawValue)
+        case .tension(let t):
+            hasher.combine("tension")
+            hasher.combine(t.id)
+        case .emphasis(let e):
+            hasher.combine("emphasis")
+            hasher.combine(e.id)
+        }
+    }
 }
 
 // MARK: - Mock View Components
 struct VisualEffectBlur: View {
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.regularMaterial)
     }
 }
 
 struct DirectorOverlay: View {
-    var body: some View {
+    public var body: some View {
         Text("AI Director Analyzing...")
             .padding()
             .background(.regularMaterial)
@@ -576,7 +604,7 @@ struct DirectorOverlay: View {
 struct MagneticTimelineRuler: View {
     let scale: CGFloat
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.regularMaterial)
             .overlay(
@@ -597,7 +625,7 @@ struct Badge: View {
         self.content = text
     }
     
-    var body: some View {
+    public var body: some View {
         Text(content)
             .font(.caption2)
             .padding(.horizontal, 6)
@@ -611,7 +639,7 @@ struct Badge: View {
 struct CutSuggestionRow: View {
     let cut: CutSuggestion
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("Cut at \(cut.time, format: .number)")
             Spacer()
@@ -623,7 +651,7 @@ struct CutSuggestionRow: View {
 struct StoryBeatsVisualizer: View {
     let beats: StoryBeats
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.blue.opacity(0.3))
             .overlay(
@@ -634,7 +662,7 @@ struct StoryBeatsVisualizer: View {
 }
 
 struct ShortsGeneratorPanel: View {
-    var body: some View {
+    public var body: some View {
         VStack {
             Text("Shorts Generator")
                 .font(.headline)
@@ -646,7 +674,7 @@ struct ShortsGeneratorPanel: View {
 }
 
 struct ProcessingStatusBar: View {
-    var body: some View {
+    public var body: some View {
         HStack {
             ProgressView()
                 .scaleEffect(0.8)
@@ -656,7 +684,7 @@ struct ProcessingStatusBar: View {
 }
 
 struct TimelineBackground: View {
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.black.opacity(0.05))
     }
@@ -667,7 +695,7 @@ struct NeuralTimelineTrack: View {
     let height: CGFloat
     let offset: CGPoint
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.blue.opacity(0.6))
             .frame(height: height)
@@ -681,7 +709,7 @@ struct DirectorAnnotationsLayer: View {
     let height: CGFloat
     let offset: CGPoint
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.purple.opacity(0.3))
             .frame(height: height)
@@ -694,7 +722,7 @@ struct WaveformTrack: View {
     let height: CGFloat
     let offset: CGPoint
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.green.opacity(0.6))
             .frame(height: height)
@@ -707,7 +735,7 @@ struct TranscriptionTrack: View {
     let height: CGFloat
     let offset: CGPoint
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.orange.opacity(0.6))
             .frame(height: height)
@@ -718,7 +746,7 @@ struct TranscriptionTrack: View {
 struct NeuralPlayheadView: View {
     @Binding var currentTime: TimeInterval
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.red)
             .frame(width: 2)
@@ -726,7 +754,7 @@ struct NeuralPlayheadView: View {
 }
 
 struct NeuralSelectionRectangle: View {
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .stroke(.blue, lineWidth: 2)
             .fill(.blue.opacity(0.1))
@@ -734,7 +762,7 @@ struct NeuralSelectionRectangle: View {
 }
 
 struct PlaybackControls: View {
-    var body: some View {
+    public var body: some View {
         HStack {
             Button("◀◀") { }
             Button("▶") { }
@@ -744,7 +772,7 @@ struct PlaybackControls: View {
 }
 
 struct TimelineViewOptions: View {
-    var body: some View {
+    public var body: some View {
         Menu("View") {
             Button("Zoom In") { }
             Button("Zoom Out") { }
@@ -753,7 +781,7 @@ struct TimelineViewOptions: View {
 }
 
 struct ExportOptionsPanel: View {
-    var body: some View {
+    public var body: some View {
         VStack {
             Text("Export Options")
             Button("Export") { }
@@ -765,7 +793,7 @@ struct ExportOptionsPanel: View {
 struct TensionGraph: View {
     let data: [Double]
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.orange.opacity(0.3))
     }
@@ -774,7 +802,7 @@ struct TensionGraph: View {
 struct EmphasisRow: View {
     let moment: EmphasisMoment
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text("Emphasis")
             Spacer()
@@ -788,7 +816,7 @@ struct EnergyVisualization: View {
     let beats: StoryBeats
     let size: CGSize
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.blue.opacity(0.5))
     }
@@ -798,7 +826,7 @@ struct MotionFlowVisualization: View {
     let vectors: [MotionVector]
     let size: CGSize
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.green.opacity(0.5))
     }
@@ -808,7 +836,7 @@ struct ComplexityHeatmap: View {
     let data: [[Double]]
     let size: CGSize
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(.red.opacity(0.5))
     }
@@ -819,7 +847,7 @@ struct ContinuityFlowChart: View {
     let size: CGSize
     @State private var hoveredConnection: ContinuityScore?
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             // Draw motion flow vectors between shots
             for connection in connections {
@@ -827,8 +855,8 @@ struct ContinuityFlowChart: View {
                 
                 // Draw connection arc
                 var path = Path()
-                let start = CGPoint(x: CGFloat(connection.fromShot) * 80, y: size.height/2)
-                let end = CGPoint(x: CGFloat(connection.toShot) * 80, y: size.height/2)
+                let start = CGPoint(x: CGFloat(connection.time * 2) * 80, y: size.height/2)
+                let end = CGPoint(x: CGFloat(connection.time * 2 + 1) * 80, y: size.height/2)
                 let control = CGPoint(x: (start.x + end.x)/2, y: size.height/2 - 50)
                 
                 path.move(to: start)
@@ -861,21 +889,21 @@ struct ContinuityFlowChart: View {
 struct InsightDetailPanel: View {
     let insight: DirectorInsight
     
-    var body: some View {
+    public var body: some View {
         Text("Insight Details")
             .padding()
     }
 }
 
 struct PropertiesInspector: View {
-    var body: some View {
+    public var body: some View {
         Text("Properties Inspector")
             .padding()
     }
 }
 
 struct TimelineEffectsInspector: View {
-    var body: some View {
+    public var body: some View {
         Text("Effects Inspector")
             .padding()
     }
@@ -884,7 +912,7 @@ struct TimelineEffectsInspector: View {
 // MARK: - Additional Inspector Views for DaVinci Style Layout
 
 struct AudioInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Audio Inspector")
                 .font(.headline)
@@ -897,7 +925,7 @@ struct AudioInspector: View {
 }
 
 struct NeuralAnalysisInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Neural Analysis")
                 .font(.headline)
@@ -910,7 +938,7 @@ struct NeuralAnalysisInspector: View {
 }
 
 struct CutsInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Cuts Inspector")
                 .font(.headline)
@@ -923,7 +951,7 @@ struct CutsInspector: View {
 }
 
 struct ShortsInspector: View {
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Shorts Inspector")
                 .font(.headline)
@@ -936,9 +964,9 @@ struct ShortsInspector: View {
 }
 
 struct DirectorInsightsPanel: View {
-    @EnvironmentObject var store: UnifiedStore
+    @EnvironmentObject private var store: UnifiedStore
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // CURRENT SEGMENT ANALYSIS - not available in TimelineModel
             /*if let current = store.timeline.currentSegment {
@@ -1039,14 +1067,14 @@ struct DirectorInsightsPanel: View {
 }
 
 struct TranscriptionInspector: View {
-    var body: some View {
+    public var body: some View {
         Text("Transcription Inspector")
             .padding()
     }
 }
 
 struct MetadataInspector: View {
-    var body: some View {
+    public var body: some View {
         Text("Metadata Inspector")
             .padding()
     }
@@ -1056,7 +1084,7 @@ struct MetadataInspector: View {
 struct EnergyMeter: View {
     let value: Double
     
-    var body: some View {
+    public var body: some View {
         HStack {
             ProgressView(value: value)
                 .progressViewStyle(LinearProgressViewStyle(tint: energyColor))
@@ -1077,7 +1105,7 @@ struct EnergyMeter: View {
 struct TensionIndicator: View {
     let value: Double
     
-    var body: some View {
+    public var body: some View {
         HStack {
             // Simplified tension indicator
             HStack(spacing: 2) {

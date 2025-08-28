@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import Combine
@@ -240,8 +241,8 @@ public class BRollSelectionViewModel: ObservableObject {
                 
                 let suggestions = try await backendService.selectBRoll(
                     videoPath: videoPath,
-                    cuts: cuts,
-                    settings: BRollSettings(
+                    cuts: cuts.map { BackendTimeRange(start: $0.start, end: $0.end) },
+                    settings: BackendBRollSettings(
                         brollDirectory: brollLibraryPath?.path ?? "",
                         maxResults: 20,
                         confidenceThreshold: suggestionConfidenceThreshold,
@@ -278,7 +279,7 @@ public class BRollSelectionViewModel: ObservableObject {
                     clips: track.clips.map { clip in
                         ClipData(
                             startTime: clip.startTime,
-                            duration: clip.duration,
+                            duration: clip.duration ?? 0,
                             name: clip.name
                         )
                     }
@@ -325,7 +326,7 @@ public class BRollSelectionViewModel: ObservableObject {
         
         guard let videoTrack = timeline.videoTracks.first else { return gaps }
         
-        let sortedClips = videoTrack.clips.sorted { $0.startTime < $1.startTime }
+        let sortedClips = videoTrack.clips.sorted { (a, b) in a.startTime < b.startTime }
         
         var currentTime: TimeInterval = 0
         
@@ -334,7 +335,7 @@ public class BRollSelectionViewModel: ObservableObject {
                 // Found a gap
                 gaps.append(currentTime...clip.startTime)
             }
-            currentTime = clip.startTime + clip.duration
+            currentTime = clip.startTime + clip.duration ?? 0
         }
         
         // Check for gap at the end
@@ -351,7 +352,7 @@ public class BRollSelectionViewModel: ObservableObject {
         
         // Find clips that fit the gap duration
         let suitableClips = clips.filter { clip in
-            clip.duration <= gapDuration * 1.2 && clip.duration >= gapDuration * 0.5
+            clip.duration ?? 0 <= gapDuration * 1.2 && clip.duration ?? 0 >= gapDuration * 0.5
         }
         
         // Sort by relevance score
@@ -363,7 +364,7 @@ public class BRollSelectionViewModel: ObservableObject {
         
         return clips
             .filter { clip in
-                clip.duration <= gapDuration * 1.5 && clip.duration >= gapDuration * 0.3
+                clip.duration ?? 0 <= gapDuration * 1.5 && clip.duration ?? 0 >= gapDuration * 0.3
             }
             .sorted { $0.relevanceScore > $1.relevanceScore }
             .prefix(3)
@@ -375,10 +376,10 @@ public class BRollSelectionViewModel: ObservableObject {
         return BRollSuggestion(
             id: UUID(),
             timeRange: selection.timeRange.start...selection.timeRange.end,
-            clipName: URL(fileURLWithPath: selection.brollPath).lastPathComponent,
+            clipName: URL(fileURLWithPath: selection.brollClipPath).lastPathComponent,
             clipId: UUID(), // Generate new ID
             confidence: selection.confidence,
-            reason: selection.reason,
+            reason: "B-roll suggestion",
             thumbnail: nil, // No thumbnail available
             alternativeClips: [] // No alternatives
         )
@@ -504,18 +505,18 @@ public class BRollSelectionViewModel: ObservableObject {
         // Ensure we have a B-roll track
         if timeline.videoTracks.count < 2 {
             // Create B-roll track
-            let brollTrack = TimelineTrack(name: "B-Roll", type: .video)
+            let brollTrack = UITimelineTrack(name: "B-Roll", type: .video)
             timeline.tracks.append(brollTrack)
         }
         
         let targetTrackIndex = min(1, timeline.videoTracks.count - 1)
         
         // Create timeline clip from B-roll
-        var timelineClip = TimelineClip(
+        var timelineClip = TimelineClip(id: UUID(), 
             name: clip.name,
             trackIndex: targetTrackIndex,
             startTime: time,
-            duration: min(clip.duration, 5.0)  // Limit to 5 seconds by default
+            duration: min(clip.duration ?? 0, 5.0)  // Limit to 5 seconds by default
         )
         timelineClip.sourceURL = clip.url
         
@@ -531,7 +532,7 @@ public class BRollSelectionViewModel: ObservableObject {
         // Remove existing clips in range
         for var track in timeline.videoTracks {
             track.clips.removeAll { clip in
-                let clipRange = clip.startTime...(clip.startTime + clip.duration)
+                let clipRange = clip.startTime...(clip.startTime + clip.duration ?? 0)
                 return clipRange.overlaps(range)
             }
         }
@@ -663,7 +664,7 @@ public struct BRollClip: Identifiable, Hashable {
         )
     }
     
-    public func hash(into hasher: inout Hasher) {
+    public nonisolated func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }
@@ -709,7 +710,7 @@ struct BRollSelectionSettings: Codable {
 }
 
 public struct BackendBRollClip: Codable {
-    let id: String
+    public let id: String
     let path: String
     let duration: TimeInterval
     let category: String

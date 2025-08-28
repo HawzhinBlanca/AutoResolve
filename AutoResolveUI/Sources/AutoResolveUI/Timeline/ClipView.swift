@@ -19,7 +19,7 @@ struct ClipView: View {
     private let handleWidth: CGFloat = 8
     private let cornerRadius: CGFloat = 4
     
-    var body: some View {
+    public var body: some View {
         ZStack(alignment: .leading) {
             // Main clip body
             RoundedRectangle(cornerRadius: cornerRadius)
@@ -49,7 +49,7 @@ struct ClipView: View {
                         .font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
                     
-                    Text("\(formatDuration(clip.duration))")
+                    Text("\(formatDuration(clip.duration ?? 0))")
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
                 }
@@ -108,11 +108,11 @@ struct ClipView: View {
     // MARK: - Computed Properties
     
     private var clipWidth: CGFloat {
-        CGFloat(clip.duration * timeline.zoomLevel)
+        CGFloat(clip.duration ?? 0 * timeline.zoomLevel)
     }
     
     private var clipHeight: CGFloat {
-        if let track = timeline.tracks.first(where: { $0.clips.contains(where: { $0.id == clip.id }) }) {
+        if let track = timeline.tracks.first(where: { $0.clips.contains { $0.id == clip.id } }) {
             return track.height - 4
         }
         return 56
@@ -223,7 +223,7 @@ struct ClipView: View {
         
         let deltaTime = value.translation.width / CGFloat(timeline.zoomLevel)
         let newStartTime = max(0, clip.startTime + deltaTime)
-        let newDuration = clip.duration - deltaTime
+        let newDuration = clip.duration ?? 0 - deltaTime
         
         if newDuration > 0.1 {  // Minimum clip duration
             updateClip { clip in
@@ -240,7 +240,7 @@ struct ClipView: View {
         }
         
         let deltaTime = value.translation.width / CGFloat(timeline.zoomLevel)
-        let newDuration = max(0.1, clip.duration + deltaTime)
+        let newDuration = max(0.1, clip.duration ?? 0 + deltaTime)
         
         updateClip { clip in
             clip.duration = newDuration
@@ -288,7 +288,7 @@ struct ClipView: View {
 struct ResizeHandle: View {
     let edge: Edge
     
-    var body: some View {
+    public var body: some View {
         Rectangle()
             .fill(Color.white.opacity(0.01))  // Nearly invisible but clickable
             .frame(width: 8)
@@ -325,7 +325,7 @@ struct AudioWaveformView: View {
     let samples: [Float]
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             Path { path in
                 let width = geometry.size.width

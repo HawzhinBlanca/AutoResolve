@@ -132,71 +132,71 @@ public struct BackendTelemetryDashboard: View {
             ScrollView {
                 VStack(spacing: 12) {
                     // CPU Metric
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "CPU Usage",
                         value: "\(Int(telemetry.cpuUsage))%",
                         trend: telemetry.cpuTrend,
-                        status: telemetry.cpuStatus,
+                        status: telemetry.cpuStatus.dashboardStatus,
                         icon: "cpu",
                         isSelected: selectedMetric == .cpu,
                         onTap: { selectedMetric = .cpu }
                     )
                     
                     // Memory Metric
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "Memory Usage",
                         value: formatMemory(telemetry.memoryUsed),
                         subtitle: "/ \(formatMemory(telemetry.memoryTotal))",
                         trend: telemetry.memoryTrend,
-                        status: telemetry.memoryStatus,
+                        status: telemetry.memoryStatus.dashboardStatus,
                         icon: "memorychip",
                         isSelected: selectedMetric == .memory,
                         onTap: { selectedMetric = .memory }
                     )
                     
                     // GPU Metric
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "GPU Usage",
                         value: "\(Int(telemetry.gpuUsage))%",
                         subtitle: "VRAM: \(formatMemory(telemetry.vramUsed))",
                         trend: telemetry.gpuTrend,
-                        status: telemetry.gpuStatus,
+                        status: telemetry.gpuStatus.dashboardStatus,
                         icon: "rectangle.3.group",
                         isSelected: selectedMetric == .gpu,
                         onTap: { selectedMetric = .gpu }
                     )
                     
                     // Disk I/O
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "Disk I/O",
                         value: "\(formatBandwidth(telemetry.diskReadRate))",
                         subtitle: "R: \(formatBandwidth(telemetry.diskReadRate)) W: \(formatBandwidth(telemetry.diskWriteRate))",
                         trend: .stable,
-                        status: telemetry.diskStatus,
+                        status: telemetry.diskStatus.dashboardStatus,
                         icon: "internaldrive",
                         isSelected: selectedMetric == .disk,
                         onTap: { selectedMetric = .disk }
                     )
                     
                     // Network
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "Network",
                         value: "\(formatBandwidth(telemetry.networkRate))",
                         subtitle: "↓ \(formatBandwidth(telemetry.downloadRate)) ↑ \(formatBandwidth(telemetry.uploadRate))",
                         trend: .stable,
-                        status: telemetry.networkStatus,
+                        status: telemetry.networkStatus.dashboardStatus,
                         icon: "network",
                         isSelected: selectedMetric == .network,
                         onTap: { selectedMetric = .network }
                     )
                     
                     // Pipeline Status
-                    MetricCard(
+                    TelemetryMetricCard(
                         title: "Pipeline",
                         value: telemetry.pipelineStatus.capitalized,
                         subtitle: telemetry.currentOperation,
                         trend: .stable,
-                        status: telemetry.pipelineHealthStatus,
+                        status: telemetry.pipelineHealthStatus.dashboardStatus,
                         icon: "gearshape.2",
                         isSelected: selectedMetric == .pipeline,
                         onTap: { selectedMetric = .pipeline }
@@ -447,19 +447,32 @@ public struct BackendTelemetryDashboard: View {
     }
 }
 
+// MARK: - HealthStatus to DashboardHealthStatus conversion
+extension HealthStatus {
+    var dashboardStatus: DashboardHealthStatus {
+        if status == "healthy" {
+            return .good
+        } else if status == "warning" {
+            return .warning
+        } else {
+            return .critical
+        }
+    }
+}
+
 // MARK: - Supporting Views
 
-struct MetricCard: View {
+struct TelemetryMetricCard: View {
     let title: String
     let value: String
     var subtitle: String? = nil
     let trend: TrendDirection
-    let status: HealthStatus
+    let status: DashboardHealthStatus
     let icon: String
     let isSelected: Bool
     let onTap: () -> Void
     
-    var body: some View {
+    public var body: some View {
         Button(action: onTap) {
             HStack {
                 // Icon
@@ -515,7 +528,7 @@ struct StatRow: View {
     let label: String
     let value: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .font(.caption)
@@ -532,7 +545,7 @@ struct ChartStat: View {
     let label: String
     let value: String
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 4) {
             Text(label)
                 .font(.caption2)
@@ -547,7 +560,7 @@ struct ChartStat: View {
 struct AlertRow: View {
     let alert: TelemetryAlert
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Image(systemName: alert.severity.icon)
                 .foregroundColor(alert.severity.color)
@@ -583,7 +596,7 @@ struct AlertRow: View {
 struct EventRow: View {
     let event: TelemetryEvent
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Circle()
                 .fill(event.type.color)
@@ -614,7 +627,7 @@ struct MetricChartView: View {
     let data: [DataPoint]
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             Path { path in
                 guard !data.isEmpty else { return }
@@ -652,31 +665,31 @@ class TelemetryManager: ObservableObject {
     // System Metrics
     @Published var cpuUsage: Double = 0
     @Published var cpuTrend = TrendDirection.stable
-    @Published var cpuStatus = HealthStatus.good
+    @Published var cpuStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     
     @Published var memoryUsed: Int64 = 0
     @Published var memoryTotal: Int64 = 16_000_000_000
     @Published var memoryTrend = TrendDirection.stable
-    @Published var memoryStatus = HealthStatus.good
+    @Published var memoryStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     
     @Published var gpuUsage: Double = 0
     @Published var vramUsed: Int64 = 0
     @Published var gpuTrend = TrendDirection.stable
-    @Published var gpuStatus = HealthStatus.good
+    @Published var gpuStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     
     @Published var diskReadRate: Double = 0
     @Published var diskWriteRate: Double = 0
-    @Published var diskStatus = HealthStatus.good
+    @Published var diskStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     
     @Published var networkRate: Double = 0
     @Published var downloadRate: Double = 0
     @Published var uploadRate: Double = 0
-    @Published var networkStatus = HealthStatus.good
+    @Published var networkStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     
     // Pipeline Metrics
     @Published var pipelineStatus = "idle"
     @Published var currentOperation = "None"
-    @Published var pipelineHealthStatus = HealthStatus.good
+    @Published var pipelineHealthStatus = HealthStatus(status: "healthy", pipeline: "ready", memory_mb: 0, active_tasks: 0)
     @Published var jobsProcessed = 0
     @Published var errorCount24h = 0
     @Published var avgResponseTime: Double = 0
@@ -855,7 +868,7 @@ class TelemetryManager: ObservableObject {
 // MARK: - Data Models
 
 struct DataPoint: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     let timestamp: Date
     let value: Double
 }
@@ -880,7 +893,7 @@ enum TrendDirection {
     }
 }
 
-enum HealthStatus {
+enum DashboardHealthStatus {
     case good, warning, critical
     
     var color: Color {
@@ -893,7 +906,7 @@ enum HealthStatus {
 }
 
 struct TelemetryAlert: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     let title: String
     let message: String
     let severity: AlertSeverity
@@ -921,7 +934,7 @@ struct TelemetryAlert: Identifiable {
 }
 
 struct TelemetryEvent: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     let message: String
     let type: EventType
     let timestamp: Date

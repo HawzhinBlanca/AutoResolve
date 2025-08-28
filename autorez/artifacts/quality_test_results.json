@@ -1,0 +1,146 @@
+[
+  {
+    "video": "art_painting.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "beach_sunset.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "city_aerial.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "clip_5m.mp4",
+    "metrics": {
+      "sharpness": 0.6720448783555225,
+      "stability": 0.1363174707135309,
+      "composition": 0.3843384170751634,
+      "color_consistency": 0.9992010383023041,
+      "exposure": 0.7305215909234757,
+      "overall": 0.5681268710766603
+    },
+    "overall": 0.5681268710766603
+  },
+  {
+    "video": "cooking_kitchen.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "mountain_climb.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "nature_forest.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "office_work.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "sports_soccer.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "tech_coding.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  },
+  {
+    "video": "test_video.mp4",
+    "metrics": {
+      "sharpness": 0.6720448783555225,
+      "stability": 0.1363174707135309,
+      "composition": 0.3843384170751634,
+      "color_consistency": 0.9992010383023041,
+      "exposure": 0.7305215909234757,
+      "overall": 0.5681268710766603
+    },
+    "overall": 0.5681268710766603
+  },
+  {
+    "video": "urban_traffic.mp4",
+    "metrics": {
+      "sharpness": 0.1735337165615562,
+      "stability": 0.11396087442139297,
+      "composition": 0.3029989808006536,
+      "color_consistency": 0.9999592470526489,
+      "exposure": 0.6160600779531613,
+      "overall": 0.39998130283332795
+    },
+    "overall": 0.39998130283332795
+  }
+]

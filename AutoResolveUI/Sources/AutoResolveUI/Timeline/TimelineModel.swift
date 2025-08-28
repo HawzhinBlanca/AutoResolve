@@ -1,159 +1,176 @@
+import AppKit
 import Foundation
+import Combine
 import SwiftUI
 
 // MARK: - Core Timeline Data Models
+// TimelineClip, TimelineTrack, and TimelineMarker are defined in Core/UnifiedTypes.swift
+// This file uses those definitions to avoid duplication
 
-/// Represents a single clip in the timeline
-public struct TimelineClip: Identifiable, Codable, Equatable {
-    public let id = UUID()
+public struct SimpleTimelineClip: Identifiable, Equatable {
+    public let id: UUID
     public var name: String
     public var sourceURL: URL?
     public var trackIndex: Int
-    public var startTime: TimeInterval  // Position on timeline
+    public var startTime: TimeInterval
     public var duration: TimeInterval
-    public var inPoint: TimeInterval = 0  // Source in point
-    public var outPoint: TimeInterval    // Source out point
-    public var sourceStartTime: TimeInterval = 0  // Start time in source media
+    public var inPoint: TimeInterval = 0
+    public var outPoint: TimeInterval
     public var isSelected: Bool = false
-    public var colorData: Data? = nil  // Store color as encoded data
-    public var thumbnailData: Data?
-    public var effects: [VideoEffect] = []  // Applied effects
-    public var volume: Float = 1.0  // Audio volume level
+    public var colorData: Data? = nil
+    public var thumbnailData: Data? = nil
+    public var sourceStartTime: TimeInterval = 0
+    public var type: ClipType = .video
+    public var color: Color = .blue
+    public var effects: [VideoEffect] = []
     
-    public init(name: String, trackIndex: Int, startTime: TimeInterval, duration: TimeInterval) {
+    // Computed property for compatibility
+    public var url: URL {
+        get { sourceURL ?? URL(fileURLWithPath: "/") }
+    }
+    
+    public var thumbnail: NSImage? {
+        get {
+            guard let data = thumbnailData else { return nil }
+            return NSImage(data: data)
+        }
+        set {
+            thumbnailData = newValue?.tiffRepresentation
+        }
+    }
+    
+    public init(id: UUID = UUID(), name: String, trackIndex: Int, startTime: TimeInterval, duration: TimeInterval, sourceURL: URL? = nil, inPoint: TimeInterval = 0, isSelected: Bool = false, colorData: Data? = nil, thumbnailData: Data? = nil, sourceStartTime: TimeInterval = 0, type: ClipType = .video, color: Color = .blue, effects: [VideoEffect] = []) {
+        self.id = id
         self.name = name
         self.trackIndex = trackIndex
         self.startTime = startTime
         self.duration = duration
         self.outPoint = duration
+        self.sourceURL = sourceURL
+        self.inPoint = inPoint
+        self.isSelected = isSelected
+        self.colorData = colorData
+        self.thumbnailData = thumbnailData
+        self.sourceStartTime = sourceStartTime
+        self.type = type
+        self.color = color
+        self.effects = effects
     }
     
-    /// End time on timeline
-    public var endTime: TimeInterval {
-        startTime + duration
-    }
-    
-    /// Check if clip contains a time point
-    public func contains(time: TimeInterval) -> Bool {
-        time >= startTime && time <= endTime
-    }
-    
-    /// Check if clip overlaps with time range
+    public var endTime: TimeInterval { startTime + duration }
+    public func contains(time: TimeInterval) -> Bool { time >= startTime && time <= endTime }
+}
+
+// MARK: - Timeline clip utilities
+extension SimpleTimelineClip {
     public func overlaps(start: TimeInterval, end: TimeInterval) -> Bool {
-        startTime < end && endTime > start
-    }
-    
-    /// Color property for UI display
-    public var color: Color {
-        get {
-            if let data = colorData,
-               let nsColor = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? NSColor {
-                return Color(nsColor)
-            }
-            return .blue  // Default color
-        }
-        set {
-            let nsColor = NSColor(newValue)
-            colorData = try? NSKeyedArchiver.archivedData(withRootObject: nsColor, requiringSecureCoding: true)
-        }
-    }
-    
-    // MARK: - Codable Implementation
-    
-    enum CodingKeys: String, CodingKey {
-        case name, sourceURL, trackIndex, startTime, duration, inPoint, outPoint, sourceStartTime, isSelected, colorData, thumbnailData
-        // Note: 'id' is excluded from coding - it will be regenerated
+        let aStart = self.startTime
+        let aEnd = self.endTime
+        return max(aStart, start) < min(aEnd, end)
     }
 }
 
-/// Represents a track in the timeline (video or audio)
-public struct TimelineTrack: Identifiable, Codable {
+// MARK: - Codable conformance for SimpleTimelineClip
+extension SimpleTimelineClip: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, sourceURL, trackIndex, startTime, duration
+        case inPoint, outPoint, isSelected, colorData, thumbnailData
+        case sourceStartTime, type
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(sourceURL, forKey: .sourceURL)
+        try container.encode(trackIndex, forKey: .trackIndex)
+        try container.encode(startTime, forKey: .startTime)
+        try container.encode(duration, forKey: .duration)
+        try container.encode(inPoint, forKey: .inPoint)
+        try container.encode(outPoint, forKey: .outPoint)
+        try container.encode(isSelected, forKey: .isSelected)
+        try container.encode(colorData, forKey: .colorData)
+        try container.encode(thumbnailData, forKey: .thumbnailData)
+        try container.encode(sourceStartTime, forKey: .sourceStartTime)
+        try container.encode(type, forKey: .type)
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        sourceURL = try container.decodeIfPresent(URL.self, forKey: .sourceURL)
+        trackIndex = try container.decode(Int.self, forKey: .trackIndex)
+        startTime = try container.decode(TimeInterval.self, forKey: .startTime)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        inPoint = try container.decodeIfPresent(TimeInterval.self, forKey: .inPoint) ?? 0
+        outPoint = try container.decode(TimeInterval.self, forKey: .outPoint)
+        isSelected = try container.decodeIfPresent(Bool.self, forKey: .isSelected) ?? false
+        colorData = try container.decodeIfPresent(Data.self, forKey: .colorData)
+        thumbnailData = try container.decodeIfPresent(Data.self, forKey: .thumbnailData)
+        sourceStartTime = try container.decodeIfPresent(TimeInterval.self, forKey: .sourceStartTime) ?? 0
+        type = try container.decodeIfPresent(ClipType.self, forKey: .type) ?? .video
+        color = .blue  // Default color since it's not persisted
+    }
+}
+
+public struct UITimelineTrack: Identifiable, Codable {
     public let id = UUID()
     public var name: String
     public var type: TrackType
     public var height: CGFloat = 60
     public var isEnabled: Bool = true
     public var isLocked: Bool = false
-    public var clips: [TimelineClip] = []
+    public var clips: [SimpleTimelineClip] = []
     
-    public enum TrackType: String, Codable {
+    public enum TrackType: String, Codable { 
         case video = "V"
         case audio = "A"
-        
-        var defaultHeight: CGFloat {
-            switch self {
-            case .video: return 80
-            case .audio: return 50
-            }
-        }
+        case title = "T"
+        case effect = "FX"
+        case director = "D"
+        case transcription = "TR"
     }
     
     public init(name: String, type: TrackType) {
         self.name = name
         self.type = type
-        self.height = type.defaultHeight
+        switch type {
+        case .video: self.height = 80
+        case .audio: self.height = 50
+        case .title, .effect: self.height = 60
+        case .director: self.height = 100
+        case .transcription: self.height = 40
+        }
     }
     
-    /// Add clip maintaining time order
-    public mutating func addClip(_ clip: TimelineClip) {
+    public mutating func addClip(_ clip: SimpleTimelineClip) {
         clips.append(clip)
         clips.sort { $0.startTime < $1.startTime }
     }
     
-    /// Remove clip by ID
     public mutating func removeClip(id: UUID) {
         clips.removeAll { $0.id == id }
     }
-    
-    /// Find clip at time position
-    public func clipAt(time: TimeInterval) -> TimelineClip? {
-        clips.first { $0.contains(time: time) }
-    }
-    
-    // MARK: - Codable Implementation
-    
-    enum CodingKeys: String, CodingKey {
-        case name, type, height, isEnabled, isLocked, clips
-        // Note: 'id' is excluded from coding - it will be regenerated
-    }
 }
 
-/// Timeline marker for silence regions, cuts, etc.
-public struct TimelineMarker: Identifiable, Codable {
+public struct UITimelineMarker: Identifiable, Codable {
     public let id = UUID()
     public var time: TimeInterval
     public var type: MarkerType
     public var name: String
-    
-    public enum MarkerType: String, Codable {
-        case silence = "silence"
-        case cut = "cut"
-        case bookmark = "bookmark"
-    }
-    
-    public init(time: TimeInterval, type: MarkerType, name: String = "") {
-        self.time = time
-        self.type = type
-        self.name = name
-    }
-    
-    // MARK: - Codable Implementation
-    
-    enum CodingKeys: String, CodingKey {
-        case time, type, name
-        // Note: 'id' is excluded from coding - it will be regenerated
-    }
+    public enum MarkerType: String, Codable { case silence, cut, bookmark }
 }
 
 /// Main timeline data model
 public class TimelineModel: ObservableObject {
-    @Published public var tracks: [TimelineTrack] = []
+    @Published public var tracks: [UITimelineTrack] = []
     @Published public var duration: TimeInterval = 1800  // 30 minutes default
     @Published public var playheadPosition: TimeInterval = 0
     @Published public var selectedClips: Set<UUID> = []
     @Published public var zoomLevel: Double = 1.0  // Pixels per second
     @Published public var scrollOffset: CGFloat = 0
-    @Published public var markers: [TimelineMarker] = []
+    @Published public var markers: [UITimelineMarker] = []
     @Published public var selectedTimeRange: (start: TimeInterval, end: TimeInterval)? = nil
     @Published public var workAreaStart: TimeInterval = 0
     @Published public var workAreaEnd: TimeInterval = 1800
@@ -164,42 +181,47 @@ public class TimelineModel: ObservableObject {
     public var resolution: CGSize = CGSize(width: 1920, height: 1080)
     public var name: String = "Untitled Timeline"
     
+    // Timeline Editing Tools
+    public let editingTools: TimelineEditingTools
+    
     // MARK: - Computed Properties
     
     /// Get only video tracks
-    public var videoTracks: [TimelineTrack] {
+    public var videoTracks: [UITimelineTrack] {
         tracks.filter { $0.type == .video }
     }
     
     /// Get only audio tracks  
-    public var audioTracks: [TimelineTrack] {
+    public var audioTracks: [UITimelineTrack] {
         tracks.filter { $0.type == .audio }
     }
     
-    // Coding keys for Codable
+    // MARK: - Codable
     enum CodingKeys: CodingKey {
         case tracks, duration, frameRate, resolution, name, markers
     }
     
     public init() {
+        self.editingTools = TimelineEditingTools()
         setupDefaultTracks()
+        self.editingTools.setTimeline(self)
     }
     
     /// Set up default video and audio tracks
     private func setupDefaultTracks() {
         tracks = [
-            TimelineTrack(name: "V1", type: .video),
-            TimelineTrack(name: "V2", type: .video),
-            TimelineTrack(name: "A1", type: .audio),
-            TimelineTrack(name: "A2", type: .audio)
+            UITimelineTrack(name: "V1", type: .video),
+            UITimelineTrack(name: "V2", type: .video),
+            UITimelineTrack(name: "A1", type: .audio),
+            UITimelineTrack(name: "A2", type: .audio)
         ]
     }
     
     /// Add a new track
-    public func addTrack(type: TimelineTrack.TrackType) {
+    public func addTrack(type: UITimelineTrack.TrackType) {
         let count = tracks.filter { $0.type == type }.count
         let name = "\(type.rawValue)\(count + 1)"
-        tracks.append(TimelineTrack(name: name, type: type))
+        tracks.append(UITimelineTrack(name: name, type: type))
     }
     
     /// Remove track by ID
@@ -208,7 +230,7 @@ public class TimelineModel: ObservableObject {
     }
     
     /// Add clip to specific track
-    public func addClip(_ clip: TimelineClip, toTrack trackID: UUID) {
+    public func addClip(_ clip: SimpleTimelineClip, toTrack trackID: UUID) {
         if let index = tracks.firstIndex(where: { $0.id == trackID }) {
             tracks[index].addClip(clip)
             updateDuration()
@@ -271,6 +293,117 @@ public class TimelineModel: ObservableObject {
     public func xFromTime(_ time: TimeInterval) -> CGFloat {
         return CGFloat(time * zoomLevel) + scrollOffset
     }
+    
+    // MARK: - Additional Properties and Methods
+    @Published public var isPlaying: Bool = false
+    
+    /// Find a clip by ID across all tracks
+    public func findClip(id: UUID) -> SimpleTimelineClip? {
+        for track in tracks {
+            if let clip = track.clips.first(where: { $0.id == id }) {
+                return clip
+            }
+        }
+        return nil
+    }
+    
+    /// Deselect a specific clip
+    public func deselectClip(id: UUID) {
+        selectedClips.remove(id)
+    }
+    
+    /// Find the nearest snap point to the given time
+    public func findSnapPoint(near time: TimeInterval, threshold: TimeInterval = 0.5) -> TimeInterval? {
+        var snapPoints: [TimeInterval] = []
+        
+        // Add clip start and end points
+        for track in tracks {
+            for clip in track.clips {
+                snapPoints.append(clip.startTime)
+                snapPoints.append(clip.endTime)
+            }
+        }
+        
+        // Add marker positions
+        for marker in markers {
+            snapPoints.append(marker.time)
+        }
+        
+        // Add playhead position
+        snapPoints.append(playheadPosition)
+        
+        // Find nearest point within threshold
+        let nearestPoint = snapPoints.min(by: { abs($0 - time) < abs($1 - time) })
+        
+        if let point = nearestPoint, abs(point - time) <= threshold {
+            return point
+        }
+        
+        return nil
+    }
+    
+    /// Move a clip to a new time position
+    public func moveClip(id: UUID, to newTime: TimeInterval) {
+        for trackIndex in tracks.indices {
+            if let clipIndex = tracks[trackIndex].clips.firstIndex(where: { $0.id == id }) {
+                tracks[trackIndex].clips[clipIndex].startTime = max(0, newTime)
+                tracks[trackIndex].clips.sort { $0.startTime < $1.startTime }
+                updateDuration()
+                break
+            }
+        }
+    }
+    
+    /// Resize a clip
+    public func resizeClip(id: UUID, newStartTime: TimeInterval? = nil, newDuration: TimeInterval? = nil) {
+        for trackIndex in tracks.indices {
+            if let clipIndex = tracks[trackIndex].clips.firstIndex(where: { $0.id == id }) {
+                if let newStart = newStartTime {
+                    tracks[trackIndex].clips[clipIndex].startTime = max(0, newStart)
+                }
+                if let newDuration = newDuration, newDuration > 0 {
+                    tracks[trackIndex].clips[clipIndex].duration = max(0.1, newDuration)  // Minimum 0.1 second
+                }
+                updateDuration()
+                break
+            }
+        }
+    }
+    
+    /// Update a clip with new values
+    public func updateClip(id: UUID, startTime: TimeInterval? = nil, duration: TimeInterval? = nil) {
+        resizeClip(id: id, newStartTime: startTime, newDuration: duration)
+    }
+    
+    /// Cut a clip at a specific time
+    public func cutClip(id: UUID, at cutTime: TimeInterval) {
+        for trackIndex in tracks.indices {
+            if let clipIndex = tracks[trackIndex].clips.firstIndex(where: { $0.id == id }) {
+                let clip = tracks[trackIndex].clips[clipIndex]
+                
+                // Only cut if the time is within the clip
+                if cutTime > clip.startTime && cutTime < clip.endTime {
+                    // Resize the original clip to end at cut point
+                    tracks[trackIndex].clips[clipIndex].duration = cutTime - clip.startTime
+                    
+                    // Create new clip from cut point
+                    var newClip = SimpleTimelineClip(id: UUID(), 
+                        name: clip.name,
+                        trackIndex: clip.trackIndex,
+                        startTime: cutTime,
+                        duration: clip.endTime - cutTime
+                    )
+                    newClip.sourceURL = clip.sourceURL
+                    newClip.sourceStartTime = clip.sourceStartTime + (cutTime - clip.startTime)
+                    newClip.type = clip.type
+                    newClip.color = clip.color
+                    
+                    tracks[trackIndex].addClip(newClip)
+                }
+                break
+            }
+        }
+    }
 }
 
 // MARK: - Edit Operations
@@ -293,7 +426,7 @@ extension TimelineModel {
                 tracks[trackIndex].clips[clipIndex] = clip
                 
                 // Second part: cut point to original end
-                var secondClip = TimelineClip(
+                var secondClip = SimpleTimelineClip(id: UUID(), 
                     name: clip.name,
                     trackIndex: clip.trackIndex,
                     startTime: cutTime,
@@ -321,15 +454,15 @@ extension TimelineModel {
     
     /// Duplicate selected clips
     func duplicateSelected() {
-        var newClips: [(TimelineClip, UUID)] = []
+        var newClips: [(SimpleTimelineClip, UUID)] = []
         
         for trackIndex in tracks.indices {
             for clip in tracks[trackIndex].clips where selectedClips.contains(clip.id) {
-                var newClip = TimelineClip(
+                var newClip = SimpleTimelineClip(id: UUID(), 
                     name: clip.name,
                     trackIndex: clip.trackIndex,
-                    startTime: clip.startTime + clip.duration,  // Place after original
-                    duration: clip.duration
+                    startTime: clip.startTime + (clip.duration ?? 0),  // Place after original
+                    duration: clip.duration ?? 0
                 )
                 newClip.sourceURL = clip.sourceURL
                 newClip.inPoint = clip.inPoint
@@ -350,14 +483,14 @@ extension TimelineModel {
     /// Move selected clips by delta
     func moveSelectedClips(by delta: TimeInterval) {
         for trackIndex in tracks.indices {
-            for clipIndex in tracks[trackIndex].clips.indices {
-                if selectedClips.contains(tracks[trackIndex].clips[clipIndex].id) {
-                    tracks[trackIndex].clips[clipIndex].startTime += delta
-                    tracks[trackIndex].clips[clipIndex].startTime = max(0, tracks[trackIndex].clips[clipIndex].startTime)
+            var updatedClips = tracks[trackIndex].clips
+            for idx in updatedClips.indices {
+                if selectedClips.contains(updatedClips[idx].id) {
+                    updatedClips[idx].startTime = max(0, updatedClips[idx].startTime + delta)
                 }
             }
-            // Re-sort clips after moving
-            tracks[trackIndex].clips.sort { $0.startTime < $1.startTime }
+            updatedClips.sort { $0.startTime < $1.startTime }
+            tracks[trackIndex].clips = updatedClips
         }
         updateDuration()
     }
@@ -433,7 +566,7 @@ extension TimelineModel {
         for (index, cut) in cuts.enumerated() {
             if let t0 = cut["t0"] as? TimeInterval,
                let t1 = cut["t1"] as? TimeInterval {
-                let clip = TimelineClip(
+                let clip = SimpleTimelineClip(id: UUID(), 
                     name: "Clip \(index + 1)",
                     trackIndex: 0,
                     startTime: t0,
@@ -444,5 +577,21 @@ extension TimelineModel {
         }
         
         updateDuration()
+    }
+}
+
+// MARK: - Missing Properties Fix for Compilation
+public extension TimelineModel {
+    var totalDuration: TimeInterval {
+        duration
+    }
+    
+    var currentTime: TimeInterval {
+        get { playheadPosition }
+        set { playheadPosition = newValue }
+    }
+    
+    var selectedClipID: UUID? {
+        selectedClips.first
     }
 }

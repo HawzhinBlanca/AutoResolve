@@ -9,7 +9,7 @@ public struct VideoPlayerView: View {
     @ObservedObject var timeline: TimelineModel
     @StateObject private var playerController = VideoPlayerController()
     @StateObject private var effectsProcessor = VideoEffectsProcessor()
-    @StateObject private var audioAnalyzer = AudioAnalyzer()
+    // Audio analysis disabled in minimal slice
     @State private var isPlaying = false
     @State private var currentTime: TimeInterval = 0
     @State private var showControls = true
@@ -213,8 +213,7 @@ public struct VideoPlayerView: View {
                 }
             }
             
-            // Start audio analysis
-            audioAnalyzer.startAnalyzing(player: playerController.player)
+            // Audio analysis disabled
         }
         
         // Setup effects processor
@@ -229,7 +228,7 @@ public struct VideoPlayerView: View {
     private func cleanupPlayer() {
         playerController.pause()
         controlsTimer?.invalidate()
-        audioAnalyzer.stopAnalyzing()
+        // audioAnalyzer.stopAnalyzing() // This line is removed as per the edit hint.
         effectsProcessor.detachFromPlayer()
     }
     
@@ -416,7 +415,7 @@ struct VideoScrubber: View {
     @State private var dragTime: TimeInterval = 0
     @State private var lastDispatchTime: CFAbsoluteTime = 0
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 // Track
@@ -473,7 +472,7 @@ struct VideoScrubber: View {
 struct VolumeControl: View {
     @Binding var volume: Float
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: volumeIcon)
                 .font(.system(size: 14))
@@ -503,7 +502,7 @@ struct VolumeControl: View {
 struct PerformanceOverlay: View {
     @ObservedObject var playerController: VideoPlayerController
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Performance")
                 .font(.caption.bold())

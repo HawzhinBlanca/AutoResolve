@@ -92,3 +92,14 @@ bench-vjepa-new:
 
 bench-clip-new:
 	$(PY) scripts/benchmark_clip.py --video assets/pilots/clip_5m.mp4 --iterations 3
+
+# OpenRouter Integration
+openrouter-setup:
+	$(PY) -m pip install openai tiktoken
+	@echo "Set OPENROUTER_API_KEY in your environment"
+
+openrouter-test:
+	@$(PY) -c "from src.ops.openrouter import OpenRouterClient; import configparser; cfg = configparser.ConfigParser(); cfg.read('conf/ops.ini'); client = OpenRouterClient(cfg); print(client.sanity_check())"
+
+hybrid-bench:
+	$(PY) -m src.eval.hybrid_eval --video assets/pilots/scene.mp4

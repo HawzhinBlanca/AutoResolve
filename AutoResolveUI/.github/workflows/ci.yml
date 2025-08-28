@@ -1,0 +1,406 @@
+name: AutoResolve CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  SWIFT_VERSION: '5.9'
+  XCODE_VERSION: '15.0'
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  # Swift Build and Test
+  swift-tests:
+    name: Swift Build & Tests
+    runs-on: macos-14
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/Library/Caches/org.swift.swiftpm
+          ~/.swiftpm/cache
+          .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.swift', '**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Swift Build
+      run: |
+        cd AutoResolveUI
+        swift build --configuration ${{ matrix.configuration }} -v
+        
+    - name: Swift Package Resolve
+      run: |
+        cd AutoResolveUI
+        swift package resolve
+        
+    - name: Run Unit Tests
+      run: |
+        cd AutoResolveUI
+        swift test --configuration ${{ matrix.configuration }} \
+          --parallel \
+          --enable-code-coverage \
+          --filter AutoResolveUITests.TestFramework
+          
+    - name: Run Integration Tests
+      run: |
+        cd AutoResolveUI
+        swift test --configuration ${{ matrix.configuration }} \
+          --parallel \
+          --enable-code-coverage \
+          --filter AutoResolveUITests.IntegrationTestFramework
+          
+    - name: Generate Code Coverage
+      if: matrix.configuration == 'Debug'
+      run: |
+        cd AutoResolveUI
+        swift test --enable-code-coverage
+        xcrun llvm-cov export \
+          .build/debug/AutoResolveUIPackageTests.xctest/Contents/MacOS/AutoResolveUIPackageTests \
+          --instr-profile .build/debug/codecov/default.profdata \
+          --format="lcov" > coverage.lcov
+          
+    - name: Upload Coverage to Codecov
+      if: matrix.configuration == 'Debug'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./AutoResolveUI/coverage.lcov
+        flags: swift-tests
+        name: swift-coverage
+        
+    - name: Archive Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: swift-test-results-${{ matrix.configuration }}
+        path: |
+          AutoResolveUI/.build/debug/**/*.xml
+          AutoResolveUI/.build/release/**/*.xml
+
+  # Python Backend Tests
+  python-tests:
+    name: Python Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
+        
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install Dependencies
+      run: |
+        cd autorez
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements_test.txt
+        pip install pytest-cov pytest-xdist
+        
+    - name: Run Python Tests
+      run: |
+        cd autorez
+        python -m pytest tests/ \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=term-missing \
+          --junit-xml=pytest-results.xml \
+          -v
+          
+    - name: Upload Python Coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./autorez/coverage.xml
+        flags: python-tests
+        name: python-coverage
+        
+    - name: Archive Python Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-test-results-${{ matrix.python-version }}
+        path: |
+          autorez/pytest-results.xml
+          autorez/coverage.xml
+
+  # Security Scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: swift, python
+        
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+      
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      
+    - name: Run Semgrep Security Scan
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: auto
+        publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+        
+    - name: Dependency Security Scan
+      run: |
+        # Swift dependency scan
+        cd AutoResolveUI
+        swift package show-dependencies --format json > dependencies.json
+        
+        # Python dependency scan
+        cd ../autorez  
+        pip install safety
+        safety check --json --output safety-report.json || true
+        
+    - name: Upload Security Scan Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan-results
+        path: |
+          AutoResolveUI/dependencies.json
+          autorez/safety-report.json
+
+  # UI Tests (macOS only)
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-14
+    timeout-minutes: 45
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Setup Test Environment
+      run: |
+        # Create test media directory
+        mkdir -p ~/AutoResolveTestMedia
+        
+        # Generate test video files
+        ffmpeg -f lavfi -i testsrc=duration=10:size=1280x720:rate=30 \
+          -c:v libx264 -preset ultrafast \
+          ~/AutoResolveTestMedia/test_video.mp4
+          
+        # Generate test audio file
+        ffmpeg -f lavfi -i sine=frequency=1000:duration=10 \
+          -c:a aac ~/AutoResolveTestMedia/test_audio.wav
+          
+    - name: Build for UI Testing
+      run: |
+        cd AutoResolveUI
+        swift build --configuration Debug
+        
+    - name: Run UI Tests
+      run: |
+        cd AutoResolveUI
+        swift test --filter AutoResolveUITests.UITestFramework \
+          --parallel \
+          --enable-code-coverage
+          
+    - name: Archive UI Test Screenshots
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ui-test-screenshots
+        path: |
+          ~/Library/Logs/DiagnosticReports/
+          /tmp/AutoResolveUI-*
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: macos-14
+    timeout-minutes: 60
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Setup Performance Test Environment
+      run: |
+        # Setup high-performance test environment
+        sudo sysctl -w kern.maxfiles=65536
+        sudo sysctl -w kern.maxfilesperproc=32768
+        
+    - name: Setup Python Backend
+      run: |
+        cd autorez
+        python3 -m pip install --upgrade pip
+        pip3 install -r requirements.txt
+        pip3 install -r requirements_extended.txt
+        
+    - name: Start Backend Service
+      run: |
+        cd autorez
+        python3 backend_service_final.py &
+        sleep 10
+        curl --fail http://localhost:8000/health || exit 1
+        
+    - name: Run Load Tests
+      run: |
+        cd AutoResolveUI
+        swift build --configuration Release
+        swift test --filter AutoResolveUITests.LoadTestFramework \
+          --configuration Release
+          
+    - name: Generate Performance Report
+      run: |
+        # Collect system performance metrics
+        system_profiler SPHardwareDataType > system_info.txt
+        top -l 1 -s 0 | head -20 > cpu_info.txt
+        vm_stat > memory_info.txt
+        
+    - name: Upload Performance Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-test-results
+        path: |
+          /tmp/LoadTestReport_*.json
+          system_info.txt
+          cpu_info.txt
+          memory_info.txt
+
+  # Deployment (Release builds)
+  deploy:
+    name: Build Release
+    runs-on: macos-14
+    timeout-minutes: 30
+    needs: [swift-tests, python-tests, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Build Release Binary
+      run: |
+        cd AutoResolveUI
+        swift build --configuration Release -v
+        
+    - name: Package Application
+      run: |
+        cd AutoResolveUI
+        mkdir -p AutoResolve.app/Contents/MacOS
+        mkdir -p AutoResolve.app/Contents/Resources
+        
+        # Copy binary
+        cp .build/release/AutoResolveUI AutoResolve.app/Contents/MacOS/
+        
+        # Create Info.plist
+        cat > AutoResolve.app/Contents/Info.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>AutoResolveUI</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.autoresolve.app</string>
+            <key>CFBundleName</key>
+            <string>AutoResolve</string>
+            <key>CFBundleVersion</key>
+            <string>3.0.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>3.0.0</string>
+            <key>NSMainStoryboardFile</key>
+            <string>Main</string>
+            <key>NSPrincipalClass</key>
+            <string>NSApplication</string>
+        </dict>
+        </plist>
+        EOF
+        
+        # Create DMG
+        hdiutil create -volname "AutoResolve" \
+          -srcfolder AutoResolve.app \
+          -ov -format UDZO \
+          AutoResolve-3.0.0.dmg
+          
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: autoresolve-release
+        path: |
+          AutoResolveUI/AutoResolve-3.0.0.dmg
+          AutoResolveUI/.build/release/AutoResolveUI
+
+  # Notification
+  notify:
+    name: Build Notifications
+    runs-on: ubuntu-latest
+    needs: [swift-tests, python-tests, security-scan, ui-tests, performance-tests, deploy]
+    if: always()
+    
+    steps:
+    - name: Notify Success
+      if: ${{ needs.swift-tests.result == 'success' && needs.python-tests.result == 'success' }}
+      run: |
+        echo "✅ AutoResolve CI/CD Pipeline completed successfully!"
+        echo "All tests passed and release build generated."
+        
+    - name: Notify Failure
+      if: ${{ needs.swift-tests.result == 'failure' || needs.python-tests.result == 'failure' }}
+      run: |
+        echo "❌ AutoResolve CI/CD Pipeline failed!"
+        echo "Check the failed jobs for details."
+        exit 1

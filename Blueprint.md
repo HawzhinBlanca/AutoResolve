@@ -1,6 +1,3 @@
-Absolutely. Here’s the final, full, end-to-end, strict, production-ready blueprint—lean, measurable, and complete. Nothing hand-wavy, no missing pieces.
-
-⸻
 
 AutoResolve v3.0 — BlueprintV3_FINAL (Full Stack, Strict)
 
@@ -165,6 +162,10 @@ numpy
 faster-whisper
 ffmpeg-python
 
+# 2.5: OpenRouter Dependencies (NEW)
+openai>=1.0.0         # OpenRouter client via OpenAI SDK
+tiktoken>=0.5.0       # Token counting for cost estimation
+
 System: ffmpeg on PATH.
 Optional: DaVinciResolveScript (installed with Resolve).
 
@@ -243,6 +244,26 @@ max_overlay_s = 7.0
 min_gap_s = 4.0
 dissolve_s = 0.25
 prefer_no_dialog = true
+
+[openrouter]
+enabled = false                          # Default OFF - local only
+base_url = https://openrouter.ai/api/v1
+api_key_env = OPENROUTER_API_KEY
+app_referrer = https://autoresolve.app
+app_title = AutoResolve v3.0
+
+# Model routing
+narrative_model = cohere/command-r7b-12-2024
+reasoning_model = qwen/qwq-32b
+vision_model = openai/gpt-4o-mini
+
+# Budgets & timeouts
+max_input_tokens = 3500
+max_output_tokens = 800
+request_timeout_s = 20
+daily_usd_cap = 2.50
+max_calls_per_video = 6
+target_api_sec_per_min = 3.0
 
 
 ⸻
@@ -653,6 +674,41 @@ E2E Test Suite (DAY9_E2E_TEST.swift)
 ├─ Backend communication: ✅ PASS
 ├─ Memory compliance: ✅ PASS
 └─ Overall: 90.5% pass rate
+
+⸻
+
+20) Error Resolution System
+
+• Comprehensive error analysis (error_analysis.txt, error_patterns.txt)
+• Automated fixing scripts (fix_all_errors.sh, fix_swift_errors.sh)
+• Build hardening process (HARDENING_COMPLETE.md)
+• Zero-error strategy (ZERO_ERROR_BATTLEPLAN.md)
+• Systematic build phases (phase1_build.txt, final_build.txt)
+• Duplicate cleanup (remove_all_duplicates.sh)
+
+21) Enhanced Resolve Integration
+
+• Detailed integration roadmap (DAVINCI_RESOLVE_INTEGRATION_ROADMAP.md)
+• Practical implementation plan (RESOLVE_INTEGRATION_PLAN.md)
+• Timeline export formats (timeline.edl, timeline.fcpxml)
+• Test cases (test_resolve_integration.py)
+
+22) Testing Infrastructure
+
+• End-to-end test workflow (test_workflow.py)
+• Performance testing (test_shortsify_performance.py)
+• Memory validation (test_memory_30min.py)
+• Video quality assessment (test_all_videos_quality.py)
+• Silence detection tests (test_silence_detection.py)
+• Transcription validation (test_transcription_rtf.py)
+
+23) Project Artifacts & Diagnostics
+
+• Autopsy reports (autopsy_report.json, autopsy_scan.py)
+• Performance metrics (metrics.jsonl)
+• Version tracking (VERSIONS.json)
+• Build logs (build_output.txt, build_result.txt)
+• Current state snapshots (current_state.txt)
 
 ⸻
 

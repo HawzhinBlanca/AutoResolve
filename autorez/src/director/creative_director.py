@@ -15,7 +15,7 @@ from src.director.continuity import detect_shot_boundaries
 from src.director.emphasis import track_saliency
 from src.utils.memory import rss_gb, emit_metrics
 
-def analyze_video(video_path: str, modules=None, fps=None, window=None):
+def analyze_video(video_path: str, modules=None, fps=None, window=None, config=None):
     """
     Orchestrate all director modules for comprehensive video analysis
     
@@ -24,6 +24,7 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None):
         modules: List of modules to run (default: all)
         fps: Frames per second for analysis
         window: Window size for temporal segments
+        config: Configuration object (optional, for OpenRouter)
         
     Returns:
         Dictionary with results from all requested modules
@@ -134,6 +135,36 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None):
         "peak_rss_gb": rss_gb()
     })
     
+    # NEW: OpenRouter augmentation (if enabled)
+    if config and config.get('openrouter', 'enabled', fallback='false').lower() == 'true':
+        from src.ops.openrouter import get_client
+        orc = get_client(config)
+        
+        # Prepare compact summary for augmentation
+        summary = {
+            'duration_s': duration_s,
+            'modules_run': modules
+        }
+        
+        # Add key data from each module
+        if "narrative" in results and "beats" in results["narrative"]:
+            summary['narrative_beats'] = len(results["narrative"]["beats"])
+        if "emotion" in results and "tension_peaks" in results["emotion"]:
+            summary['tension_peaks'] = results["emotion"]["tension_peaks"][:10]
+        if "rhythm" in results and "peaks" in results["rhythm"]:
+            summary['rhythm_peaks'] = results["rhythm"]["peaks"][:10]
+        
+        # Get narrative beats using OpenRouter
+        enhanced_beats = orc.json_chat(
+            model=orc.narrative_model,
+            system="Label narrative beats using three-act structure",
+            user=json.dumps(summary)
+        )
+        
+        if not enhanced_beats.get('_skipped'):
+            results['narrative_beats'] = enhanced_beats.get('beats', [])
+            results['openrouter_enhanced'] = True
+    
     # Save results to artifacts
     os.makedirs("artifacts", exist_ok=True)
     results_file = "artifacts/director_results.json"
@@ -148,6 +179,20 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None):
         json.dump(json_results, f, indent=2, default=str)
     
     return results
+
+# Alias for compatibility with hybrid_eval.py
+analyze_footage = analyze_video
+
+def make_creative_decisions(results):
+    """Make creative decisions based on analysis results"""
+    decisions = []
+    if "emotion" in results and "tension_peaks" in results["emotion"]:
+        for peak in results["emotion"]["tension_peaks"]:
+            decisions.append(f"Add slow motion at {peak[0]:.2f}s due to high tension")
+    if "rhythm" in results and "peaks" in results["rhythm"]:
+        for peak in results["rhythm"]["peaks"]:
+            decisions.append(f"Cut to a new shot at {peak[0]:.2f}s due to high rhythm")
+    return decisions
 
 def evaluate_director_quality(results, annotations=None):
     """
@@ -243,6 +288,10 @@ def main():
     
     # Analyze video
     analysis = analyze_video(args.video)
+    decisions = make_creative_decisions(analysis)
+    print("\nCreative Decisions:")
+    for decision in decisions:
+        print(f"- {decision}")
     
     # Save results
     import json

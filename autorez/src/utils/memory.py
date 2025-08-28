@@ -96,13 +96,15 @@ def enforce_budget(b: Budget, device: str, aggressive: bool = True):
         try: 
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
-        except Exception: pass
+        except Exception as e:
+            print(f"Warning: CUDA cache cleanup failed: {e}")
     elif device == "mps":
         try:
             # Force MPS cache clear
             import gc
             gc.collect()
-        except Exception: pass
+        except Exception as e:
+            print(f"Warning: MPS cache cleanup failed: {e}")
     
     return changes, b
 

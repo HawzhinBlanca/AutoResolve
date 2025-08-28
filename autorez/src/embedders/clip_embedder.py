@@ -22,7 +22,9 @@ class CLIPEmbedder:
         for k, v in self.model.state_dict().items():
             h.update(k.encode()); h.update(str(tuple(v.shape)).encode()); h.update(str(v.dtype).encode())
             try: h.update(v.view(-1)[:1].detach().cpu().numpy().tobytes())
-            except Exception: pass
+            except Exception as e:
+                # Skip parameters that cannot be serialized for fingerprinting
+                print(f"Warning: Skipping parameter {k} in fingerprint due to: {e}")
         return h.hexdigest()[:16]
 
     def _read_frames(self, path, fps=1.0):

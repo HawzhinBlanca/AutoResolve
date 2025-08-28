@@ -93,7 +93,7 @@ public struct ClipInspector: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
     
-    private var selectedClip: TimelineClip? {
+    private var selectedClip: SimpleTimelineClip? {
         guard let clipId = timeline.selectedClips.first else { return nil }
         return timeline.tracks.flatMap { $0.clips }.first { $0.id == clipId }
     }
@@ -115,7 +115,7 @@ public struct ClipInspector: View {
 struct InspectorHeader: View {
     let title: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(title)
                 .font(.headline)
@@ -136,7 +136,7 @@ struct InspectorHeader: View {
 // MARK: - Properties Panel
 
 struct PropertiesPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     @ObservedObject var timeline: TimelineModel
     
     @State private var clipName: String = ""
@@ -147,7 +147,7 @@ struct PropertiesPanel: View {
     @State private var speed: Double = 1.0
     @State private var reverse: Bool = false
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Name
             LabeledField("Name") {
@@ -257,7 +257,7 @@ private extension PropertiesPanel {
         guard let clip = clip else { return }
         clipName = clip.name
         startTime = clip.startTime
-        duration = clip.duration
+        duration = clip.duration ?? 0
         inPoint = clip.inPoint
         outPoint = clip.outPoint
     }
@@ -266,7 +266,7 @@ private extension PropertiesPanel {
 // MARK: - Transform Panel
 
 struct TransformPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     
     @State private var positionX: Double = 0
     @State private var positionY: Double = 0
@@ -277,7 +277,7 @@ struct TransformPanel: View {
     @State private var anchorY: Double = 0.5
     @State private var uniformScale = true
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Position
             GroupBox("Position") {
@@ -360,7 +360,7 @@ struct TransformPanel: View {
 // MARK: - Crop Panel
 
 struct CropPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     
     @State private var cropLeft: Double = 0
     @State private var cropRight: Double = 0
@@ -371,7 +371,7 @@ struct CropPanel: View {
     @State private var sourceSize: CGSize = CGSize(width: 1920, height: 1080)
     @State private var sourceSizeTask: Task<Void, Never>? = nil
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             GroupBox("Crop Values") {
                 VStack(spacing: 8) {
@@ -466,7 +466,7 @@ struct CropPanel: View {
 // MARK: - Audio Panel
 
 struct AudioPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     
     @State private var volume: Double = 0
     @State private var pan: Double = 0
@@ -475,7 +475,7 @@ struct AudioPanel: View {
     @State private var fadeInDuration: Double = 0
     @State private var fadeOutDuration: Double = 0
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Volume
             GroupBox("Volume") {
@@ -559,12 +559,12 @@ struct AudioPanel: View {
 // MARK: - Metadata Panel
 
 struct MetadataPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     @State private var fileSize: String = "—"
     @State private var modified: String = "—"
     @State private var abbreviatedPath: String = "—"
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let clip = clip, let url = clip.sourceURL {
                 GroupBox("File Info") {
@@ -661,7 +661,7 @@ struct MetadataPanel: View {
 // MARK: - Advanced Options Panel
 
 struct AdvancedOptionsPanel: View {
-    var clip: TimelineClip?
+    var clip: SimpleTimelineClip?
     
     @State private var deinterlace = false
     @State private var removeNoise = false
@@ -669,7 +669,7 @@ struct AdvancedOptionsPanel: View {
     @State private var colorSpace = "Auto"
     @State private var alphaHandling = "Premultiplied"
     
-    var body: some View {
+    public var body: some View {
         GroupBox("Advanced Options") {
             VStack(alignment: .leading, spacing: 8) {
                 Toggle("Deinterlace", isOn: $deinterlace)
@@ -712,7 +712,7 @@ struct LabeledField<Content: View>: View {
         self.content = content
     }
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .frame(width: 80, alignment: .leading)
@@ -726,7 +726,7 @@ struct NumberField: View {
     @Binding var value: Double
     let suffix: String
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .frame(width: 80, alignment: .leading)
@@ -752,7 +752,7 @@ struct ClipInfoRow: View {
         self.value = value
     }
     
-    var body: some View {
+    public var body: some View {
         HStack {
             Text(label)
                 .foregroundColor(.secondary)
@@ -773,7 +773,7 @@ struct AnchorPointSelector: View {
         (0, 1), (0.5, 1), (1, 1)
     ]
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 4) {
             ForEach(0..<3) { row in
                 HStack(spacing: 4) {
@@ -807,7 +807,7 @@ struct CropPreview: View {
     let bottom: Double
     var sourceSize: CGSize = CGSize(width: 1920, height: 1080)
     
-    var body: some View {
+    public var body: some View {
         GeometryReader { geometry in
             ZStack {
                 Rectangle()
@@ -838,7 +838,7 @@ struct AudioMetersView: View {
     @State private var leftLevel: Double = -20
     @State private var rightLevel: Double = -18
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             AudioMeter(level: leftLevel, label: "L")
             AudioMeter(level: rightLevel, label: "R")
@@ -850,7 +850,7 @@ struct AudioMeter: View {
     let level: Double // in dB
     let label: String
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 4) {
             Text(label)
                 .font(.caption)

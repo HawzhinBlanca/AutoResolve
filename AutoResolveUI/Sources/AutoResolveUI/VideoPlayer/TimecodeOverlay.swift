@@ -10,94 +10,110 @@ public struct TimecodeOverlay: View {
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Main timecode display
-            HStack(spacing: 12) {
-                // Timecode
-                Text(timeline.timecode(for: currentTime))
-                    .font(.system(size: 24, weight: .medium, design: .monospaced))
-                    .foregroundColor(.white)
-                
-                // Frame number
-                Text("F: \(currentFrame)")
-                    .font(.system(size: 14, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.8))
-                
-                // Playback rate indicator
-                if timeline.playbackRate != 1.0 {
-                    Text("\(String(format: "%.1fx", timeline.playbackRate))")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(playbackRateColor)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Color.black.opacity(0.3)))
-                }
-            }
+            mainTimecodeDisplay
             
             // Extended info
             if showExtendedInfo {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("Duration:")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                        Text(timeline.timecode(for: timeline.duration))
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    
-                    HStack {
-                        Text("In:")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                        Text(timeline.timecode(for: timeline.workAreaStart))
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(.white.opacity(0.8))
-                        
-                        Text("Out:")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                        Text(timeline.timecode(for: timeline.workAreaEnd))
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    
-                    if let activeClip = getActiveClip() {
-                        Divider()
-                            .background(Color.white.opacity(0.3))
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(activeClip.name)
-                                .font(.caption.bold())
-                                .foregroundColor(.white.opacity(0.9))
-                                .lineLimit(1)
-                            
-                            HStack {
-                                Text("Clip TC:")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.6))
-                                Text(clipTimecode(for: activeClip))
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                        }
-                    }
-                }
-                .padding(.top, 4)
+                extendedInfoSection
             }
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.7))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-        )
+        .padding(8)
+        .background(backgroundOverlay)
+        .cornerRadius(6)
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showExtendedInfo.toggle()
+            showExtendedInfo.toggle()
+        }
+    }
+    
+    private var extendedInfoSection: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text("Duration:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+                Text(timeline.timecode(for: timeline.duration))
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.white.opacity(0.8))
             }
+            
+            HStack {
+                Text("In:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+                Text(timeline.timecode(for: timeline.workAreaStart))
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.white.opacity(0.8))
+                
+                Text("Out:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+                Text(timeline.timecode(for: timeline.workAreaEnd))
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            if let activeClip = getActiveClip() {
+                Divider()
+                    .background(Color.white.opacity(0.3))
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(activeClip.name)
+                        .font(.caption.bold())
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
+                    
+                    HStack {
+                        Text("Clip TC:")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.6))
+                        Text(clipTimecode(for: activeClip))
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+    
+    private var backgroundOverlay: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color.black.opacity(0.7))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+    }
+    
+    private var mainTimecodeDisplay: some View {
+        HStack(spacing: 12) {
+            timecodeText
+            frameNumberText
+            playbackRateIndicator
+        }
+    }
+    
+    private var timecodeText: some View {
+        Text(timeline.timecode(for: currentTime))
+            .font(.system(size: 24, weight: .medium, design: .monospaced))
+            .foregroundColor(.white)
+    }
+    
+    private var frameNumberText: some View {
+        Text("F: \(currentFrame)")
+            .font(.system(size: 14, weight: .regular, design: .monospaced))
+            .foregroundColor(.white.opacity(0.8))
+    }
+    
+    @ViewBuilder
+    private var playbackRateIndicator: some View {
+        if timeline.playbackRate != 1.0 {
+            Text("\(String(format: "%.1fx", timeline.playbackRate))")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(playbackRateColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(Color.black.opacity(0.3)))
         }
     }
     
@@ -115,11 +131,11 @@ public struct TimecodeOverlay: View {
         }
     }
     
-    private func getActiveClip() -> TimelineClip? {
+    private func getActiveClip() -> SimpleTimelineClip? {
         for track in timeline.tracks {
             for clip in track.clips {
                 if currentTime >= clip.startTime && 
-                   currentTime < clip.startTime + clip.duration {
+                   currentTime < clip.startTime + clip.duration ?? 0 {
                     return clip
                 }
             }
@@ -127,7 +143,7 @@ public struct TimecodeOverlay: View {
         return nil
     }
     
-    private func clipTimecode(for clip: TimelineClip) -> String {
+    private func clipTimecode(for clip: SimpleTimelineClip) -> String {
         let clipTime = currentTime - clip.startTime + clip.inPoint
         return timeline.timecode(for: clipTime)
     }
@@ -298,7 +314,7 @@ public class VideoScopesManager: ObservableObject {
 struct WaveformScope: View {
     let data: VideoScopesManager.WaveformData
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             // Draw waveform
             drawChannel(data.luminance, color: .white, in: context, size: size)
@@ -329,7 +345,7 @@ struct WaveformScope: View {
 struct VectorscopeView: View {
     let data: VideoScopesManager.VectorscopeData
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let radius = min(size.width, size.height) / 2 * 0.9
@@ -384,7 +400,7 @@ struct VectorscopeView: View {
 struct HistogramView: View {
     let data: VideoScopesManager.HistogramData
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             let barWidth = size.width / 256
             
@@ -414,7 +430,7 @@ struct HistogramView: View {
 struct RGBParadeView: View {
     let data: VideoScopesManager.RGBParadeData
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 2) {
             ParadeChannel(values: data.red, color: .red)
             ParadeChannel(values: data.green, color: .green)
@@ -427,7 +443,7 @@ struct ParadeChannel: View {
     let values: [Float]
     let color: Color
     
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
             guard !values.isEmpty else { return }
             

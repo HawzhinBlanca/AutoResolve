@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import av
 import numpy as np
 import os
+import configparser
 import json
 import time
 import hashlib
@@ -30,6 +31,10 @@ except ImportError:
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configuration for embeddings
+_EMB_CFG = configparser.ConfigParser()
+_EMB_CFG.read(os.getenv("EMBEDDINGS_INI", "conf/embeddings.ini"))
 
 # TimeSformer architecture implementation
 class TimeSformerModel(nn.Module):
@@ -382,47 +387,35 @@ class VJEPAEmbedder:
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         
-        # Check for real V-JEPA-2 model
-        vjepa2_path = Path("/Users/hawzhin/vjepa2-vitl-fpc64-256")
-        self.use_real_vjepa2 = use_real_vjepa2 and HAS_VJEPA2 and vjepa2_path.exists()
+        # Check for real V-JEPA-2 model via config (no hardcoded paths)
+        self.use_real_vjepa2 = use_real_vjepa2 and HAS_VJEPA2
         
         if self.use_real_vjepa2:
-            # Use actual V-JEPA-2 model from HuggingFace
-            logger.info("Loading real V-JEPA-2 model from local directory")
+            logger.info("Loading V-JEPA-2 model via HuggingFace (config-driven)")
             try:
+                model_id = _EMB_CFG.get('embeddings', 'vjepa_model', fallback=_EMB_CFG.get('DEFAULT', 'vjepa_model', fallback='facebook/vjepa2-vitl-fpc64-256'))
                 self.model = AutoModel.from_pretrained(
-                    str(vjepa2_path),
+                    model_id,
                     trust_remote_code=True,
-                    local_files_only=True
+                    cache_dir="models/cache"
                 ).to(self.device)
                 
-                # Use V-JEPA-2's own preprocessor config
-                preprocessor_config_path = vjepa2_path / "preprocessor_config.json"
-                if preprocessor_config_path.exists():
-                    with open(preprocessor_config_path, 'r') as f:
-                        proc_config = json.load(f)
-                    # Create a simple processor with V-JEPA-2 settings
-                    self.processor = None  # We'll handle preprocessing manually
-                    self.proc_config = proc_config
-                else:
-                    # Fall back to VideoMAE processor
-                    try:
-                        self.processor = VideoMAEImageProcessor.from_pretrained("MCG-NJU/videomae-base")
-                        self.processor.size = {"height": 256, "width": 256}
-                        self.processor.crop_size = {"height": 256, "width": 256}
-                    except:
-                        self.processor = None  # Handle preprocessing manually
+                # Processor fallback if needed
+                try:
+                    self.processor = VideoMAEImageProcessor.from_pretrained("MCG-NJU/videomae-base")
+                    self.processor.size = {"height": 256, "width": 256}
+                    self.processor.crop_size = {"height": 256, "width": 256}
+                except Exception:
+                    self.processor = None
                 
-                # V-JEPA-2 specific settings
-                self.embed_dim = 1024  # ViT-L
+                # V-JEPA-2 defaults
+                self.embed_dim = 1024
                 self.img_size = 256
                 self.frames_per_clip = 64
-                self.model_tag = "vjepa2-vitl-fpc64-256"
-                
-                logger.info("✅ Real V-JEPA-2 model loaded successfully")
-                
+                self.model_tag = model_id
+                logger.info("✅ V-JEPA-2 model loaded: %s", self.model_tag)
             except Exception as e:
-                logger.warning(f"Failed to load V-JEPA-2, falling back to TimeSformer: {e}")
+                logger.warning(f"Failed to load V-JEPA-2 via HuggingFace, falling back to TimeSformer: {e}")
                 self.use_real_vjepa2 = False
         
         if not self.use_real_vjepa2:

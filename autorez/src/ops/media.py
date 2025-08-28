@@ -61,7 +61,7 @@ def extract_audio(
     
     # Execute
     start_time = time.time()
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     
     if result.returncode != 0:
         return {
@@ -76,7 +76,7 @@ def extract_audio(
         '-show_entries', 'format=duration',
         '-of', 'json', str(output_path)
     ]
-    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
     
     duration = 0
     if probe_result.returncode == 0:
@@ -156,7 +156,7 @@ def concatenate_clips(
     
     # Execute
     start_time = time.time()
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     
     # Clean up concat file
     Path(concat_file).unlink()
@@ -174,7 +174,7 @@ def concatenate_clips(
         '-show_entries', 'format=duration,size',
         '-of', 'json', str(output_path)
     ]
-    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
     
     duration = 0
     size = 0
@@ -240,7 +240,7 @@ def remux_media(
     
     # Execute
     start_time = time.time()
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     
     if result.returncode != 0:
         return {
@@ -283,7 +283,7 @@ def get_media_info(media_path: str) -> Dict:
         str(media_path)
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     
     if result.returncode != 0:
         return {
@@ -305,23 +305,35 @@ def get_media_info(media_path: str) -> Dict:
             "success": True,
             "path": media_path,
             "duration": float(format_info.get('duration', 0)),
-            "size": int(format_info.get('size', 0)),
-            "bitrate": int(format_info.get('bit_rate', 0))
+            "size": int(float(format_info.get('size', 0) or 0)),
+            "bitrate": int(float(format_info.get('bit_rate', 0) or 0))
         }
         
         if video_stream:
+            # Safely parse r_frame_rate like "30000/1001"
+            rate_value = str(video_stream.get('r_frame_rate', '0/1'))
+            try:
+                if "/" in rate_value:
+                    num_str, den_str = rate_value.split('/', 1)
+                    num = float(num_str)
+                    den = float(den_str) if float(den_str) != 0 else 1.0
+                    fps = num / den
+                else:
+                    fps = float(rate_value)
+            except Exception:
+                fps = 0.0
             info["video"] = {
                 "codec": video_stream.get('codec_name'),
                 "width": video_stream.get('width'),
                 "height": video_stream.get('height'),
-                "fps": eval(video_stream.get('r_frame_rate', '0/1'))
+                "fps": fps
             }
         
         if audio_stream:
             info["audio"] = {
                 "codec": audio_stream.get('codec_name'),
-                "channels": audio_stream.get('channels'),
-                "sample_rate": int(audio_stream.get('sample_rate', 0))
+                "channels": int(audio_stream.get('channels') or 0),
+                "sample_rate": int(audio_stream.get('sample_rate') or 0)
             }
         
         return info
