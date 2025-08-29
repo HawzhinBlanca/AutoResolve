@@ -8,9 +8,9 @@ import json
 import hashlib
 import time
 from pathlib import Path
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List
 from openai import OpenAI
-import tiktoken
+from src.security.bedrock_guardrails import validate_content_safety
 
 class OpenRouterClient:
     def __init__(self, config):
@@ -53,6 +53,15 @@ class OpenRouterClient:
         if not self.enabled or self.call_count >= self.max_calls or self.daily_spend >= self.daily_cap:
             return {"_skipped": True, "reason": "limits"}
             
+        # Pre-flight safety check
+        try:
+            pre = validate_content_safety({"system": system, "user": user}, source="openrouter_pre")
+            if not pre.get("safe", True):
+                return {"_error": "content_blocked_pre", "_skipped": True}
+        except Exception:
+            # Fail-secure: skip external call on safety failure
+            return {"_error": "content_safety_failed_pre", "_skipped": True}
+
         # Cache key
         content_hash = hashlib.sha256(f"{model}{system}{user}{images}".encode()).hexdigest()[:16]
         cache_file = self.cache_dir / f"{model.replace('/', '_')}_{content_hash}.json"
@@ -85,6 +94,13 @@ class OpenRouterClient:
             )
             
             result = json.loads(response.choices[0].message.content)
+            # Post-flight safety check
+            try:
+                post = validate_content_safety(result, source="openrouter_post")
+                if not post.get("safe", True):
+                    return {"_error": "content_blocked_post", "_skipped": True}
+            except Exception:
+                return {"_error": "content_safety_failed_post", "_skipped": True}
             
             # Track costs
             self._track_cost(response.usage)
@@ -110,6 +126,13 @@ class OpenRouterClient:
         input_cost = (usage.prompt_tokens / 1000000) * 0.15  # $0.15/M tokens
         output_cost = (usage.completion_tokens / 1000000) * 0.60  # $0.60/M tokens
         self.daily_spend += (input_cost + output_cost)
+        # Persist spend to disk for the day
+        spend_file = self.cache_dir / f"spend_{time.strftime('%Y%m%d')}.json"
+        try:
+            spend_file.write_text(json.dumps({"total": self.daily_spend}))
+        except Exception:
+            # Non-fatal; keep in-memory counter
+            pass
         
     def _load_daily_spend(self) -> float:
         """Load today's spend from disk"""

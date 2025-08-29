@@ -10,11 +10,17 @@ def cos(a, b):
             logging.debug(f"Cosine similarity dimension mismatch: {a.shape} vs {b.shape}")
             return 0.0
     
+    # Add epsilon to prevent division by zero
     na = np.linalg.norm(a)
     nb = np.linalg.norm(b)
-    if na == 0 or nb == 0:
+    
+    # Check for zero vectors
+    if na < 1e-10 or nb < 1e-10:
         return 0.0
-    return float(np.dot(a, b) / (na * nb))
+    
+    # Compute similarity and clip to valid range
+    similarity = np.dot(a, b) / (na * nb)
+    return float(np.clip(similarity, -1.0, 1.0))
 
 def iou(a, b):
     """Intersection over union for time ranges"""

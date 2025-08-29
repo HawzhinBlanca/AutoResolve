@@ -267,7 +267,7 @@ class ResolveWorkflow:
             # Start render
             project.StartRendering()
             
-            logger.info(f"Rendering started...")
+            logger.info("Rendering started...")
             
             # Wait for render to complete
             while project.IsRenderingInProgress():

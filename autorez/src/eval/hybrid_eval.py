@@ -3,10 +3,7 @@ Hybrid evaluation: measures quality/cost/latency with OpenRouter augmentation
 """
 
 import time
-import json
-from pathlib import Path
-from typing import Dict, List, Any
-import numpy as np
+from typing import Dict, List
 from src.ops.openrouter import get_client
 
 def evaluate_hybrid(video_path: str, config) -> Dict:

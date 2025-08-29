@@ -1,0 +1,29 @@
+name: UI Freeze
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+jobs:
+  ui-freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Block new/renamed UI files
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${{ github.base_ref || 'main' }}"
+          git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+          git diff --name-status "origin/${BASE}"...HEAD | while read -r status pathA pathB; do
+            case "$status" in
+              A*|R*)
+                path="${pathB:-$pathA}"
+                if [[ "$path" =~ ^AutoResolveUI/ ]] && \
+                   [[ "$path" =~ (\.swift$|\.storyboard$|\.xib$|\.xcassets($|/)|\.xcodeproj($|/)|^AutoResolveUI/Sources/AutoResolveUI/|^AutoResolveUI/Tests/AutoResolveUITests/) ]]; then
+                  echo "UI freeze violated by: $status $path"
+                  exit 1
+                fi
+                ;;
+            esac
+          done

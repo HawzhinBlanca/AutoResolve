@@ -220,7 +220,11 @@ struct TimelineCanvas: View {
                     )
                     
                     // PLAYHEAD
-                    PlayheadView(timeline: store.timeline, height: 400)
+                    PlayheadView(
+                        currentTime: .constant(store.timeline.duration.seconds),
+                        duration: store.timeline.duration.seconds,
+                        height: 400
+                    )
                         .zIndex(1000)
                     
                     // SELECTION RECTANGLE
@@ -252,7 +256,28 @@ struct TimelineCanvas: View {
     }
     
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        // Handle video/audio file drops
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { (urlData, error) in
+                    if let urlData = urlData as? Data,
+                       let urlString = String(data: urlData, encoding: .utf8),
+                       let url = URL(string: urlString) {
+                        DispatchQueue.main.async { [weak store] in
+                            guard let store = store else { return }
+                            // Add clip to timeline at current playhead position
+                            let currentTime = CMTime.zero // Place at start for now
+                            store.addClipToTimeline(url: url, at: currentTime, trackIndex: 0)
+                        }
+                    } else if let url = urlData as? URL {
+                        DispatchQueue.main.async { [weak store] in
+                            guard let store = store else { return }
+                            let currentTime = CMTime.zero // Place at start for now
+                            store.addClipToTimeline(url: url, at: currentTime, trackIndex: 0)
+                        }
+                    }
+                }
+            }
+        }
         return true
     }
 }

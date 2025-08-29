@@ -1,105 +1,158 @@
-.PHONY: setup eval-ablate bench-vjepa bench-clip director-analyze director-eval-narrative transcribe silence-cut shortsify resolve-build broll-select broll-place proof-pack metrics-tail clean-cache run-safe check-memory
+# AutoResolve v3.2 - Production Makefile
+# Complete operational commands for development, testing, and production
 
-PY=python3
+.PHONY: help install test clean run stop health benchmark verify-all setup eval-ablate bench-vjepa bench-clip director-analyze transcribe silence-cut shortsify
 
-setup:
+# Colors for output
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+NC := \033[0m # No Color
+
+PY := python3
+
+help: ## Show this help message
+	@echo "$(GREEN)AutoResolve v3.2 - Production Commands$(NC)"
+	@echo "========================================="
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
+
+# === SETUP & INSTALLATION ===
+
+install: setup ## Install all dependencies
+	@echo "$(GREEN)✓ Dependencies installed$(NC)"
+
+setup: ## Install dependencies (legacy compatibility)
+	@echo "$(GREEN)Installing dependencies...$(NC)"
 	$(PY) -m pip install -r requirements.txt
 
-check-memory:
-	@echo "Checking system memory..."
-	@$(PY) -c "import psutil; m=psutil.virtual_memory(); print(f'Available: {m.available/(1024**3):.1f}GB / {m.total/(1024**3):.1f}GB ({m.percent:.1f}% used)')"
+install-dev: ## Install development dependencies
+	pip install -r requirements.txt
+	pip install pytest black pylint mypy
 
-run-safe: check-memory
+clean: clean-cache ## Clean all artifacts and caches
+	@echo "$(YELLOW)Cleaning artifacts...$(NC)"
+	rm -rf __pycache__ .pytest_cache *.pyc
+	rm -rf artifacts/*.json artifacts/cache/*
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@echo "$(GREEN)✓ Cleaned$(NC)"
+
+clean-cache: ## Clean cache only
+	rm -rf artifacts/cache/*
+	@echo "$(GREEN)✓ Cache cleaned$(NC)"
+
+# === BACKEND OPERATIONS ===
+
+run: ## Start backend server
+	@echo "$(GREEN)Starting AutoResolve backend...$(NC)"
+	uvicorn backend_service_final:app --host 0.0.0.0 --port 8000 --reload
+
+run-prod: ## Start production server with workers
+	uvicorn backend_service_final:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
+
+run-safe: check-memory ## Run with memory protection
 	@echo "Running with memory protection..."
 	$(PY) run_safe.py
 
-# Retrieval A/B
-eval-ablate:
+stop: ## Stop all AutoResolve processes
+	@echo "$(YELLOW)Stopping services...$(NC)"
+	-pkill -f "uvicorn backend_service_final"
+	-lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+	@echo "$(GREEN)✓ Services stopped$(NC)"
+
+health: ## Check system health
+	@echo "$(GREEN)Health Check:$(NC)"
+	@curl -s http://localhost:8000/health | python -m json.tool || echo "$(RED)✗ Backend not responding$(NC)"
+
+# === TESTING ===
+
+test-pipeline: ## Test full pipeline with 30min video
+	@echo "$(GREEN)Testing full pipeline...$(NC)"
+	$(PY) autoresolve_cli.py process assets/test_30min.mp4
+	@echo "$(GREEN)✓ Pipeline test complete$(NC)"
+
+test-gates: verify-gates ## Alias for verify-gates
+
+verify-gates: ## Verify performance gates
+	@echo "$(GREEN)Verifying performance gates...$(NC)"
+	@$(PY) -m src.eval.gates --verify && echo "$(GREEN)✓ All gates PASS$(NC)" || echo "$(RED)✗ Gates FAILED$(NC)"
+
+# === PERFORMANCE ===
+
+benchmark: bench-vjepa bench-clip ## Run all benchmarks
+	@echo "$(GREEN)✓ Benchmarks complete$(NC)"
+
+bench-vjepa: ## Benchmark V-JEPA embedder
+	@echo "$(GREEN)Running V-JEPA benchmark...$(NC)"
+	@$(PY) -c "from src.embedders.vjepa_embedder import VJEPAEmbedder; E=VJEPAEmbedder(); segs, meta = E.embed_segments('assets/test_30min.mp4', fps=1.0, window=16, strategy='temp_attn', max_segments=10); print({'segments': len(segs), **meta})"
+
+bench-clip: ## Benchmark CLIP embedder
+	@echo "$(GREEN)Running CLIP benchmark...$(NC)"
+	@$(PY) -c "from src.embedders.clip_embedder import CLIPEmbedder; E=CLIPEmbedder(); segs, meta = E.embed_segments('assets/test_30min.mp4', fps=1.0, window=16, strategy='temp_attn', max_segments=10); print({'segments': len(segs), **meta})"
+
+check-memory: ## Check system memory
+	@echo "Checking system memory..."
+	@$(PY) -c "import psutil; m=psutil.virtual_memory(); print(f'Available: {m.available/(1024**3):.1f}GB / {m.total/(1024**3):.1f}GB ({m.percent:.1f}% used)')"
+
+# === OPERATIONS ===
+
+eval-ablate: ## Run V-JEPA vs CLIP ablation
 	$(PY) -m src.eval.ablate_vjepa_vs_clip datasets/broll_pilot/manifest.json
 
-bench-vjepa:
-	@echo "Running V-JEPA benchmark..."
-	$(PY) -c "from src.embedders.vjepa_embedder import VJEPAEmbedder; E=VJEPAEmbedder(); segs, meta = E.embed_segments('assets/pilots/clip_5m.mp4', fps=1.0, window=16, strategy='temp_attn'); print({'segments': len(segs), **meta})"
-
-bench-clip:
-	@echo "Running CLIP benchmark..."
-	$(PY) -c "from src.embedders.clip_embedder import CLIPEmbedder; E=CLIPEmbedder(); segs, meta = E.embed_segments('assets/pilots/clip_5m.mp4', fps=1.0, window=16, strategy='temp_attn'); print({'segments': len(segs), **meta})"
-
-# Director
-director-analyze:
+director-analyze: ## Analyze video with creative director
 	$(PY) -m src.director.creative_director --video $(VIDEO) --out artifacts/creative_director.json
 
-director-eval-narrative:
-	$(PY) -m src.eval.eval_director --video $(VIDEO) \
-		--gt_incidents datasets/annotations/incidents.jsonl \
-		--gt_climax datasets/annotations/climax.jsonl \
-		--gt_resolution datasets/annotations/resolution.jsonl
-
-eval-director:
-	$(PY) -m src.eval.eval_director datasets/annotations/
-
-# Ops
-transcribe:
+transcribe: ## Transcribe video audio
 	$(PY) -m src.ops.transcribe --audio $(VIDEO) --out artifacts/transcript.json
 
-silence-cut:
-	$(PY) -m src.ops.silence --video $(VIDEO) --out artifacts/cuts.json
+silence-cut: ## Detect and cut silence
+	$(PY) -m src.ops.silence $(VIDEO) artifacts/cuts.json
 
-shortsify:
+shortsify: ## Create short clips
 	$(PY) -m src.ops.shortsify --video $(VIDEO) --out_dir artifacts/shorts
 
-resolve-build:
-	$(PY) -m src.ops.resolve_api --video $(VIDEO) --cuts artifacts/cuts.json --transcript artifacts/transcript.json --timeline "AutoResolve v3"
+broll-select: ## Select B-roll suggestions
+	$(PY) -m src.broll.selector $(VIDEO) --out artifacts/broll_selection.json
 
-# B-roll
-broll-select:
-	$(PY) -m src.broll.selector --video $(VIDEO) --library datasets/library/stock_manifest.json --out artifacts/broll/select.json
-
-broll-place:
-	$(PY) -m src.broll.placer --video $(VIDEO) --select artifacts/broll/select.json --out artifacts/broll/overlay.json
-
-# Proofs & Metrics
-proof-pack:
-	mkdir -p proof_pack
-	$(PY) -m src.eval.ablate_vjepa_vs_clip datasets/broll_pilot/manifest.json > proof_pack/ablation_results.json
-	cp -f artifacts/creative_director.json proof_pack/creative_director.json 2>/dev/null || true
-	cp -f artifacts/transcript.json       proof_pack/transcript.json       2>/dev/null || true
-	cp -f artifacts/cuts.json             proof_pack/cuts.json             2>/dev/null || true
-	cp -f artifacts/shorts/index.json     proof_pack/shorts_index.json     2>/dev/null || true
-	cp -f artifacts/broll/overlay.json    proof_pack/broll_overlay.json    2>/dev/null || true
-	cp -f artifacts/VERSIONS.json         proof_pack/VERSIONS.json         2>/dev/null || true
-	$(PY) -c "import json,platform; print(json.dumps({'python': platform.python_version()}))" > proof_pack/environment.json
+proof-pack: ## Generate proof pack
 	$(PY) -m src.eval.generate_proof_pack
 
-metrics-tail:
-	@tail -n 50 artifacts/metrics.jsonl 2>/dev/null || echo "no metrics yet"
+# === MONITORING ===
 
-clean-cache:
-	rm -rf artifacts/cache/*.npz artifacts/cache/*.json 2>/dev/null || true
+logs: ## Tail application logs
+	@tail -f logs/autoresolve.log 2>/dev/null || echo "$(YELLOW)No logs available$(NC)"
 
-# Bug fix validation commands
-validate-fixes:
-	bash scripts/validate_all_fixes.sh
+metrics: metrics-tail ## Show current metrics
+	@cat artifacts/metrics.json | python -m json.tool
 
-test-unit:
-	$(PY) -m pytest tests/ -v --tb=short
+metrics-tail: ## Tail metrics file
+	@tail -f artifacts/metrics.jsonl 2>/dev/null || cat artifacts/metrics.json | python -m json.tool
 
-test-integration:
-	$(PY) tests/integration/test_full_pipeline.py
+status: ## Show system status
+	@echo "$(GREEN)=== AutoResolve Status ===$(NC)"
+	@echo -n "Backend: "; curl -s http://localhost:8000/health >/dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Stopped$(NC)"
+	@echo -n "Port 8000: "; lsof -i:8000 >/dev/null 2>&1 && echo "$(GREEN)✓ Listening$(NC)" || echo "$(RED)✗ Free$(NC)"
+	@echo -n "Gates: "; $(PY) -m src.eval.gates --verify >/dev/null 2>&1 && echo "$(GREEN)✓ Passing$(NC)" || echo "$(RED)✗ Failing$(NC)"
 
-bench-vjepa-new:
-	$(PY) scripts/benchmark_vjepa.py --video assets/pilots/clip_5m.mp4 --iterations 3
+# === VALIDATION ===
 
-bench-clip-new:
-	$(PY) scripts/benchmark_clip.py --video assets/pilots/clip_5m.mp4 --iterations 3
+verify-all: ## Complete system verification
+	@echo "$(GREEN)=== COMPLETE SYSTEM VERIFICATION ===$(NC)"
+	@echo -n "1. Dependencies: "; $(PY) -c "import torch, fastapi, numpy" 2>/dev/null && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@echo -n "2. Structure: "; test -f backend_service_final.py && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@echo -n "3. No LibROSA: "; ! grep -q "import librosa" src/ops/silence.py && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@echo -n "4. Test asset: "; test -f assets/test_30min.mp4 && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@echo -n "5. Gates pass: "; $(PY) -m src.eval.gates --verify >/dev/null 2>&1 && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@echo "$(GREEN)====================================$(NC)"
 
-# OpenRouter Integration
-openrouter-setup:
-	$(PY) -m pip install openai tiktoken
-	@echo "Set OPENROUTER_API_KEY in your environment"
+# === DEPLOYMENT ===
 
-openrouter-test:
-	@$(PY) -c "from src.ops.openrouter import OpenRouterClient; import configparser; cfg = configparser.ConfigParser(); cfg.read('conf/ops.ini'); client = OpenRouterClient(cfg); print(client.sanity_check())"
+deploy: ## Deploy to production
+	@echo "$(GREEN)Deploying to production...$(NC)"
+	./deploy_final.sh
 
-hybrid-bench:
-	$(PY) -m src.eval.hybrid_eval --video assets/pilots/scene.mp4
+# === QUICK COMMANDS ===
+
+quick-test: ## Quick smoke test
+	@curl -s http://localhost:8000/health | grep healthy >/dev/null && echo "$(GREEN)✓ System operational$(NC)" || echo "$(RED)✗ System down$(NC)"
+
+all: install verify-all ## Complete setup and verification

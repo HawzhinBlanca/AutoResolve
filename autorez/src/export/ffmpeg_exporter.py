@@ -4,11 +4,10 @@ Handles real MP4 export from timeline data
 """
 
 import os
-import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 import tempfile
 import shutil
 
@@ -184,7 +183,7 @@ class FFmpegExporter:
                 ])
                 
                 if i == 0:
-                    filter_complex.append(f"[0:v][0:a]")
+                    filter_complex.append("[0:v][0:a]")
                 elif i < len(clips) - 1:
                     # Add crossfade
                     filter_complex.append(

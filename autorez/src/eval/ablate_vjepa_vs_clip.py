@@ -2,7 +2,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-import json, numpy as np
+import json
+import numpy as np
 from src.embedders.vjepa_embedder import VJEPAEmbedder
 from src.embedders.clip_embedder  import CLIPEmbedder
 from src.align.align_vjepa_to_clip import fit_linear_head_kfold, project
@@ -132,9 +133,9 @@ def eval_manifest(manifest, fps=1.0, window=16, crop_v=256, kfold=5):
     
     if should_promote:
         update_embeddings_config_to_vjepa()
-        logger.info(f"✅ V-JEPA PROMOTED: Updated embeddings.ini to use V-JEPA")
+        logger.info("✅ V-JEPA PROMOTED: Updated embeddings.ini to use V-JEPA")
     else:
-        logger.info(f"❌ V-JEPA NOT PROMOTED: Keeping CLIP as default")
+        logger.info("❌ V-JEPA NOT PROMOTED: Keeping CLIP as default")
     
     logger.info(json.dumps(res, indent=2))
     return res

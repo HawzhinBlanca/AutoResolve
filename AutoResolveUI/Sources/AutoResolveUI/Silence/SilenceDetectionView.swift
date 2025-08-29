@@ -474,7 +474,7 @@ struct TimelineRulerOverlay: View {
         GeometryReader { geometry in
             VStack {
                 HStack(alignment: .top, spacing: 0) {
-                    ForEach(0..<Int(duration) + 1, id: \.self) { second in
+                    ForEach(0..<(duration.isFinite && duration >= 0 ? Int(min(duration, 10000)) + 1 : 1), id: \.self) { second in
                         VStack {
                             Text(formatTime(TimeInterval(second)))
                                 .font(.system(size: 9))
@@ -493,8 +493,10 @@ struct TimelineRulerOverlay: View {
     }
     
     private func formatTime(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
+        guard time.isFinite && time >= 0 else { return "0:00" }
+        let safeTime = min(time, 359999.0)
+        let minutes = Int(safeTime) / 60
+        let seconds = Int(safeTime) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
 }
@@ -558,9 +560,11 @@ struct SilenceRegionRow: View {
     }
     
     private func formatTimecode(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        let frames = Int((time - Double(Int(time))) * 30)
+        guard time.isFinite && time >= 0 else { return "00:00:00" }
+        let safeTime = min(time, 359999.0)
+        let minutes = Int(safeTime) / 60
+        let seconds = Int(safeTime) % 60
+        let frames = Int((safeTime - Double(Int(safeTime))) * 30)
         return String(format: "%02d:%02d:%02d", minutes, seconds, frames)
     }
     

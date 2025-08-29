@@ -15,6 +15,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Configuration helpers
+def _base_dir() -> Path:
+    return Path(os.getenv("AUTORESOLVE_BASE_DIR", str(Path.cwd()))).resolve()
+
+def _ensure_dir(env_key: str, default_subdir: str) -> Path:
+    base = _base_dir()
+    p = Path(os.getenv(env_key, str(base / default_subdir)))
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
 # Pydantic models for timeline operations
 class TimelineClip(BaseModel):
     id: str
@@ -50,8 +60,7 @@ class TimelineManager:
     
     def __init__(self, db_path: str = None):
         if db_path is None:
-            db_dir = Path(os.getenv("TIMELINE_DB_DIR", "/Users/hawzhin/AutoResolve/timeline_db"))
-            db_dir.mkdir(parents=True, exist_ok=True)
+            db_dir = _ensure_dir("TIMELINE_DB_DIR", "timeline_db")
             db_path = str(db_dir / "timeline.db")
         
         self.db_path = db_path
@@ -60,6 +69,8 @@ class TimelineManager:
     def _init_database(self):
         """Initialize SQLite database with timeline schema"""
         with sqlite3.connect(self.db_path) as conn:
+            # CRITICAL: Enable foreign key enforcement
+            conn.execute("PRAGMA foreign_keys = ON")
             cursor = conn.cursor()
             
             # Projects table
@@ -104,6 +115,8 @@ class TimelineManager:
         project_id = f"project_{int(time.time() * 1000)}"
         
         with sqlite3.connect(self.db_path) as conn:
+            # Enable foreign keys for this connection
+            conn.execute("PRAGMA foreign_keys = ON")
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO projects (id, name, settings, metadata)
@@ -117,6 +130,8 @@ class TimelineManager:
     async def add_clip(self, project_id: str, clip: TimelineClip) -> Dict:
         """Add a clip to the timeline"""
         with sqlite3.connect(self.db_path) as conn:
+            # Enable foreign keys for this connection
+            conn.execute("PRAGMA foreign_keys = ON")
             cursor = conn.cursor()
             
             # Check for collisions
@@ -150,6 +165,8 @@ class TimelineManager:
     async def move_clip(self, project_id: str, clip_id: str, position: TimePosition) -> Dict:
         """Move a clip to a new position"""
         with sqlite3.connect(self.db_path) as conn:
+            # Enable foreign keys for this connection
+            conn.execute("PRAGMA foreign_keys = ON")
             cursor = conn.cursor()
             
             # Get current clip info
@@ -192,6 +209,48 @@ class TimelineManager:
         
         logger.info(f"Moved clip {clip_id} to track {position.track_index}, time {position.start_time}")
         return {"status": "moved", "collisions": [c[0] for c in collisions]}
+    
+    async def update_clip(self, project_id: str, clip_id: str, clip_data: TimelineClip) -> Dict:
+        """Update clip properties"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Verify clip exists
+            cursor.execute("""
+                SELECT id FROM clips WHERE id = ? AND project_id = ?
+            """, (clip_id, project_id))
+            
+            if not cursor.fetchone():
+                raise ValueError(f"Clip {clip_id} not found in project {project_id}")
+            
+            # Update all clip properties
+            cursor.execute("""
+                UPDATE clips SET 
+                    name = ?,
+                    track_index = ?,
+                    start_time = ?,
+                    duration = ?,
+                    source_url = ?,
+                    in_point = ?,
+                    out_point = ?,
+                    effects = ?,
+                    transitions = ?
+                WHERE id = ? AND project_id = ?
+            """, (clip_data.name, clip_data.track_index, clip_data.start_time,
+                  clip_data.duration, clip_data.source_url, clip_data.in_point,
+                  clip_data.out_point, json.dumps(clip_data.effects),
+                  json.dumps(clip_data.transitions), clip_id, project_id))
+            
+            # Update project modified time
+            cursor.execute("""
+                UPDATE projects SET modified_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            """, (project_id,))
+            
+            conn.commit()
+        
+        logger.info(f"Updated clip {clip_id} in project {project_id}")
+        return {"status": "updated", "clip_id": clip_id}
     
     async def delete_clip(self, project_id: str, clip_id: str) -> Dict:
         """Delete a clip from the timeline"""

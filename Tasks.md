@@ -1,399 +1,256 @@
-# OpenRouter Integration Prompt for AutoResolve v3.0 Blueprint Update
+Here’s a crisp, end-to-end build spec you can drop into Claude as the coding agent brief. It’s ruthlessly scoped to a Resolve-quality UI, minus Media/Fusion/Fairlight/Color. No fluff, just what to build, how, and how we’ll know it’s perfect.
 
-Execute this integration plan to add OpenRouter capabilities to AutoResolve v3.0. No deviations. Every change must preserve existing guarantees.
+⸻
 
-## PHASE 1: Blueprint Update
+AutoResolve UI — Production Spec (for Claude)
 
-Update `/Users/hawzhin/AutoResolve/Blueprint.md` with the following additions:
+0) Mission & Non-Goals
 
-### Section 2.5: OpenRouter Dependencies (NEW)
-```
-openai>=1.0.0         # OpenRouter client via OpenAI SDK
-tiktoken>=0.5.0       # Token counting for cost estimation
-```
+Mission: Ship a desktop-class, DaVinci-grade editor UI with Cut / Edit / Deliver pages and AI as annotation lanes (silence, beats, b-roll). Must feel native, run at 60fps, and be frame-accurate.
 
-### Section 3: Configuration - Add OpenRouter Section
-```ini
-# conf/ops.ini - ADD this section after [broll]
+Non-Goals: Media/Fusion/Fairlight/Color pages, scopes, effects, transitions, titles, audio mixing, node graphs.
 
-[openrouter]
-enabled = false                          # Default OFF - local only
-base_url = https://openrouter.ai/api/v1
-api_key_env = OPENROUTER_API_KEY
-app_referrer = https://autoresolve.app
-app_title = AutoResolve v3.0
+Target stack: Swift + SwiftUI + Metal + AVFoundation (matches AutoResolveUI package). Web prototypes are out of scope.
 
-# Model routing
-narrative_model = cohere/command-r7b-12-2024
-reasoning_model = qwen/qwq-32b
-vision_model = openai/gpt-4o-mini
+⸻
 
-# Budgets & timeouts
-max_input_tokens = 3500
-max_output_tokens = 800
-request_timeout_s = 20
-daily_usd_cap = 2.50
-max_calls_per_video = 6
-target_api_sec_per_min = 3.0
-```
+1) UI Architecture & Files
 
-## PHASE 2: Create OpenRouter Client
+AutoResolveUI/
+└── Sources/AutoResolveUI/
+    ├── App/
+    │   ├── AutoResolveApp.swift                 // App entry; window group
+    │   ├── AppState.swift                       // @MainActor global state
+    │   └── Theme.swift                          // design tokens
+    ├── Core/
+    │   ├── Timebase.swift                       // fps/px/sec mapping, snapping
+    │   ├── Transport.swift                      // play/pause/JKL/shared clock
+    │   ├── BackendClient.swift                  // REST + WS to backend
+    │   ├── ArtifactsModels.swift                // Codable: Cuts, Beats, Broll
+    │   └── Persistence.swift                    // local UI state (UserDefaults)
+    ├── Views/
+    │   ├── ShellView.swift                      // top tabs: Cut | Edit | Deliver
+    │   ├── ViewerDock.swift                     // dual viewers (Source/Timeline)
+    │   ├── InspectorView.swift                  // contextual + AI metrics
+    │   ├── ToolbarView.swift                    // tools, snapping, AI toggles
+    │   ├── StatusBar.swift                      // timecode, fps, backend link
+    │   └── DeliverView.swift                    // minimal export presets
+    ├── Timeline/
+    │   ├── TimelinePage.swift                   // Cut/Edit shells (layout)
+    │   ├── TracksHeaderView.swift               // V1/V2/A1/A2, locks, vis
+    │   ├── RulerView.swift                      // time ruler & marks
+    │   ├── MetalTimelineView.swift              // Metal layer host
+    │   ├── TimelineRenderer.swift               // Metal draw pipeline
+    │   ├── WaveformPyramid.swift                // multi-res audio cache
+    │   ├── ThumbnailsCache.swift                // async keyframe cache
+    │   └── EditToolsController.swift            // select/blade/trim/slide/slip
+    ├── Playback/
+    │   ├── AVPlaybackCoordinator.swift          // sync playhead ↔ AVPlayer
+    │   └── DualPlayerView.swift                 // AVPlayerLayers (source/tl)
+    └── Tests/
+        ├── TimebaseTests.swift
+        ├── EditToolsTests.swift
+        ├── PerformanceTests.swift
+        └── SnapshotTests.swift
 
-Create `/Users/hawzhin/AutoResolve/autorez/src/ops/openrouter.py`:
 
-```python
-"""
-OpenRouter client for AutoResolve v3.0
-ADR: Augments local processing with LLM intelligence. Never replaces core embeddings.
-"""
+⸻
 
-import os
-import json
-import hashlib
-import time
-from pathlib import Path
-from typing import Optional, Dict, List, Any
-from openai import OpenAI
-import tiktoken
+2) Design System (Resolve-adjacent)
 
-class OpenRouterClient:
-    def __init__(self, config):
-        self.enabled = config.get('openrouter', 'enabled', fallback='false').lower() == 'true'
-        if not self.enabled:
-            return
-            
-        self.api_key = os.getenv(config.get('openrouter', 'api_key_env', fallback='OPENROUTER_API_KEY'))
-        if not self.api_key:
-            self.enabled = False
-            return
-            
-        self.client = OpenAI(
-            base_url=config.get('openrouter', 'base_url'),
-            api_key=self.api_key,
-            default_headers={
-                "HTTP-Referer": config.get('openrouter', 'app_referrer', fallback=''),
-                "X-Title": config.get('openrouter', 'app_title', fallback='AutoResolve')
-            }
-        )
-        
-        self.narrative_model = config.get('openrouter', 'narrative_model')
-        self.reasoning_model = config.get('openrouter', 'reasoning_model')
-        self.vision_model = config.get('openrouter', 'vision_model')
-        
-        self.max_input_tokens = int(config.get('openrouter', 'max_input_tokens', fallback='3500'))
-        self.max_output_tokens = int(config.get('openrouter', 'max_output_tokens', fallback='800'))
-        self.timeout = float(config.get('openrouter', 'request_timeout_s', fallback='20'))
-        self.daily_cap = float(config.get('openrouter', 'daily_usd_cap', fallback='2.50'))
-        self.max_calls = int(config.get('openrouter', 'max_calls_per_video', fallback='6'))
-        
-        self.cache_dir = Path('artifacts/cache/openrouter')
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
-        self.daily_spend = self._load_daily_spend()
-        self.call_count = 0
-        
-    def json_chat(self, model: str, system: str, user: str, images: Optional[List[str]] = None) -> Dict:
-        """Call OpenRouter with strict JSON response"""
-        if not self.enabled or self.call_count >= self.max_calls or self.daily_spend >= self.daily_cap:
-            return {"_skipped": True, "reason": "limits"}
-            
-        # Cache key
-        content_hash = hashlib.sha256(f"{model}{system}{user}{images}".encode()).hexdigest()[:16]
-        cache_file = self.cache_dir / f"{model.replace('/', '_')}_{content_hash}.json"
-        
-        if cache_file.exists():
-            return json.loads(cache_file.read_text())
-            
-        # Build messages
-        messages = [{"role": "system", "content": system + " Respond with valid JSON only."}]
-        
-        if images:
-            content = [{"type": "text", "text": user}]
-            for img in images[:3]:  # Max 3 images
-                content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{img}"}
-                })
-            messages.append({"role": "user", "content": content})
-        else:
-            messages.append({"role": "user", "content": user})
-            
-        try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=self.max_output_tokens,
-                temperature=0,
-                timeout=self.timeout,
-                response_format={"type": "json_object"}
-            )
-            
-            result = json.loads(response.choices[0].message.content)
-            
-            # Track costs
-            self._track_cost(response.usage)
-            self.call_count += 1
-            
-            # Cache result
-            cache_file.write_text(json.dumps(result))
-            
-            return result
-            
-        except Exception as e:
-            return {"_error": str(e), "_skipped": True}
-            
-    def json_reason(self, model: str, payload: Dict) -> Dict:
-        """Reasoning-specific call with structured input"""
-        system = "You are a video editing assistant. Analyze the provided data and return structured JSON."
-        user = json.dumps(payload)
-        return self.json_chat(model, system, user)
-        
-    def _track_cost(self, usage):
-        """Track API costs"""
-        # Rough estimates based on OpenRouter pricing
-        input_cost = (usage.prompt_tokens / 1000000) * 0.15  # $0.15/M tokens
-        output_cost = (usage.completion_tokens / 1000000) * 0.60  # $0.60/M tokens
-        self.daily_spend += (input_cost + output_cost)
-        
-    def _load_daily_spend(self) -> float:
-        """Load today's spend from disk"""
-        spend_file = self.cache_dir / f"spend_{time.strftime('%Y%m%d')}.json"
-        if spend_file.exists():
-            return json.loads(spend_file.read_text()).get('total', 0.0)
-        return 0.0
-        
-    def sanity_check(self) -> Dict:
-        """Test connectivity and model availability"""
-        if not self.enabled:
-            return {"status": "disabled"}
-        try:
-            resp = self.json_chat(
-                self.narrative_model,
-                "Test connection",
-                "Return {'status': 'ok'}"
-            )
-            return resp
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+Colors
+	•	bg: #141414, panel: #202225, hairline: #3A3A3A
+	•	text: #C7C7C7, subdued: #9A9A9A
+	•	accent: #FD4E22 (sparingly)
+	•	AI lanes: silence #D64E4E66, beats #B28DFF66, b-roll #4EC9B066
 
-# Global singleton
-_client = None
+Typography
+	•	SF Pro Text 12/13/15; monospaced timecode SF Mono 12
 
-def get_client(config):
-    global _client
-    if _client is None:
-        _client = OpenRouterClient(config)
-    return _client
-```
+States
+	•	Hover: +2% luminance; Focus: 1px keyline; No glows or glossy gradients.
 
-## PHASE 3: Create Hybrid Evaluator
+⸻
 
-Create `/Users/hawzhin/AutoResolve/autorez/src/eval/hybrid_eval.py`:
+3) Data Contracts (from backend)
 
-```python
-"""
-Hybrid evaluation: measures quality/cost/latency with OpenRouter augmentation
-"""
+Endpoints (existing):
+	•	POST /api/process {video} → writes:
+	•	artifacts/transcript.json
+	•	artifacts/cuts.json → [{"start":12.50,"end":14.20}, ...]
+	•	artifacts/creative_director.json:
 
-import time
-import json
-from pathlib import Path
-import numpy as np
-from src.ops.openrouter import get_client
+{
+  "narrative": {
+    "beats":[{"t":180.0,"kind":"climax"},{"t":52.0,"kind":"incident"}],
+    "energy_curve":[...],
+    "momentum":[...]
+  },
+  "tension_peaks":[92.0,168.5],
+  "broll":[{"start":45.2,"end":52.0,"tags":["audience","applause"]}]
+}
 
-def evaluate_hybrid(video_path: str, config) -> Dict:
-    """Compare local-only vs OpenRouter-augmented pipeline"""
-    
-    results = {
-        'local_only': {},
-        'with_openrouter': {},
-        'gates': {}
-    }
-    
-    # Phase 1: Local-only baseline
-    start = time.time()
-    from src.director.creative_director import analyze_footage
-    local_analysis = analyze_footage(video_path)
-    local_time = time.time() - start
-    
-    results['local_only'] = {
-        'time_seconds': local_time,
-        'beats_found': len(local_analysis.get('beats', [])),
-        'quality_score': compute_quality(local_analysis)
-    }
-    
-    # Phase 2: With OpenRouter
-    orc = get_client(config)
-    if orc.enabled:
-        start = time.time()
-        
-        # Augment narrative
-        summary = {
-            'duration': local_analysis['duration'],
-            'energy_peaks': downsample(local_analysis['energy'], 1.0)[:100],
-            'momentum_changes': local_analysis['momentum_changes'][:20]
-        }
-        
-        enhanced = orc.json_reason(
-            orc.narrative_model,
-            {
-                'task': 'identify_story_beats',
-                'data': summary,
-                'constraints': {
-                    'max_beats': 10,
-                    'min_confidence': 0.7
-                }
-            }
-        )
-        
-        api_time = time.time() - start
-        
-        results['with_openrouter'] = {
-            'time_seconds': local_time + api_time,
-            'api_calls': orc.call_count,
-            'api_cost_usd': orc.daily_spend,
-            'beats_found': len(enhanced.get('beats', [])),
-            'quality_score': compute_quality(enhanced)
-        }
-        
-    # Phase 3: Gate checks
-    video_duration_min = local_analysis['duration'] / 60
-    
-    results['gates'] = {
-        'local_speed': (video_duration_min / local_time) > 30,  # 30x realtime
-        'api_latency': api_time / video_duration_min < 3.0 if orc.enabled else True,  # <3s/min
-        'quality_uplift': (results.get('with_openrouter', {}).get('quality_score', 0) / 
-                          results['local_only']['quality_score']) > 1.3 if orc.enabled else False,
-        'cost_per_min': (orc.daily_spend / video_duration_min) < 0.05 if orc.enabled else True,
-        'all_pass': True  # Set after computing
-    }
-    
-    results['gates']['all_pass'] = all([
-        results['gates']['local_speed'],
-        results['gates']['api_latency'],
-        results['gates']['cost_per_min']
-    ])
-    
-    return results
 
-def compute_quality(analysis: Dict) -> float:
-    """Score analysis quality (0-100)"""
-    score = 0
-    score += min(20, len(analysis.get('beats', [])) * 2)  # Story beats
-    score += min(20, len(analysis.get('cuts', [])))  # Cut suggestions
-    score += 20 if 'climax' in analysis else 0
-    score += 20 if 'tension_curve' in analysis else 0
-    score += 20 if analysis.get('confidence', 0) > 0.7 else 0
-    return score
+	•	POST /api/silence {video}
+	•	POST /api/transcribe {video}
+	•	POST /api/export/edl {video}
+	•	GET /health
+	•	WS /ws/status → {"processing":bool,"progress":0..1}
 
-def downsample(data: List, target_fps: float) -> List:
-    """Downsample to target FPS"""
-    if not data:
-        return []
-    step = max(1, int(len(data) / (len(data) * target_fps / 30)))
-    return data[::step]
-```
+Swift models: ArtifactsModels.swift defines SilenceRegion, Beat(kind: enum), BrollSuggestion, etc.
 
-## PHASE 4: Update Director Integration
+⸻
 
-Modify `/Users/hawzhin/AutoResolve/autorez/src/director/creative_director.py` at line 145:
+4) Timebase, Zoom & Mapping (frame-exact)
+	•	Timebase: fps: Double, pxPerSec: CGFloat (zoomable 20..200), sec↔x, frame↔sec, snap( sec, grid = 1/fps or mark )
+	•	Project FPS from backend config (default 30).
+	•	Pan/Zoom:
+	•	Pinch or ⌘+ / ⌘- → adjust pxPerSec
+	•	Scroll=vertical tracks; Shift+scroll=horizontal pan
+	•	Ruler: nice ticks 1s/2s/5s/10s, drop timecode labels every major tick.
 
-```python
-# ADD after local analysis complete (around line 145)
-def analyze_footage(video_path: str, config=None) -> Dict:
-    # ... existing local analysis code ...
-    
-    # NEW: OpenRouter augmentation (if enabled)
-    if config and config.get('openrouter', 'enabled', fallback='false').lower() == 'true':
-        from src.ops.openrouter import get_client
-        orc = get_client(config)
-        
-        # Prepare compact summary
-        summary = {
-            'duration_s': analysis['duration'],
-            'energy_curve': analysis['energy'][:600],  # Max 600 points
-            'momentum_peaks': analysis['momentum_peaks'][:10],
-            'novelty_peaks': analysis['novelty_peaks'][:10]
-        }
-        
-        # Get narrative beats
-        enhanced_beats = orc.json_chat(
-            model=orc.narrative_model,
-            system="Label narrative beats using three-act structure",
-            user=json.dumps(summary)
-        )
-        
-        if not enhanced_beats.get('_skipped'):
-            analysis['narrative_beats'] = enhanced_beats.get('beats', [])
-            analysis['openrouter_enhanced'] = True
-    
-    return analysis
-```
+⸻
 
-## PHASE 5: Update Makefile
+5) Playback & Transport (Resolve-like)
+	•	AVPlaybackCoordinator owns AVPlayer (timeline viewer).
+	•	Shared playhead: @Published playSec updated by CADisplayLink on play, and by user scrubs.
+	•	Controls: Space (play/pause), J/K/L speeds (−1/0/+1/±2/±4 on repeat), Home/End, I/O set in/out.
+	•	DualPlayerView: AVPlayerLayer for Source & Timeline; in/out overlays when a clip selected.
 
-Add to `/Users/hawzhin/AutoResolve/autorez/Makefile` after line 85:
+⸻
 
-```makefile
-# OpenRouter Integration
-openrouter-setup:
-	$(PY) -m pip install openai tiktoken
-	@echo "Set OPENROUTER_API_KEY in your environment"
+6) Timeline Rendering (Metal, 60fps)
+	•	MetalTimelineView host a CAMetalLayer.
+	•	TimelineRenderer responsibilities:
+	•	Virtualize: only draw elements within [visStart, visEnd].
+	•	Draw order: bg → grid → clips (video rects w/ thumb) → audio waveforms → AI lanes → markers → playhead.
+	•	WaveformPyramid: precompute RMS/peak at 64/256/1024 spp; pick by zoom.
+	•	ThumbnailsCache: async keyframes via AVAssetImageGenerator, mipmapped, cached on disk.
+	•	Playhead & drag use CATransaction disabled actions + transforms (no layout thrash).
+	•	Performance budget: ≤16ms/frame under 3V/2A + 2 AI lanes on 30-min timeline.
 
-openrouter-test:
-	$(PY) - << 'PY'
-from src.ops.openrouter import OpenRouterClient
-import configparser
-cfg = configparser.ConfigParser()
-cfg.read('conf/ops.ini')
-client = OpenRouterClient(cfg)
-print(client.sanity_check())
-PY
+⸻
 
-hybrid-bench:
-	$(PY) -m src.eval.hybrid_eval --video assets/pilots/scene.mp4
-```
+7) Edit Tools (minimal but real)
 
-## PHASE 6: Testing Protocol
+Tools: Select (V), Blade (B), Trim (T), Slip (Y), Slide (S).
+State machine: EditToolsController with currentTool, hit-testing clip edges, snapping to:
+	•	cut edges, silence boundaries, beat markers (±6px window).
+	•	Trim: drag in/out; Ripple Delete (Shift-Delete) removes selected gap.
+	•	Blade: split at playhead (B or click with blade cursor).
+	•	Slip/Slide: logical placeholders (basic offset math); keep performant.
 
-```bash
-# 1. Install dependencies
-cd /Users/hawzhin/AutoResolve/autorez
-make openrouter-setup
+Keyboard map (Resolve-style):
+	•	Space Play/Pause, V/B/T/Y/S tools, Cmd-B split, M marker, N snap toggle, ←/→ ±1f, ⌥←/→ ±5f, Cmd +/− zoom.
 
-# 2. Set API key
-export OPENROUTER_API_KEY="your-key-here"
+⸻
 
-# 3. Test connection
-make openrouter-test
-# Expected: {"status": "ok"}
+8) AI Lanes (annotation overlays)
+	•	Lanes: fixed 20px height over timeline content; toggle in Toolbar.
+	•	Silence: translucent bands spanning audio tracks; context menu → ripple/delete/copy timecode.
+	•	Beats: small markers (shape by kind: ▲ incident, ◆ climax, ● pause); snapping enabled.
+	•	B-roll: bracketed regions with badge (B1, B2…); action: “Insert on BROLL track at nearest safe gap”.
 
-# 4. Run hybrid benchmark
-make hybrid-bench
-# Must show: all gates PASS
+Inspector shows actual runtime metrics (loaded from artifacts):
+	•	Silence count, total silence duration, “51× speed”, peak RSS, etc.
 
-# 5. Enable in config
-sed -i '' 's/enabled = false/enabled = true/' conf/ops.ini
+⸻
 
-# 6. Process with augmentation
-python autoresolve_cli.py process test_video.mp4 --openrouter
-```
+9) Deliver Page (minimal)
+	•	Presets: YouTube 1080p, TikTok 1080×1920, ProRes 422.
+	•	Range: Entire / In-Out / Selected.
+	•	“Render” → call POST /api/export/edl {video} then confirm path; no inline encode UI.
 
-## VALIDATION CHECKLIST
+⸻
 
-- [ ] V-JEPA/CLIP embeddings unchanged (local only)
-- [ ] OpenRouter disabled by default
-- [ ] All API calls have timeout < 20s
-- [ ] Daily spend cap enforced ($2.50)
-- [ ] Cache directory created and working
-- [ ] JSON validation on all responses
-- [ ] Local processing continues if OpenRouter fails
-- [ ] Performance gates: 30x realtime maintained
-- [ ] API latency < 3s per video minute
-- [ ] Cost < $0.05 per video minute
+10) Backend Integration
+	•	BackendClient:
+	•	func process(videoURL: URL) async throws -> Artifacts
+	•	func exportEDL(videoURL: URL) async throws -> URL
+	•	func connectProgressWS() async -> AsyncStream<ProgressEvent>
+	•	Error handling: network timeouts, 4xx/5xx → non-modal toast + retry. WS auto-reconnect with backoff.
+	•	Dev switch: Mock mode loads sample JSON from bundle.
 
-## ADR Statement
+⸻
 
-"Added optional OpenRouter augmentation for narrative labeling and cut reasoning. Core embeddings remain local (V-JEPA/CLIP). Cloud assist is fail-closed with strict budgets. No network dependency in critical path."
+11) Accessibility & Intl
+	•	Contrast ≥ 4.5:1 for critical text.
+	•	VoiceOver labels for all toolbar buttons & markers.
+	•	“Reduce Motion” respected (disable subtle playhead shadow).
+	•	Timecode locale formatting; pluggable strings (Localizable.strings).
 
-Execute this plan exactly. Report gate results after implementation.
+⸻
+
+12) Performance & Stability Gates (must pass)
+	•	Timeline scrub 60fps on 30-min project, 3V/2A + 2 AI lanes.
+	•	Frame-accurate playhead at arbitrary fps (23.976/24/25/29.97/30).
+	•	Zoom/pan/box-select: no frame >16ms (Xcode Instruments).
+	•	Memory cap: UI ≤ 200MB; thumbnail cache bounded (LRU).
+	•	Zero layout jank on zoom; thumbnails fade-in only.
+
+⸻
+
+13) Test Plan
+
+Unit
+	•	TimebaseTests: sec↔x mapping, snapping grids, round-trip frames.
+	•	EditToolsTests: trim math, blade split, snap priority (beat > cut > silence).
+	•	ArtifactsParsingTests: strict Codable.
+
+Perf
+	•	PerformanceTests: measure draw loop under synthetic 30-min timeline.
+
+Snapshot
+	•	Key views (Ruler, TracksHeader, Inspector states) at 1x/2x scaling.
+
+Manual acceptance (scripted)
+	1.	Load assets/test_30min.mp4, run “Process” → AI lanes populate.
+	2.	Scrub, zoom, blade at a beat, ripple delete a silence.
+	3.	Toggle AI lanes; Insert B-roll suggestion to BROLL track.
+	4.	Deliver → export EDL; verify file path returned.
+
+⸻
+
+14) Implementation Milestones (for Claude)
+
+M1 — Skeleton & Contracts (Day 1–2)
+	•	App shell, tabs, Theme, BackendClient (mock + real), models, Timebase.
+
+M2 — Timeline Engine (Day 3–5)
+	•	MetalTimelineView + Renderer; Ruler; virtualized clips; WaveformPyramid.
+
+M3 — Playback & Tools (Day 6–7)
+	•	AVPlaybackCoordinator; DualPlayer; Transport; select/blade/trim + snapping.
+
+M4 — AI Lanes & Inspector (Day 8–9)
+	•	Load artifacts; render Silence/Beats/B-roll; Inspector metrics.
+
+M5 — Deliver & Polish (Day 10)
+	•	DeliverView → export EDL; keyboard map; accessibility & perf pass.
+
+⸻
+
+15) Definition of Done
+	•	✅ 60fps scrub/zoom on 30-min timeline (Instrumented).
+	•	✅ Frame-accurate timecode & JKL playback.
+	•	✅ Tools: select, blade, trim, ripple delete with snap.
+	•	✅ AI lanes rendered from backend JSON; toggle works; snapping uses beats.
+	•	✅ Inspector shows real metrics from artifacts.
+	•	✅ Export EDL returns valid path.
+	•	✅ Keyboard shortcuts & accessibility complete.
+	•	✅ No modal crashes, recoverable network errors with toasts.
+
+⸻
+
+16) Guardrails (quality bars Claude must honor)
+	•	No heavy shadows/animations; keep ΔL ≤ 2% on hover.
+	•	Don’t block main thread on decoding; use background queues.
+	•	Only render on-screen timeline elements (+buffer).
+	•	Persist UI state (tool, zoom, lane toggles).
+	•	Keep code split per files above; no god-views; 300–500 line soft cap per file.
+
+⸻
+
+
+You are implementing the AutoResolve UI in Swift/SwiftUI/Metal/AVFoundation per the “AutoResolve UI — Production Spec”. Create the exact file tree and implement milestones M1→M2. Priorities: frame-accurate timebase, Metal timeline renderer with virtualization, AV-synced playhead, and Contracts in BackendClient. Use the Design System tokens, colors, and sizes as specified. All data models must be Codable and match the backend JSON. Avoid heavy animations. Include unit tests for Timebase mapping and basic EditTools math. Deliver compilable code for Sources/AutoResolveUI exactly as structured.
+

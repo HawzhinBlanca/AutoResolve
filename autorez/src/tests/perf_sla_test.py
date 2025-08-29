@@ -1,4 +1,3 @@
-import time
 
 def test_placeholder_perf_markers_present():
     # Placeholder presence test: real timing executed in CI job script

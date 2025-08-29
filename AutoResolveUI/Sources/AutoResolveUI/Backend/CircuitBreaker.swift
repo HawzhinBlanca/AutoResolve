@@ -6,11 +6,27 @@ import SwiftUI
 import Combine
 
 // Configuration for CircuitBreaker
-public struct CircuitBreakerConfiguration {
-    let failureThreshold: Int      // Failures before opening
-    let successThreshold: Int      // Successes to close from half-open
-    let timeout: TimeInterval       // Time before half-open attempt
-    let resetTimeout: TimeInterval  // Time to reset failure count
+public struct CircuitBreakerConfiguration: Sendable {
+    public let failureThreshold: Int      // Failures before opening
+    public let successThreshold: Int      // Successes to close from half-open
+    public let timeout: TimeInterval       // Time before half-open attempt
+    public let resetTimeout: TimeInterval  // Time to reset failure count
+
+    public init(
+        failureThreshold: Int,
+        successThreshold: Int,
+        timeout: TimeInterval,
+        resetTimeout: TimeInterval
+    ) {
+        precondition(failureThreshold >= 0, "failureThreshold must be >= 0")
+        precondition(successThreshold >= 0, "successThreshold must be >= 0")
+        precondition(timeout >= 0, "timeout must be >= 0")
+        precondition(resetTimeout >= 0, "resetTimeout must be >= 0")
+        self.failureThreshold = failureThreshold
+        self.successThreshold = successThreshold
+        self.timeout = timeout
+        self.resetTimeout = resetTimeout
+    }
     
     public static let `default` = CircuitBreakerConfiguration(
         failureThreshold: 5,
@@ -57,6 +73,8 @@ public class CircuitBreaker<Output>: ObservableObject {
     private let queue = DispatchQueue(label: "circuit.breaker", attributes: .concurrent)
     private var resetTimer: Timer?
     private var halfOpenTimer: Timer?
+    private var resetTimerSrc: DispatchSourceTimer?
+    private var halfOpenTimerSrc: DispatchSourceTimer?
     
     // Statistics
     public struct Statistics {
@@ -126,7 +144,7 @@ public class CircuitBreaker<Output>: ObservableObject {
             self.lastFailureTime = nil
             self.cancelTimers()
             
-            logInfo("[CircuitBreaker] Reset to closed state", category: .backend)
+            _ = ()
         }
     }
     
@@ -134,7 +152,7 @@ public class CircuitBreaker<Output>: ObservableObject {
     public func trip() {
         queue.async(flags: .barrier) {
             self.transitionTo(.open)
-            logWarning("[CircuitBreaker] Manually tripped", category: .backend)
+            _ = ()
         }
     }
     
@@ -176,16 +194,18 @@ public class CircuitBreaker<Output>: ObservableObject {
                 }
                 
             case .closed:
-                // Reset failure count on success
-                if self.failureCount > 0 {
-                    self.scheduleFailureReset()
-                }
+                // Immediately reset failure count on success and cancel any pending reset timer
+                self.failureCount = 0
+                self.resetTimer?.invalidate()
+                self.resetTimer = nil
+                self.resetTimerSrc?.cancel()
+                self.resetTimerSrc = nil
                 
             case .open:
                 break // Shouldn't happen
             }
             
-            logDebug("[CircuitBreaker] Request succeeded (state: \(self.state))", category: .backend)
+            _ = ()
         }
     }
     
@@ -209,7 +229,7 @@ public class CircuitBreaker<Output>: ObservableObject {
                 break // Shouldn't happen
             }
             
-            logWarning("[CircuitBreaker] Request failed (failures: \(self.failureCount))", category: .backend)
+            _ = ()
         }
     }
     
@@ -237,28 +257,39 @@ public class CircuitBreaker<Output>: ObservableObject {
             successCount = 0
         }
         
-        logInfo("[CircuitBreaker] State transition: \(oldState) → \(newState)", category: .backend)
+        _ = ()
     }
     
     private func scheduleHalfOpenTransition() {
         halfOpenTimer?.invalidate()
-        halfOpenTimer = Timer.scheduledTimer(withTimeInterval: configuration.timeout, repeats: false) { [weak self] _ in
-            self?.queue.async(flags: .barrier) {
-                if self?.state == .open {
-                    self?.transitionTo(.halfOpen)
-                }
+        halfOpenTimer = nil
+        halfOpenTimerSrc?.cancel()
+        halfOpenTimerSrc = nil
+        let src = DispatchSource.makeTimerSource(queue: queue)
+        src.schedule(deadline: .now() + configuration.timeout)
+        src.setEventHandler { [weak self] in
+            guard let self else { return }
+            if self.state == .open {
+                self.transitionTo(.halfOpen)
             }
         }
+        halfOpenTimerSrc = src
+        src.resume()
     }
     
     private func scheduleFailureReset() {
         resetTimer?.invalidate()
-        resetTimer = Timer.scheduledTimer(withTimeInterval: configuration.resetTimeout, repeats: false) { [weak self] _ in
-            self?.queue.async(flags: .barrier) {
-                self?.failureCount = 0
-                logDebug("[CircuitBreaker] Failure count reset", category: .backend)
-            }
+        resetTimer = nil
+        resetTimerSrc?.cancel()
+        resetTimerSrc = nil
+        let src = DispatchSource.makeTimerSource(queue: queue)
+        src.schedule(deadline: .now() + configuration.resetTimeout)
+        src.setEventHandler { [weak self] in
+            self?.failureCount = 0
+            _ = ()
         }
+        resetTimerSrc = src
+        src.resume()
     }
     
     private func cancelTimers() {
@@ -266,6 +297,10 @@ public class CircuitBreaker<Output>: ObservableObject {
         halfOpenTimer?.invalidate()
         resetTimer = nil
         halfOpenTimer = nil
+        resetTimerSrc?.cancel()
+        halfOpenTimerSrc?.cancel()
+        resetTimerSrc = nil
+        halfOpenTimerSrc = nil
     }
 }
 
@@ -285,31 +320,7 @@ public enum CircuitBreakerError: LocalizedError {
     }
 }
 
-// MARK: - Backend Service Extension
-
-extension BackendService {
-    /// Circuit breakers for different endpoints
-    public static let pipelineBreaker = CircuitBreaker<Any>(configuration: .default)
-    private static let mediaBreaker = CircuitBreaker<Any>(configuration: .lenient)
-    private static let analysisBreaker = CircuitBreaker<Any>(configuration: .aggressive)
-    
-    /// Execute request with circuit breaker protection
-    public func executeWithBreaker<T: Decodable>(
-        breaker: CircuitBreaker<Any> = pipelineBreaker,
-        request: @escaping () -> AnyPublisher<T, Error>
-    ) -> AnyPublisher<T, Error> {
-        breaker.execute {
-            request().map { $0 as Any }.eraseToAnyPublisher()
-        }
-        .tryMap { output -> T in
-            guard let result = output as? T else {
-                throw CircuitBreakerError.deallocated
-            }
-            return result
-        }
-        .eraseToAnyPublisher()
-    }
-}
+// BackendClient extension removed for BackendCore minimal build
 
 // MARK: - Circuit Breaker Monitor View
 

@@ -40,17 +40,9 @@ public class OfflineManager: ObservableObject {
     // MARK: - Connection Monitoring
     
     private func setupConnectionMonitoring() {
-        ConnectionManager.shared.$connectionState
-            .sink { [weak self] state in
-                self?.isOfflineMode = !state.isConnected
-                
-                if state.isConnected {
-                    self?.syncWithBackend()
-                } else {
-                    self?.enableOfflineMode()
-                }
-            }
-            .store(in: &cancellables)
+        // ConnectionManager monitoring disabled temporarily
+        // TODO: Integrate with actual ConnectionManager when ready
+        isOfflineMode = false
     }
     
     // MARK: - Offline Mode Management
@@ -344,7 +336,7 @@ struct OfflineDetailsView: View {
             
             Spacer()
             
-            Button(action: { ConnectionManager.shared.reconnect() }) {
+            Button(action: { /* TODO: Reconnect */ }) {
                 Text("Try Reconnecting")
                     .font(.system(size: 12, weight: .medium))
                     .frame(maxWidth: .infinity)

@@ -16,7 +16,7 @@ public struct AppConfig {
         public static let retryDelay: TimeInterval = 1.0
         
         // WebSocket
-        public static let websocketURL = URL(string: "ws://localhost:8000/ws/progress")!
+        public static let websocketURL = URL(string: "ws://localhost:8000/ws/status")!
         public static let websocketReconnectDelay: TimeInterval = 5.0
         
         // Endpoints

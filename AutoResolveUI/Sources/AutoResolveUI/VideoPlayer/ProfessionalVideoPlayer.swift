@@ -274,10 +274,12 @@ struct ProfessionalTimecodeDisplay: View {
     }
     
     private func timecode(_ time: TimeInterval) -> String {
-        let hours = Int(time) / 3600
-        let minutes = (Int(time) % 3600) / 60
-        let seconds = Int(time) % 60
-        let frames = Int((time.truncatingRemainder(dividingBy: 1)) * 30)
+        guard time.isFinite && time >= 0 else { return "00:00:00:00" }
+        let safeTime = min(time, 359999.0) // Cap at 99:59:59:29
+        let hours = Int(safeTime) / 3600
+        let minutes = (Int(safeTime) % 3600) / 60
+        let seconds = Int(safeTime) % 60
+        let frames = Int((safeTime.truncatingRemainder(dividingBy: 1)) * 30)
         return String(format: "%02d:%02d:%02d:%02d", hours, minutes, seconds, frames)
     }
 }

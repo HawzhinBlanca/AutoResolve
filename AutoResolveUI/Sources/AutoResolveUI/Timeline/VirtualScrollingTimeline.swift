@@ -3,6 +3,7 @@
 
 import SwiftUI
 import Combine
+import AVFoundation
 
 // MARK: - Virtual Scrolling Timeline
 struct VirtualScrollingTimeline: View {
@@ -164,10 +165,12 @@ struct TimelineHeader: View {
     }
     
     private func formatTimecode(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
-        let frames = Int((seconds.truncatingRemainder(dividingBy: 1)) * 30)
+        guard seconds.isFinite && seconds >= 0 else { return "00:00:00:00" }
+        let safeSeconds = min(seconds, 359999) // Cap at 99:59:59:29
+        let hours = Int(safeSeconds) / 3600
+        let minutes = (Int(safeSeconds) % 3600) / 60
+        let secs = Int(safeSeconds) % 60
+        let frames = Int((safeSeconds.truncatingRemainder(dividingBy: 1)) * 30)
         return String(format: "%02d:%02d:%02d:%02d", hours, minutes, secs, frames)
     }
 }
@@ -188,9 +191,10 @@ struct TrackHeadersView: View {
             
             // Track headers
             ForEach(Array(tracks.prefix(10).enumerated()), id: \.offset) { index, track in
-                TrackHeader(
+                VirtualTrackHeader(
                     track: track,
-                    timeline: timeline
+                    height: trackHeight,
+                    index: index
                 )
             }
             
@@ -433,8 +437,10 @@ struct VirtualTimelineRuler: View {
     }
     
     private func formatTime(_ seconds: TimeInterval) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
+        guard seconds.isFinite && seconds >= 0 else { return "0:00" }
+        let safeSeconds = min(seconds, 359999)
+        let mins = Int(safeSeconds) / 60
+        let secs = Int(safeSeconds) % 60
         return String(format: "%d:%02d", mins, secs)
     }
 }
@@ -457,19 +463,19 @@ struct VirtualTimelineTrackView: View {
                 .frame(height: trackHeight)
             
             // Clips
-            ForEach(track.clips) { clip in
+            ForEach(track.clips) { legacyClip in
                 UITimelineClipView(
-                    clip: clip,
-                    isSelected: selectedClips.contains(clip.id),
+                    clip: convertToUIClip(legacyClip),
+                    isSelected: selectedClips.contains(legacyClip.id),
                     trackHeight: trackHeight,
                     zoomLevel: zoomLevel,
                     onSelect: {
-                        toggleSelection(clip.id)
+                        toggleSelection(legacyClip.id)
                     },
                     onDrag: { isDragging in
                         if isDragging {
                             isDraggingClip = true
-                            draggedClip = clip
+                            draggedClip = convertToUIClip(legacyClip)
                             calculateSnapPoints()
                         } else {
                             isDraggingClip = false
@@ -478,7 +484,7 @@ struct VirtualTimelineTrackView: View {
                         }
                     }
                 )
-                .offset(x: CGFloat(clip.startTime.seconds) * 10 * zoomLevel)
+                .offset(x: CGFloat(legacyClip.startTime.seconds) * 10 * zoomLevel)
             }
         }
         .frame(height: trackHeight)
@@ -702,16 +708,41 @@ struct TimelineControlsBar: View {
 }
 
 // MARK: - Helper Functions
+private func convertToUIClip(_ legacyClip: LegacyUITimelineClip) -> UITimelineClip {
+    var clip = UITimelineClip(
+        name: legacyClip.name,
+        type: ClipType(rawValue: legacyClip.type.rawValue) ?? .video,
+        startTime: CMTimeGetSeconds(legacyClip.startTime),
+        duration: CMTimeGetSeconds(legacyClip.duration),
+        sourceURL: legacyClip.url,
+        trackIndex: legacyClip.trackIndex
+    )
+    
+    // Convert thumbnail data to NSImage if available
+    if let thumbnailData = legacyClip.thumbnailData {
+        clip.thumbnail = NSImage(data: thumbnailData)
+    }
+    
+    // Set color
+    clip.color = legacyClip.color
+    
+    // Set volume
+    clip.volume = Double(legacyClip.volume)
+    
+    return clip
+}
+
 private func convertToTimelineTracks(_ uiTracks: [UITimelineTrack]) -> [TimelineTrack] {
     return uiTracks.enumerated().map { (index, uiTrack) in
-        let clips: [UITimelineClip] = uiTrack.clips.map { simple in
-            UITimelineClip(id: UUID(), 
+        let clips: [LegacyUITimelineClip] = uiTrack.clips.map { simple in
+            LegacyUITimelineClip(
+                url: simple.sourceURL ?? URL(fileURLWithPath: "/"),
+                inPoint: CMTime(seconds: simple.sourceStartTime ?? 0, preferredTimescale: 600),
+                outPoint: CMTime(seconds: (simple.sourceStartTime ?? 0) + simple.duration, preferredTimescale: 600),
+                duration: CMTime(seconds: simple.duration, preferredTimescale: 600),
                 name: simple.name,
-                type: .video,
-                startTime: simple.startTime,
-                duration: simple.duration,
-                sourceURL: simple.sourceURL,
-                trackIndex: simple.trackIndex
+                trackIndex: simple.trackIndex,
+                startTime: CMTime(seconds: simple.startTime, preferredTimescale: 600)
             )
         }
         return TimelineTrack(

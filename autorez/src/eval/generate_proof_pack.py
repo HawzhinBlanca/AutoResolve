@@ -300,7 +300,7 @@ def generate_run_log():
                 passed_gates += 1
             log.append(f"- {gate_name}: {status} (target: {gate_info['target']}, actual: {gate_info['actual']})")
     
-    log.append(f"\n## Overall Compliance")
+    log.append("\n## Overall Compliance")
     compliance_pct = (passed_gates / total_gates * 100) if total_gates > 0 else 0
     log.append(f"- Gates Passed: {passed_gates}/{total_gates} ({compliance_pct:.1f}%)")
     log.append(f"- Blueprint3 Compliance: {'✅ COMPLETE' if compliance_pct == 100 else f'⏳ {compliance_pct:.1f}%'}")

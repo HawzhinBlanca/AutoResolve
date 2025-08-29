@@ -4,6 +4,7 @@ import Combine
 
 import SwiftUI
 import AppKit
+import AVFoundation
 
 // MARK: - Snapping Manager
 class SnappingManager: ObservableObject {
@@ -381,17 +382,24 @@ struct MagneticTimelineHelper {
         var moves: [ClipMove] = []
         let sortedClips = track.clips.sorted { (a, b) in a.startTime < b.startTime }
         
+        let timeAsCMTime = CMTime(seconds: time, preferredTimescale: 600)
         var lastEndTime = time
-        for clip in sortedClips where clip.startTime > time {
-            if clip.startTime > lastEndTime {
+        var lastEndTimeAsCMTime = timeAsCMTime
+        for clip in sortedClips where clip.startTime > timeAsCMTime {
+            if clip.startTime > lastEndTimeAsCMTime {
                 // There's a gap, close it
                 moves.append(ClipMove(
                     clipID: clip.id,
                     newStartTime: lastEndTime
                 ))
-                lastEndTime = lastEndTime + clip.duration ?? 0
+                let clipDurationSeconds = CMTimeGetSeconds(clip.duration)
+                lastEndTime = lastEndTime + clipDurationSeconds
+                lastEndTimeAsCMTime = CMTime(seconds: lastEndTime, preferredTimescale: 600)
             } else {
-                lastEndTime = clip.startTime + clip.duration ?? 0
+                let clipStartSeconds = CMTimeGetSeconds(clip.startTime)
+                let clipDurationSeconds = CMTimeGetSeconds(clip.duration)
+                lastEndTime = clipStartSeconds + clipDurationSeconds
+                lastEndTimeAsCMTime = CMTimeAdd(clip.startTime, clip.duration)
             }
         }
         
@@ -441,14 +449,7 @@ struct SnappingKeyboardShortcuts: ViewModifier {
 extension TimelineModel {
     // Removed duplicate markers property - already defined in TimelineModel
     
-    func findClip(id: UUID) -> TimelineClip? {
-        for track in tracks {
-            if let clip = track.clips.first(where: { $0.id == id }) {
-                return clip
-            }
-        }
-        return nil
-    }
+    // findClip method is already defined in TimelineModel
     
     func findSnapPoint(for time: TimeInterval, excluding clipID: UUID?) -> TimeInterval? {
         let threshold: TimeInterval = 0.1 // 100ms threshold

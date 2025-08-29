@@ -110,7 +110,7 @@ public struct LoadingOverlay: View {
 
 // MARK: - Connection Status Banner
 public struct ConnectionStatusBanner: View {
-    @ObservedObject private var connectionManager = ConnectionManager.shared
+    @EnvironmentObject private var backendClient: BackendClient
     @State private var showBanner = false
     @State private var opacity: Double = 1
     
@@ -120,33 +120,28 @@ public struct ConnectionStatusBanner: View {
                 HStack(spacing: 12) {
                     // Status icon
                     Group {
-                        switch connectionManager.connectionState {
-                        case .connected:
+                        if backendClient.isConnected {
                             Image(systemName: "wifi")
                                 .foregroundColor(.green)
-                        case .connecting, .reconnecting:
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        case .disconnected:
+                        } else {
                             Image(systemName: "wifi.slash")
-                                .foregroundColor(.gray)
-                        case .error:
-                            Image(systemName: "exclamationmark.triangle")
                                 .foregroundColor(.red)
                         }
                     }
                     .font(.system(size: 14))
                     
                     // Status text
-                    Text(connectionManager.connectionState.description)
+                    Text(backendClient.isConnected ? "Connected" : "Disconnected")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white)
                     
                     Spacer()
                     
                     // Retry button for errors
-                    if case .error = connectionManager.connectionState {
-                        Button(action: { connectionManager.reconnect() }) {
+                    if !backendClient.isConnected {
+                        Button(action: { 
+                            // TODO: Implement reconnect functionality
+                        }) {
                             Text("Retry")
                                 .font(.system(size: 12, weight: .semibold))
                                 .padding(.horizontal, 12)
@@ -167,29 +162,23 @@ public struct ConnectionStatusBanner: View {
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showBanner)
-        .onReceive(connectionManager.$connectionState) { state in
-            updateBanner(for: state)
+        .onReceive(backendClient.$isConnected) { connected in
+            updateBanner(for: connected)
         }
     }
     
     private var backgroundForState: some View {
         Group {
-            switch connectionManager.connectionState {
-            case .connected:
+            if backendClient.isConnected {
                 Color.green.opacity(0.9)
-            case .connecting, .reconnecting:
-                Color.orange.opacity(0.9)
-            case .disconnected:
-                Color.gray.opacity(0.9)
-            case .error:
+            } else {
                 Color.red.opacity(0.9)
             }
         }
     }
     
-    private func updateBanner(for state: ConnectionState) {
-        switch state {
-        case .connected:
+    private func updateBanner(for connected: Bool) {
+        if connected {
             // Show briefly then hide
             showBanner = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -201,17 +190,10 @@ public struct ConnectionStatusBanner: View {
                     opacity = 1
                 }
             }
-        case .error, .reconnecting:
-            // Keep visible
+        } else {
+            // Keep visible when not connected
             showBanner = true
             opacity = 1
-        case .connecting:
-            // Show while connecting
-            showBanner = true
-            opacity = 1
-        case .disconnected:
-            // Hide when intentionally disconnected
-            showBanner = false
         }
     }
 }

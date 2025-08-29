@@ -11,21 +11,44 @@ let package = Package(
             name: "AutoResolveUI",
             targets: ["AutoResolveUI"]
         ),
+        .executable(
+            name: "MainApp",
+            targets: ["MainApp"]
+        ),
+        .library(
+            name: "BackendCore",
+            targets: ["BackendCore"]
+        ),
+        .executable(
+            name: "BackendSmoke",
+            targets: ["BackendSmoke"]
+        ),
+        .executable(
+            name: "UISmoke",
+            targets: ["UISmoke"]
+        ),
     ],
     targets: [
         .executableTarget(
             name: "AutoResolveUI",
             path: "Sources/AutoResolveUI",
             exclude: [
-                "main.swift.disabled",
+                "Backend/NetworkRetry.swift",
+                "Backend/CircuitBreaker.swift",
+                "Backend/ConnectionManager.swift",
+                "main.swift.disabled", 
                 "aggressive_fix.sh",
                 "AI",
                 "Audio",
                 "AudioProcessing",
                 "Authentication",
                 "Cache",
+                "BRoll",
                 "ColorGrading",
                 "Compliance",
+                "Security/KeychainHelper.swift",
+                "Inspector",
+                "Inspectors",
                 "Import",
                 "MediaPool",
                 "MotionGraphics",
@@ -34,13 +57,35 @@ let package = Package(
                 "Plugins",
                 "ResolveIntegration",
                 "Tests",
-                "scripts",
-                "Timeline/VirtualScrollingTimeline.swift",
-                "Timeline/TimelineSnappingSystem.swift"
+                "scripts"
             ],
             swiftSettings: [
                 .unsafeFlags(["-suppress-warnings"])
             ]
+        ),
+        .target(
+            name: "BackendCore",
+            path: "Sources/AutoResolveUI",
+            sources: [
+                "Backend/NetworkRetry.swift",
+                "Backend/CircuitBreaker.swift",
+                "Backend/ConnectionManager.swift"
+            ],
+            swiftSettings: [
+                .unsafeFlags(["-suppress-warnings"])
+            ]
+        ),
+        .executableTarget(
+            name: "BackendSmoke",
+            path: "Tools/BackendSmoke"
+        ),
+        .executableTarget(
+            name: "UISmoke",
+            path: "Tools/UISmoke"
+        ),
+        .executableTarget(
+            name: "MainApp",
+            path: "Sources/MainApp"
         ),
     ]
 )

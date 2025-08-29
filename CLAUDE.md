@@ -1,217 +1,257 @@
-# CLAUDE.md — AutoResolve V3.1 Agent Guide (Simplified & Focused)
+# CLAUDE.md - AI Agent Guide for AutoResolve v3.2
 
-**STATUS**: 🎯 FOCUSED - Removed color grading, motion graphics, multi-track audio
-**LAST VALIDATED**: 2025-08-27 - Core features operational, simplified scope
+## Project Context
 
-## 1. Project Reality
+AutoResolve is a production video editing pipeline combining Swift UI frontend with Python backend for automated video processing. The system performs silence detection, transcription, narrative analysis, and exports to DaVinci Resolve.
 
-**AutoResolve V3.1** is a focused AI-powered rough cut editor with SwiftUI frontend + Python FastAPI backend.
-**Core Focus**: Smart silence removal, B-roll suggestions, and efficient timeline editing for rapid rough cuts.
+## Critical Rules for AI Agents
 
-- **Frontend**: macOS SwiftUI app (40,505 total LOC)
-- **Backend**: Python 3.10+ FastAPI (verified performance: 43M+ realtime)
-- **Status**: Production ready with comprehensive test suite (598+ test files)
+### 1. File Protection Hierarchy
+```
+PROTECTED-CRITICAL: Never modify without explicit user approval
+PROTECTED: Modify only with clear justification
+SAFE-TO-MODIFY: Can update for optimization
+```
 
-### 🚨 CANONICAL UI RULE (ENFORCED)
-**THERE IS ONLY ONE UI: DaVinci Resolve-Style Professional Interface**
-- Complete three-panel layout: Media Pool (380px) | Timeline Center | Inspector (380px)
-- Full menu bar with File, Edit, Timeline, AI Director, Embedders, Export menus
-- Timeline with V3/V2/V1 tracks + Director Track + Transcription Track + Single audio track
-- Inspector tabs: Video, Audio, Neural Analysis, Director, Cuts, Shorts
-- Never use "Minimal", "Simple", or "Basic" interfaces  
-- No switching between UI modes - one complete, professional interface only
+### 2. Response Principles
+- No verbose explanations unless requested
+- Show exact commands and file paths
+- Verify changes with concrete evidence
+- Never guess - check actual files first
 
-## 2. Build & Run (Verified Commands)
+### 3. Architecture Boundaries
+```
+Frontend: /Users/hawzhin/AutoResolve/AutoResolveUI/
+Backend:  /Users/hawzhin/AutoResolve/autorez/
+Config:   /Users/hawzhin/AutoResolve/autorez/conf/
+DO NOT create duplicate GUI folders
+```
 
-### Backend (Python FastAPI)
+## Common Tasks
+
+### Task: Debug Build Errors
 ```bash
-cd /Users/hawzhin/AutoResolve/autorez
-python3 backend_service_final.py
-# Runs on: http://localhost:8000
+# Check Swift errors
+cd AutoResolveUI && swift build 2>&1 | grep -E "error:|warning:"
+
+# Check Python syntax
+python -m py_compile autorez/src/**/*.py
+
+# Verify dependencies
+pip list | grep -E "torch|transformers|fastapi"
 ```
 
-### Frontend (SwiftUI)
+### Task: Update Configuration
+```python
+# WRONG - breaks format
+config = configparser.ConfigParser()
+config['DEFAULT']['key'] = 'value'
+
+# CORRECT - preserves format
+with open('conf/embeddings.ini', 'r') as f:
+    lines = f.readlines()
+for i, line in enumerate(lines):
+    if line.startswith('default_model'):
+        lines[i] = 'default_model = clip\n'
+```
+
+### Task: Add New Endpoint
+1. Update `backend_service_final.py`:
+```python
+@app.post("/api/new_endpoint")
+def new_endpoint(req: VideoRequest):
+    # Implementation
+    return {"ok": True}
+```
+
+2. Update Blueprint.md endpoints section
+3. Add test to Makefile
+4. Document in README.md
+
+### Task: Performance Optimization
+Check gates first:
 ```bash
-cd /Users/hawzhin/AutoResolve/AutoResolveUI
-swift build    # ✅ 0 errors, 0 warnings
+python -m src.eval.gates --verify
 ```
 
-**PORT MISMATCH**: SwiftUI points to `:8081/api`, backend runs on `:8000`
-- **Quick Fix**: Change BackendService.swift line 11 from `8081` to `8000`
-
-## 3. Core API (FastAPI Endpoints)
-
-### Primary Endpoints
-- `POST /api/pipeline/start` → `{task_id, status}`  
-- `GET /api/pipeline/status/{task_id}` → progress/results
-- `GET /api/telemetry/metrics` → system health
-- `POST /api/export/fcpxml` → Final Cut export
-- `POST /api/export/edl` → EDL timeline
-
-### Health/Debug  
-- `GET /health` → service status
-- `GET /` → basic info
-- WebSocket: `/ws/progress` → realtime updates
-
-## 4. Key Architecture
-
-### Frontend Layout (DaVinci Resolve Style)
-```
-Left Panel (380px fixed):
-├── Media Pool: Master | V-JEPA Embeddings | CLIP Results | B-roll Library
-├── Neural Insights: Silence regions, scene changes, story beat markers  
-├── Effects Library: Resolve standard + AutoResolve AI effects
-└── Edit Index: Smart cut suggestions
-
-Center Area (flexible):
-├── Dual Viewer: Source (embedding viz) | Timeline (neural overlay)
-└── Timeline Tracks:
-   ├── V3, V2, V1 video tracks
-   ├── Director Track: Energy curves, tension visualization
-   ├── Transcription Track: Word-level Whisper timing
-   └── A1 audio with waveform + silence overlays
-
-Right Panel (380px fixed):
-└── Inspector Tabs:
-   ├── Video (Resolve standard)
-   ├── Audio (Basic controls only)  
-   ├── Silence Analysis: Detected regions, cut suggestions
-   ├── Cuts: Silence cut management, confidence thresholds
-   └── Shorts: Viral moment detection, platform presets
+If failing, identify bottleneck:
+```python
+# Add timing to suspicious module
+import time
+start = time.time()
+# ... operation ...
+elapsed = time.time() - start
+print(f"Operation took {elapsed:.2f}s")
 ```
 
-### Code Structure
+## Performance Requirements
+
+### Hard Gates (Must Pass)
+```python
+GATES = {
+    'processing_speed_x': ('gte', 30),      # 30x realtime minimum
+    'peak_rss_gb': ('lte', 16.0),          # 16GB max
+    'ui_memory_mb': ('lte', 200),          # 200MB UI max
+    'silence_sec_per_min': ('lte', 0.5),   # 0.5s/min max
+    'transcription_rtf': ('lte', 1.5),     # 1.5x realtime max
+    'vjepa_sec_per_min': ('lte', 5.0),     # 5s/min max
+    'export_time_s': ('lte', 2.0),         # 2s max
+}
 ```
-AutoResolveUI/Sources/AutoResolveUI/
-├── BackendService.swift     # HTTP client (port 8081 → change to 8000)
-├── Core/VideoProject.swift  # Project model
-├── Inspector/ClipInspector.swift # Right panel tabs
-└── main.swift              # Entry point
 
-autorez/
-├── backend_service_final.py # FastAPI server (port 8000)
-├── src/                    # Core pipeline modules
-├── proof_pack/             # Validation artifacts  
-└── artifacts/              # Performance metrics
+### Current Benchmarks
+```
+Processing: 51x realtime ✓
+Memory: 3.2GB peak ✓
+Silence: 0.18s/min ✓
+Transcription: 0.9x RTF ✓
+Export: 0.3s ✓
 ```
 
-## SIMPLIFIED SCOPE (V3.1)
+## Module-Specific Guidelines
 
-### ✅ KEPT (Core Features)
-- **Silence Detection & Removal** - Smart audio analysis
-- **B-roll Selection** - AI-powered footage matching
-- **Timeline Editing** - Cut, trim, move, delete clips
-- **Project Persistence** - Save/load timeline projects
-- **Basic Export** - MP4 render, FCPXML export
+### Embedders (src/embedders/)
+- V-JEPA: Local only, never send to API
+- CLIP: Default embedder
+- Promotion: Only if V-JEPA beats CLIP by >15% with CI>0
 
-### ❌ REMOVED (For Simplicity)
-- **Color Grading** - All color correction tools
-- **Motion Graphics** - Titles, transitions, animations
-- **Multi-track Audio** - Reduced from A1-A8 to single A1
-- **Advanced Audio Effects** - No reverb, compression, EQ
-- **Director AI Curves** - Energy/tension visualizations
+### Operations (src/ops/)
+- transcribe.py: Uses faster-whisper, NOT whisper
+- silence.py: NumPy RMS only, NO librosa
+- openrouter.py: Lives in ops/, not embedders/
 
-### Director Modules (Simplified)
-- `silence.py` - Core silence detection
-- `selector.py` - B-roll matching
+### Director (src/director/)
+- Returns JSON with beats, tension, emphasis
+- All modules must be deterministic (seeded)
+- Failures should not crash pipeline
 
-### Embedder Selection
-- Primary: CLIP (ViT-H-14)
-- Fallback: V-JEPA at `/Users/hawzhin/vjepa2-vitl-fpc64-256`
-- Auto-selection based on 5s/min gate
+## Error Patterns & Fixes
 
-### Performance Gates
-- Memory: <4GB (current: 892MB ✓)
-- Speed: <5s/min (current: 51x realtime ✓)
-- Silence detection: <0.5s/min ✓
+### Pattern: "Module not found"
+```bash
+# Check PYTHONPATH
+export PYTHONPATH=/Users/hawzhin/AutoResolve/autorez/src:$PYTHONPATH
+```
 
-## 5. Coding Standards (Enforced)
+### Pattern: "Config value has comment"
+```python
+# Fix inline comments
+sed -i '' 's/^default_model.*/default_model = clip/' conf/embeddings.ini
+```
 
-### Swift
-- ✅ **Compilation**: 0 errors, 0 warnings mandatory
-- 🎯 **Threading**: UI updates on MainActor only
-- 📏 **Size**: Keep files <1600 LOC
+### Pattern: "WebSocket mismatch"
+```swift
+// Frontend expects /ws/status not /ws/progress
+let wsURL = URL(string: "ws://localhost:8000/ws/status")!
+```
 
-### Python  
-- 🔒 **Validation**: All inputs via Pydantic models
-- 🚫 **Security**: No arbitrary file access beyond AR_MEDIA_ROOT
-- ⚡ **Performance**: Async/await for I/O
+## Update Procedures
 
-### Universal
-- 🧪 **Testing**: New logic requires tests
-- 📝 **Documentation**: Update this file for behavior changes
-- 🚀 **Quality**: No regressions, lints pass
+### Adding Dependencies
+1. Add to requirements.txt
+2. Update Blueprint.md
+3. Test gates still pass
+4. Document in PR
 
-## 6. Critical Files (Don't Break)
+### Modifying Protected Files
+1. Create backup: `cp file file.backup`
+2. Make changes
+3. Run tests: `make test-pipeline`
+4. Verify gates: `make verify-gates`
 
-- `BackendService.swift` - Frontend HTTP client
-- `backend_service_final.py` - Production API server  
-- `100_PERCENT_COMPLETE.md` - Validation report
-- `VALIDATION_REPORT.json` - Automated test results
-- `proof_pack/` - Performance evidence
+### OpenRouter Integration
+```ini
+# conf/ops.ini
+[openrouter]
+enabled = false  # Keep false by default
+```
+Only enable after verifying API key and budget caps.
+
+## Testing Requirements
+
+### Before Any PR
+```bash
+make test-pipeline  # Full pipeline test
+make verify-gates   # Performance gates
+make proof-pack     # Generate evidence
+```
+
+### Smoke Tests
+```bash
+curl -s http://localhost:8000/health | jq
+python autoresolve_cli.py process test.mp4
+```
+
+## Security Considerations
+
+- Never commit API keys
+- OpenRouter disabled by default
+- No telemetry or external calls without explicit enable
+- Cache stays local in artifacts/cache/
+
+## Communication Style
+
+### When Reporting Issues
+```
+ISSUE: [Component] Brief description
+EVIDENCE: Exact error or metric
+FIX: Proposed solution with code
+```
+
+### When Suggesting Changes
+```
+CHANGE: [File] Line numbers
+REASON: Performance/Security/Correctness
+IMPACT: What improves
+RISK: What could break
+```
+
+## Quick Reference
 
 ### Critical Paths
-1. Video → Pipeline → Analysis → Export
-2. All processing async via task_id
-3. Results cached in artifacts/
-
-## 7. Common Tasks
-
-### Fix Port Mismatch
-```swift
-// In BackendService.swift line 11:
-private let baseURL = URL(string: "http://localhost:8000/api")!
+```
+Config: autorez/conf/*.ini
+Backend: autorez/backend_service_final.py
+CLI: autorez/autoresolve_cli.py
+Frontend: AutoResolveUI/Sources/AutoResolveUI/BackendService.swift
 ```
 
-### Add New API Endpoint
-1. Add Pydantic model to `backend_service_final.py`
-2. Implement with validation  
-3. Add Swift client method to `BackendService.swift`
-4. Test via `/health` endpoint
-
-### UI Changes
-- Follow DaVinci Resolve-style three-panel layout (never deviate)
-- Menu Bar: File, Edit, Timeline, AI Director, Embedders, Export
-- Timeline Toolbar: Neural Timeline toggle, Auto-Cut, Director Analysis, Embedder selector
-- Status Bar: Current embedder, backend status, processing queue, performance
-- Color Scheme: #282828 base, blue-purple neural overlays (40% opacity)
-- Confidence Colors: Green (>80%), Yellow (60-80%), Red (<60%)
-- Keep async work off main thread
-- Validate with `swift build` (must be 0 warnings)
-
-## 8. Production Readiness Checklist
-
-✅ **Build**: 0 errors, 0 warnings  
-✅ **Performance**: 43M+ realtime processing  
-✅ **Tests**: 598+ test files passing
-✅ **Memory**: <500MB usage validated
-✅ **Integration**: Full pipeline functional
-✅ **Documentation**: Complete validation reports
-
-## 9. Emergency Debug
-
-**Backend Down?**
+### Key Commands
 ```bash
-ps aux | grep backend_service_final.py
-lsof -i :8000  # Check port usage
-```
+# Start backend
+cd autorez && uvicorn backend_service_final:app --port 8000
 
-**Frontend Build Fails?**  
-```bash
-cd AutoResolveUI && swift build 2>&1 | head -20
-```
+# Process video
+python autoresolve_cli.py process video.mp4
 
-**API Not Responding?**
-```bash
+# Check health
 curl http://localhost:8000/health
+
+# Run evaluation
+make eval-ablate
+
+# Verify system
+make verify-gates
+```
+
+## Debugging Checklist
+
+- [ ] Backend running on port 8000?
+- [ ] Config files have clean values (no inline comments)?
+- [ ] PYTHONPATH includes src/?
+- [ ] All dependencies installed?
+- [ ] Gates passing?
+- [ ] WebSocket URL matches (/ws/status)?
+- [ ] Artifacts directory exists?
+- [ ] Test video available?
+
+## Final Verification
+
+Always end sessions by running:
+```bash
+make verify-gates && echo "System healthy" || echo "GATES FAILED"
 ```
 
 ---
 
-**AUTHORITY**: This file reflects verified production state as of 2025-08-23. Code reality overrides this documentation - update both together. UI follows complete DaVinci Resolve-style specification from Frontend.md.
-
-**MAINTAINER**: @hawzhin
-- memorize all
-- memorize all
-- memorize
-- memorize
+This guide is the source of truth for AI agents working on AutoResolve. Follow these patterns exactly. When in doubt, check the Blueprint.md for specifications.

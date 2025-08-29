@@ -1,19 +1,23 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
-# Blueprint3 Director Module - Creative Director
-# Orchestration of all director modules
-
 import time
 import json
 import os
+import argparse
+import av
+import numpy as np
+from pathlib import Path
 from src.director.narrative import detect_story_beats
 from src.director.emotion import analyze_tension
 from src.director.rhythm import detect_pace
 from src.director.continuity import detect_shot_boundaries
 from src.director.emphasis import track_saliency
 from src.utils.memory import rss_gb, emit_metrics
+from src.ops.openrouter import get_client
+
+logger = logging.getLogger(__name__)
+
+# Blueprint3 Director Module - Creative Director
+# Orchestration of all director modules
 
 def analyze_video(video_path: str, modules=None, fps=None, window=None, config=None):
     """
@@ -37,7 +41,6 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None, config=N
     
     # Get video duration for performance calculation
     try:
-        import av
         with av.open(video_path) as container:
             duration_s = container.duration / 1000000.0 if container.duration else 60.0
     except Exception:
@@ -137,7 +140,6 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None, config=N
     
     # NEW: OpenRouter augmentation (if enabled)
     if config and config.get('openrouter', 'enabled', fallback='false').lower() == 'true':
-        from src.ops.openrouter import get_client
         orc = get_client(config)
         
         # Prepare compact summary for augmentation
@@ -280,7 +282,6 @@ def continuity_between(shotA, shotB):
 
 def main():
     """Main entry point for creative director"""
-    import argparse
     parser = argparse.ArgumentParser(description='Creative Director Analysis')
     parser.add_argument('--video', required=True, help='Video file path')
     parser.add_argument('--out', required=True, help='Output JSON path')
@@ -294,7 +295,6 @@ def main():
         print(f"- {decision}")
     
     # Save results
-    import json
     with open(args.out, 'w') as f:
         json.dump(analysis, f, indent=2)
     
@@ -303,9 +303,6 @@ def main():
 
 if __name__ == "__main__":
     """CLI entry point for director-analyze target"""
-    import argparse
-    import json
-    
     parser = argparse.ArgumentParser(description="Analyze video with director modules")
     parser.add_argument("--video", required=True, help="Video file path")
     parser.add_argument("--out", required=True, help="Output JSON path")
@@ -317,10 +314,8 @@ if __name__ == "__main__":
     results = analyze_footage(args.video, modules=args.modules)
     
     # Save results
-    from pathlib import Path
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     # Convert dataclasses to dicts for JSON serialization
-    import numpy as np
     def make_serializable(obj):
         if hasattr(obj, '__dataclass_fields__'):
             return {k: make_serializable(v) for k, v in obj.__dict__.items()}

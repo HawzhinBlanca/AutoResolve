@@ -1,0 +1,86 @@
+{
+  "timestamp": 1756471990.800464,
+  "results": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "samples": 100,
+      "errors": 0,
+      "min": 0.28487504459917545,
+      "max": 3.084834082983434,
+      "mean": 0.7814028894063085,
+      "median": 0.6574580329470336,
+      "p95": 1.8928812700323756,
+      "p99": 2.7326821780297923,
+      "stdev": 0.477267541889848,
+      "max_allowed": 10,
+      "passed": true
+    },
+    {
+      "endpoint": "/api/timeline/list",
+      "method": "GET",
+      "samples": 0,
+      "errors": 100,
+      "status": "FAILED",
+      "max_allowed": 50,
+      "passed": false
+    },
+    {
+      "endpoint": "/api/pipeline/start",
+      "method": "POST",
+      "samples": 0,
+      "errors": 100,
+      "status": "FAILED",
+      "max_allowed": 100,
+      "passed": false
+    },
+    {
+      "endpoint": "/api/telemetry/metrics",
+      "method": "GET",
+      "samples": 0,
+      "errors": 100,
+      "status": "FAILED",
+      "max_allowed": 50,
+      "passed": false
+    },
+    {
+      "endpoint": "/api/export/fcpxml",
+      "method": "POST",
+      "samples": 0,
+      "errors": 100,
+      "status": "FAILED",
+      "max_allowed": 100,
+      "passed": false
+    }
+  ],
+  "summary": {
+    "total_endpoints": 5,
+    "passed": 1,
+    "failed": 4,
+    "violations": [
+      {
+        "endpoint": "/api/timeline/list",
+        "reason": "Endpoint unreachable",
+        "errors": 100
+      },
+      {
+        "endpoint": "/api/pipeline/start",
+        "reason": "Endpoint unreachable",
+        "errors": 100
+      },
+      {
+        "endpoint": "/api/telemetry/metrics",
+        "reason": "Endpoint unreachable",
+        "errors": 100
+      },
+      {
+        "endpoint": "/api/export/fcpxml",
+        "reason": "Endpoint unreachable",
+        "errors": 100
+      }
+    ],
+    "compliance": false,
+    "compliance_rate": 20.0
+  },
+  "compliance": false
+}

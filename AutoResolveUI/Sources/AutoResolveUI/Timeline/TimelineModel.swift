@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import Combine
 import SwiftUI
+import CoreMedia
 
 // MARK: - Core Timeline Data Models
 // TimelineClip, TimelineTrack, and TimelineMarker are defined in Core/UnifiedTypes.swift
@@ -164,6 +165,7 @@ public struct UITimelineMarker: Identifiable, Codable {
 
 /// Main timeline data model
 public class TimelineModel: ObservableObject {
+    public let id = UUID()
     @Published public var tracks: [UITimelineTrack] = []
     @Published public var duration: TimeInterval = 1800  // 30 minutes default
     @Published public var playheadPosition: TimeInterval = 0
@@ -181,8 +183,8 @@ public class TimelineModel: ObservableObject {
     public var resolution: CGSize = CGSize(width: 1920, height: 1080)
     public var name: String = "Untitled Timeline"
     
-    // Timeline Editing Tools
-    public let editingTools: TimelineEditingTools
+    // Timeline Editing Tools (simple reference for now)
+    // TODO: Implement full editing tools system
     
     // MARK: - Computed Properties
     
@@ -202,9 +204,8 @@ public class TimelineModel: ObservableObject {
     }
     
     public init() {
-        self.editingTools = TimelineEditingTools()
         setupDefaultTracks()
-        self.editingTools.setTimeline(self)
+        // TODO: Initialize editing tools when implemented
     }
     
     /// Set up default video and audio tracks
@@ -593,5 +594,9 @@ public extension TimelineModel {
     
     var selectedClipID: UUID? {
         selectedClips.first
+    }
+    
+    var cmDuration: CMTime {
+        CMTime(seconds: duration, preferredTimescale: 600)
     }
 }

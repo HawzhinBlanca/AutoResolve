@@ -18,7 +18,7 @@ public class WebSocketManager: NSObject, ObservableObject {
     // WebSocket
     private var webSocket: URLSessionWebSocketTask?
     private var session: URLSession!
-    private let url = URL(string: "ws://localhost:8000/ws/progress")!
+    private let url = URL(string: "ws://localhost:8000/ws/status")!
     
     // Reconnection
     private var reconnectTimer: Timer?

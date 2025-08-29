@@ -117,6 +117,8 @@ public class RobustRequest<T: Decodable> {
         }
         
         return session.dataTaskPublisher(for: request)
+            .mapError { $0 as Error }
+            .retryOnConnectionError(retries: retries) // retry only on network errors before decode
             .tryMap { output -> Data in
                 guard let httpResponse = output.response as? HTTPURLResponse else {
                     throw NetworkError.invalidResponse
@@ -136,7 +138,6 @@ public class RobustRequest<T: Decodable> {
                 }
             }
             .decode(type: T.self, decoder: JSONDecoder())
-            .retryWithBackoff(retries: retries)
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }

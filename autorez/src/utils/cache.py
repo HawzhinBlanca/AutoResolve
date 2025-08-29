@@ -1,4 +1,7 @@
-import os, json, hashlib, numpy as np
+import os
+import json
+import hashlib
+import numpy as np
 
 def sha256_str(s: str):
     return hashlib.sha256(s.encode()).hexdigest()

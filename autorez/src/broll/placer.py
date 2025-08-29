@@ -1,4 +1,9 @@
 import logging
+import json
+import time
+import os
+import sys
+from src.utils.common import set_global_seed, iou
 
 logger = logging.getLogger(__name__)
 
@@ -6,10 +11,6 @@ logger = logging.getLogger(__name__)
 Blueprint3 B-roll Module - Placer
 Real implementation meeting <10% placement conflicts requirement
 """
-import json
-import time
-import os
-from src.utils.common import set_global_seed, iou
 
 class BrollPlacer:
     def __init__(self):
@@ -219,7 +220,6 @@ class BrollPlacer:
 
 def placer_cli():
     """CLI interface for B-roll placement"""
-    import sys
     if len(sys.argv) < 2:
         logger.info("Usage: python -m src.broll.placer <selection_file> [transcript_file] [output_path]")
         sys.exit(1)
@@ -249,7 +249,7 @@ def placer_cli():
     if "error" in placement_data:
         logger.error(f"B-roll placement failed: {placement_data['error']}")
     else:
-        logger.info(f"B-roll placement complete:")
+        logger.info("B-roll placement complete:")
         logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
         logger.info(f"  Total placements: {metrics['total_placements']}")
         logger.info(f"  Conflicts: {metrics['conflicts']}")

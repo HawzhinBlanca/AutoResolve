@@ -11,19 +11,23 @@ def fit_linear_head(v_embs, t_embs, lam=1e-2):
     return W
 
 def fit_linear_head_kfold(v_embs, t_embs, k=5, lam=1e-2) -> Tuple[np.ndarray, float]:
-    V = np.asarray(v_embs, dtype=np.float32); T = np.asarray(t_embs, dtype=np.float32)
-    N = len(V); idx = np.arange(N)
+    V = np.asarray(v_embs, dtype=np.float32)
+    T = np.asarray(t_embs, dtype=np.float32)
+    N = len(V)
+    idx = np.arange(N)
     best_W, best_score = None, -1
     for fold in range(k):
         val_mask = (idx % k) == fold
         tr, va = ~val_mask, val_mask
-        if tr.sum() == 0 or va.sum() == 0: continue
+        if tr.sum() == 0 or va.sum() == 0:
+            continue
         W = fit_linear_head(V[tr], T[tr], lam=lam)
         P = project(V[va], W)
         # cosine to targets as quick proxy
         cos = (P * T[va]).sum(axis=1)
         score = float(np.mean(cos))
-        if score > best_score: best_W, best_score = W, score
+        if score > best_score:
+            best_W, best_score = W, score
     return best_W if best_W is not None else fit_linear_head(V, T, lam=lam), float(best_score)
 
 def project(V, W):

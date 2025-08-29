@@ -140,7 +140,7 @@ class MemoryStressTest:
                 # Check memory before processing chunk
                 current_mem = self.get_memory_usage()
                 if current_mem['rss_gb'] > self.memory_limit_gb - 3:
-                    logger.warning(f"Approaching memory limit, triggering cleanup")
+                    logger.warning("Approaching memory limit, triggering cleanup")
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()

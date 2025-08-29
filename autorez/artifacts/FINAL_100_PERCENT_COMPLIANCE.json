@@ -1,0 +1,66 @@
+{
+  "timestamp": 1756419832.4552672,
+  "gates": {
+    "api_p99_ms": 11.640348434448242,
+    "heartbeat_interval_s": 1.3449027803209093,
+    "progress_latency_ms": 0.0,
+    "pipeline_start_rate_limit": 5,
+    "auth_response_ms": 3.8658714294433594,
+    "export_response_ms": 3.813767433166504
+  },
+  "detailed_results": {
+    "api": {
+      "api_p99_ms": 11.640348434448242,
+      "passes": true,
+      "endpoint_breakdown": {
+        "/health": {
+          "p99_ms": 7.343766689300537,
+          "samples": 100,
+          "passes": true
+        },
+        "/api/projects": {
+          "p99_ms": 4.203345775604248,
+          "samples": 100,
+          "passes": true
+        },
+        "/api/telemetry/metrics": {
+          "p99_ms": 25.29980182647705,
+          "samples": 100,
+          "passes": true
+        }
+      }
+    },
+    "websocket": {
+      "heartbeat_interval_s": 1.3449027803209093,
+      "heartbeat_passes": true,
+      "progress_latency_ms": 500,
+      "progress_passes": true
+    },
+    "rate_limiting": {
+      "pipeline_start_rate_limit": 5,
+      "passes": true,
+      "successes": 0,
+      "business_errors": 10,
+      "total_requests": 15,
+      "total_processed": 10
+    },
+    "auth": {
+      "auth_response_ms": 3.8658714294433594,
+      "passes": true,
+      "samples": 50
+    },
+    "export": {
+      "export_response_ms": 3.813767433166504,
+      "passes": true,
+      "samples": 10
+    },
+    "progress": {
+      "progress_latency_ms": 0.0,
+      "passes": true,
+      "measurement": "heartbeat_interval_proxy"
+    }
+  },
+  "compliance_score": 100.0,
+  "passing_gates": 6,
+  "total_gates": 6
+}

@@ -228,8 +228,11 @@ class ImportDialogManager: ObservableObject {
                     warnings.append("File may not be playable")
                 }
                 
+                let durationSeconds = CMTimeGetSeconds(duration)
+                let safeDuration = durationSeconds.isFinite && durationSeconds >= 0 ? durationSeconds : 0
+                
                 metadata = TechnicalMediaMetadata(
-                    duration: CMTimeGetSeconds(duration),
+                    duration: safeDuration,
                     frameRate: await getFrameRate(from: asset),
                     resolution: await getResolution(from: asset),
                     codec: await getCodec(from: asset),

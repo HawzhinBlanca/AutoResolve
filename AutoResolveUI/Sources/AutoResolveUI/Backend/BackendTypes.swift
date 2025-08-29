@@ -3,6 +3,75 @@ import Foundation
 import Combine
 // MARK: - Backend Types
 
+/// Video format options for project settings
+public enum VideoFormat: String, Codable, CaseIterable {
+    case hd = "hd"
+    case uhd4k = "4k"
+    case uhd8k = "8k"
+    case cinema4k = "cinema_4k"
+    case custom = "custom"
+}
+
+/// Color space options for project settings
+public enum ColorSpace: String, Codable, CaseIterable {
+    case rec709 = "Rec. 709"
+    case rec2020 = "Rec. 2020"
+    case p3 = "P3"
+    case aces = "ACES"
+    case log = "Log"
+}
+
+/// Settings for backend silence detection
+public struct BackendSilenceDetectionSettings: Codable, Sendable {
+    public let threshold: Double
+    public let minDuration: Double
+    public let padding: Double
+    
+    public init(threshold: Double, minDuration: Double, padding: Double) {
+        self.threshold = threshold
+        self.minDuration = minDuration
+        self.padding = padding
+    }
+}
+
+/// Render quality settings
+public enum RenderQuality: String, Codable, CaseIterable {
+    case draft = "draft"
+    case good = "good"
+    case best = "best"
+}
+
+/// Preview quality settings
+public enum PreviewQuality: String, Codable, CaseIterable {
+    case quarter = "quarter"
+    case half = "half"
+    case full = "full"
+}
+
+/// Backend time range for API communication
+public struct BackendTimeRange: Codable, Sendable {
+    public let start: Double
+    public let end: Double
+    
+    public init(start: Double, end: Double) {
+        self.start = start
+        self.end = end
+    }
+}
+
+/// Backend B-roll settings
+public struct BackendBRollSettings: Codable, Sendable {
+    public let maxResults: Int
+    public let threshold: Double
+    public let brollDirectory: String?
+    
+    public init(maxResults: Int, threshold: Double, brollDirectory: String? = nil) {
+        self.maxResults = maxResults
+        self.threshold = threshold
+        self.brollDirectory = brollDirectory
+    }
+}
+
 // TimeRange definition
 public struct TimeRange: Codable, Sendable, Hashable {
     public let start: TimeInterval
@@ -19,10 +88,10 @@ public struct TimeRange: Codable, Sendable, Hashable {
 }
 
 // Project type alias for compatibility
-public typealias Project = VideoProjectStore
+public typealias Project = BackendVideoProjectStore
 
-// VideoProjectStore - simple project container
-public class VideoProjectStore: ObservableObject {
+// BackendVideoProjectStore - simple project container
+public class BackendVideoProjectStore: ObservableObject {
     public let id: UUID
     @Published public var name: String
     @Published public var timeline: TimelineModel
@@ -136,11 +205,10 @@ public struct TimelineData: Codable {
     public let version: String
     public let project_name: String
     public let saved_at: String
-    public let clips: [[String: Any]]
+    public let clips: [[String: String]]
     public let metadata: [String: String]
     public let settings: [String: String]
     
-    // Custom decoder since clips is [[String: Any]]
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decode(String.self, forKey: .version)
@@ -148,19 +216,7 @@ public struct TimelineData: Codable {
         saved_at = try container.decode(String.self, forKey: .saved_at)
         metadata = try container.decode([String: String].self, forKey: .metadata)
         settings = try container.decode([String: String].self, forKey: .settings)
-        
-        // Decode clips as generic JSON
-        if let clipsData = try? container.decode([[String: AnyCodable]].self, forKey: .clips) {
-            clips = clipsData.map { clipDict in
-                var result: [String: Any] = [:]
-                for (key, value) in clipDict {
-                    result[key] = value.value
-                }
-                return result
-            }
-        } else {
-            clips = []
-        }
+        clips = (try? container.decode([[String: String]].self, forKey: .clips)) ?? []
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -170,7 +226,16 @@ public struct TimelineData: Codable {
         try container.encode(saved_at, forKey: .saved_at)
         try container.encode(metadata, forKey: .metadata)
         try container.encode(settings, forKey: .settings)
-        // Clips encoding would need custom handling
+        try container.encode(clips, forKey: .clips)
+    }
+    
+    public init(version: String, project_name: String, saved_at: String, clips: [[String: String]], metadata: [String: String], settings: [String: String]) {
+        self.version = version
+        self.project_name = project_name
+        self.saved_at = saved_at
+        self.clips = clips
+        self.metadata = metadata
+        self.settings = settings
     }
     
     private enum CodingKeys: String, CodingKey {
@@ -180,59 +245,26 @@ public struct TimelineData: Codable {
 
 public struct TimelineListResponse: Codable {
     public let status: String
-    public let timelines: [TimelineInfo]
+    public let timelines: [BackendTimelineInfo]
 }
 
-public struct TimelineInfo: Codable {
+public struct BackendTimelineInfo: Codable {
     public let project_name: String
     public let saved_at: String?
     public let clips_count: Int
     public let file_name: String
+    
+    public init(project_name: String, saved_at: String?, clips_count: Int, file_name: String) {
+        self.project_name = project_name
+        self.saved_at = saved_at
+        self.clips_count = clips_count
+        self.file_name = file_name
+    }
 }
 
 // Helper for generic JSON decoding
-public struct AnyCodable: Codable {
-    public let value: Any
-    
-    public init(_ value: Any) {
-        self.value = value
-    }
-    
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let bool = try? container.decode(Bool.self) {
-            value = bool
-        } else if let int = try? container.decode(Int.self) {
-            value = int
-        } else if let double = try? container.decode(Double.self) {
-            value = double
-        } else if let string = try? container.decode(String.self) {
-            value = string
-        } else if let dict = try? container.decode([String: AnyCodable].self) {
-            value = dict.mapValues { $0.value }
-        } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
-        } else {
-            value = NSNull()
-        }
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch value {
-        case let bool as Bool:
-            try container.encode(bool)
-        case let int as Int:
-            try container.encode(int)
-        case let double as Double:
-            try container.encode(double)
-        case let string as String:
-            try container.encode(string)
-        default:
-            try container.encodeNil()
-        }
-    }
-}
+// Local flexible JSON wrapper to avoid cross-file name clashes with WebSocket's AnyCodable
+// (Removed flexible JSON wrapper here to avoid duplicate definitions)
 
 public struct ProcessingTelemetry: Codable, Sendable {
     public let processingTime: Double

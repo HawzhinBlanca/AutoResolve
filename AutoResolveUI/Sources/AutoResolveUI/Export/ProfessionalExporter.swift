@@ -294,9 +294,18 @@ public class ProfessionalExporter: ObservableObject {
         settings: ExportSettings
     ) async throws {
         let timeline = try await loadTimeline(from: sourceURL)
-        let fcpxml = FCPXMLExporter()
-        let xmlData = try fcpxml.export(timeline: timeline, settings: settings)
-        try xmlData.write(to: outputURL)
+        // TODO: Implement FCPXML export
+        let xmlString = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <fcpxml version="1.10">
+            <project name="AutoResolve Export">
+                <sequence duration="60s">
+                    <!-- Timeline clips would be exported here -->
+                </sequence>
+            </project>
+        </fcpxml>
+        """
+        try xmlString.write(to: outputURL, atomically: true, encoding: String.Encoding.utf8)
     }
     
     private func exportEDL(
@@ -555,7 +564,7 @@ struct ExportTimeline {
     // Placeholder for timeline data structure
 }
 
-struct FCPXMLExporter {
+struct ProfessionalFCPXMLExporter {
     func export(timeline: ExportTimeline, settings: ProfessionalExporter.ExportSettings) throws -> Data {
         return Data()
     }

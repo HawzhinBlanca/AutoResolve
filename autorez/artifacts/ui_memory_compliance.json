@@ -1,0 +1,27 @@
+{
+  "compliance_test": "REQ-009 - UI Memory Usage",
+  "timestamp": "2025-08-29T15:55:00Z",
+  "requirement": "UI memory usage must be under 200MB",
+  "measurement": {
+    "process": "MainApp",
+    "pid": 73305,
+    "resident_memory_kb": 36704,
+    "resident_memory_mb": 35.84,
+    "virtual_memory_kb": 411798816,
+    "virtual_memory_mb": 402147.28,
+    "memory_pressure": "LOW"
+  },
+  "compliance": {
+    "requirement_mb": 200,
+    "actual_mb": 35.84,
+    "margin_mb": 164.16,
+    "passed": true,
+    "status": "✅ PASSED"
+  },
+  "notes": [
+    "UI running with production-grade error handling",
+    "Memory usage is 82% below requirement",
+    "Virtual memory is high but this is normal for macOS apps",
+    "Resident memory (actual RAM) is the critical metric"
+  ]
+}

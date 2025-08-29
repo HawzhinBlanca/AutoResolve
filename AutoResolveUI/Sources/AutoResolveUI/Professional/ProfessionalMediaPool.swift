@@ -402,7 +402,11 @@ struct MediaItemsView: View {
         case .fileSize:
             items.sort { $0.fileSize > $1.fileSize }
         case .type:
-            items.sort { $0.type < $1.type }
+            items.sort { 
+                let type0 = $0.url.pathExtension.lowercased()
+                let type1 = $1.url.pathExtension.lowercased()
+                return type0 < type1
+            }
         }
         
         return items
@@ -441,6 +445,12 @@ struct ThumbnailGridView: View {
                 .onTapGesture {
                     toggleSelection(item.id.uuidString)
                 }
+                .onDrag {
+                    // Create NSItemProvider with the media URL
+                    let provider = NSItemProvider(object: item.url as NSURL)
+                    provider.suggestedName = item.name
+                    return provider
+                }
             }
         }
         .padding(8)
@@ -465,14 +475,14 @@ struct MediaThumbnail: View {
             // Thumbnail
             ZStack {
                 if let thumbnail = item.thumbnail {
-                    Image(nsImage: thumbnail)
+                    thumbnail
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                 } else {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .overlay(
-                            Image(systemName: item.type == "audio" ? "waveform" : "video")
+                            Image(systemName: item.hasVideo ? "video" : "waveform")
                                 .font(.largeTitle)
                                 .foregroundColor(.gray)
                         )
@@ -557,7 +567,7 @@ struct MediaListRow: View {
     public var body: some View {
         HStack(spacing: 8) {
             // Icon
-            Image(systemName: item.type == "audio" ? "waveform" : "video")
+            Image(systemName: item.hasVideo ? "video" : "waveform")
                 .font(.system(size: 12))
                 .foregroundColor(.gray)
                 .frame(width: 20)
@@ -638,7 +648,7 @@ struct FilmstripFrame: View {
     public var body: some View {
         VStack(spacing: 2) {
             if let thumbnail = item.thumbnail {
-                Image(nsImage: thumbnail)
+                thumbnail
                     .resizable()
                     .aspectRatio(contentMode: .fit)
             } else {
@@ -670,7 +680,7 @@ struct MediaInfoBar: View {
             if let item = selectedItem {
                 // Thumbnail
                 if let thumbnail = item.thumbnail {
-                    Image(nsImage: thumbnail)
+                    thumbnail
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 80, height: 45)
@@ -687,11 +697,8 @@ struct MediaInfoBar: View {
                         if item.duration > 0 {
                             Label(formatDuration(item.duration), systemImage: "clock")
                         }
-                        if let resolution = item.resolution {
-                            Label("\(Int(resolution.width))x\(Int(resolution.height))", systemImage: "aspectratio")
-                        } else {
-                            Label("Unknown", systemImage: "aspectratio")
-                        }
+                        // Resolution not available in MediaPoolItem
+                        // TODO: Add resolution property to MediaPoolItem
                         Label(formatFileSize(item.fileSize), systemImage: "doc")
                     }
                     .font(.system(size: 9))

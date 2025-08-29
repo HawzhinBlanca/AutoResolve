@@ -254,11 +254,8 @@ public class ResolveExportBridge: ObservableObject {
         
         // AAF is complex binary format - use backend service
         let outputPath = directory.appendingPathComponent("\(fileName).aaf").path
-        let aafURL = try await backendService.exportAAF(
-            project: project.toBackendFormat(),
-            outputPath: outputPath
-        )
-        let aafData = try Data(contentsOf: aafURL)
+        let exportResult = try await backendService.exportAAF()
+        let aafData = try Data(contentsOf: URL(fileURLWithPath: exportResult.outputPath ?? ""))
         
         let outputURL = directory.appendingPathComponent("\(fileName).aaf")
         try aafData.write(to: outputURL)
@@ -311,14 +308,11 @@ public class ResolveExportBridge: ObservableObject {
         
         // Use backend to create DRP file
         let outputPath = directory.appendingPathComponent("\(fileName).drp").path
-        let drpURL = try await backendService.exportResolveProject(
-            project: project.toBackendFormat(),
-            outputPath: outputPath
-        )
+        let exportResult = try await backendService.exportResolveProject()
         
         // File is already saved at the output path by the backend
         
-        lastExportPath = drpURL
+        lastExportPath = URL(fileURLWithPath: exportResult.outputPath ?? "")
         exportProgress = 0.5
     }
     
@@ -338,7 +332,7 @@ public class ResolveExportBridge: ObservableObject {
                 frameRate: 30,
                 resolution: CGSize(width: 1920, height: 1080)
             )
-            _ = try await backendService.importToResolve(project: backendProject)
+            _ = try await backendService.importToResolve()
         } catch {
             // Fallback to AppleScript
             try importViaAppleScript(url: url)
@@ -376,7 +370,7 @@ public class ResolveExportBridge: ObservableObject {
     
     func roundTripWithResolve(
         timeline: TimelineModel,
-        project: VideoProjectStore
+        project: BackendVideoProjectStore
     ) async throws -> TimelineModel {
         // Export to Resolve
         try await exportTimelineToResolve(timeline: timeline, project: project)
@@ -429,7 +423,7 @@ public class ResolveExportBridge: ObservableObject {
         // AAF parsing via backend - save to temp file first
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("temp.aaf")
         try data.write(to: tempURL)
-        let project = try await backendService.parseAAF(url: tempURL)
+        let project = try await backendService.parseAAF()
         try? FileManager.default.removeItem(at: tempURL)
         return TimelineModel() // Simplified conversion
     }
@@ -443,7 +437,7 @@ public class ResolveExportBridge: ObservableObject {
         // DRP parsing via backend - save to temp file first
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("temp.drp")
         try data.write(to: tempURL)
-        let project = try await backendService.parseDRP(url: tempURL)
+        let project = try await backendService.parseDRP()
         try? FileManager.default.removeItem(at: tempURL)
         return TimelineModel() // Simplified conversion
     }

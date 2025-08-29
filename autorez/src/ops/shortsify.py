@@ -261,7 +261,7 @@ def shortsify_cli():
     shortsify = Shortsify()
     shorts_data, metrics = shortsify.generate_shorts(video_path, output_dir)
     
-    logger.info(f"Shortsify complete:")
+    logger.info("Shortsify complete:")
     logger.info(f"  Video duration: {metrics['video_duration_s']:.1f}s")
     logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
     logger.info(f"  Latency per 30min: {metrics['latency_per_30min']:.1f}s")

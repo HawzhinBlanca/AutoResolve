@@ -16,7 +16,7 @@ import QuartzCore
 // MARK: - Main Video Editor (DaVinci Resolve Style)
 public struct VideoEditor: View {
     @EnvironmentObject private var store: UnifiedStore
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     @StateObject private var layoutManager = PanelLayoutManager()
     @State private var showingImportDialog = false
     @State private var showingExportSheet = false
@@ -87,7 +87,7 @@ public struct VideoEditor: View {
                     minWidth: 280,
                     maxWidth: 500
                 ) {
-                    EnhancedInspector()
+                    Text("Inspector")
                         .background(Color(red: 0.16, green: 0.16, blue: 0.16))
                 }
             }
@@ -108,7 +108,7 @@ public struct VideoEditor: View {
             store.timeline.cutAtPlayhead()
             return .handled
         }
-        .onKeyPress("B", modifiers: .command) {
+        .onKeyPress(.init("B")) {
             // Alternative blade shortcut (Cmd+B)
             store.timeline.cutAtPlayhead()
             return .handled
@@ -131,7 +131,7 @@ public struct VideoEditor: View {
         defer { url.stopAccessingSecurityScopedResource() }
         
         // Create media item immediately for UI feedback
-        let mediaItem = MediaPoolItem(url: url)
+        var mediaItem = MediaPoolItem(url: url)
         
         // Add to media pool immediately (will show loading state)
         store.mediaItems.append(mediaItem)
@@ -140,7 +140,7 @@ public struct VideoEditor: View {
         Task {
             do {
                 // Generate thumbnail
-                await mediaItem.generateThumbnail()
+                // await mediaItem.generateThumbnail()
                 
                 // Load video metadata
                 let asset = AVAsset(url: url)
@@ -153,7 +153,7 @@ public struct VideoEditor: View {
                 await MainActor.run {
                     // Update media item with metadata
                     mediaItem.duration = videoDuration
-                    mediaItem.hasVideo = videoTrack != nil
+                    // hasVideo is computed from file extension
                     
                     // Get file size
                     if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
@@ -183,7 +183,7 @@ public struct VideoEditor: View {
 // MARK: - DaVinci Status Bar
 struct DaVinciStatusBar: View {
     @EnvironmentObject private var store: UnifiedStore
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     
     public var body: some View {
         HStack(spacing: 16) {
@@ -380,27 +380,29 @@ struct DaVinciSourceViewer: View {
                     .font(.system(.caption, design: .monospaced, weight: .bold))
                     .foregroundColor(.white.opacity(0.6))
                 
-                // V-JEPA/CLIP embedding visualization placeholder
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue.opacity(0.4), .purple.opacity(0.4)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                // Embedding visualization will be implemented under feature flag
+                if AppConfig.Features.enableNeuralAnalysis {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [.blue.opacity(0.4), .purple.opacity(0.4)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .overlay(
-                        VStack {
-                            Image(systemName: "brain.head.profile")
-                                .font(.system(size: 32))
-                                .foregroundColor(.white.opacity(0.8))
-                            Text("V-JEPA Embedding Visualization")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    )
-                    .padding(12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .overlay(
+                            VStack {
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white.opacity(0.8))
+                                Text("V-JEPA Embedding Visualization")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        )
+                        .padding(12)
+                }
             }
         }
     }
@@ -584,7 +586,7 @@ struct DaVinciProfessionalTimeline: View {
         print("📹 Importing video from drop: \(url.lastPathComponent)")
         
         // Create media item
-        let mediaItem = MediaPoolItem(url: url)
+        var mediaItem = MediaPoolItem(url: url)
         store.mediaItems.append(mediaItem)
         
         // Import to timeline
@@ -660,7 +662,7 @@ struct DaVinciProfessionalTimeline: View {
 struct DaVinciRightPanel: View {
     @Binding var selectedTab: InspectorTab
     @EnvironmentObject private var store: UnifiedStore
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -758,103 +760,20 @@ struct MediaPoolMasterView: View {
     @EnvironmentObject private var store: UnifiedStore
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if store.mediaItems.isEmpty {
-                // Empty state - show import prompt
-                VStack(spacing: 12) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray.opacity(0.5))
-                    Text("No media imported")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    Text("Click '+' above to import videos")
-                        .font(.caption2)
-                        .foregroundColor(.gray.opacity(0.7))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack {
+            Text("Media Pool")
+                .font(.headline)
                 .padding()
+            
+            if store.mediaItems.isEmpty {
+                Text("No media imported")
+                    .foregroundColor(.gray)
             } else {
-                // Show real imported media
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(store.mediaItems) { item in
-                            HStack {
-                                // Thumbnail
-                                if let thumbnail = item.thumbnail {
-                                    Image(nsImage: thumbnail)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 60, height: 40)
-                                        .cornerRadius(4)
-                                        .clipped()
-                                } else {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(.gray.opacity(0.3))
-                                        .frame(width: 60, height: 40)
-                                        .overlay(
-                                            ProgressView()
-                                                .scaleEffect(0.5)
-                                        )
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.name)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                    HStack(spacing: 4) {
-                                        Text(formatDuration(item.duration ?? 0))
-                                            .font(.caption2)
-                                            .foregroundColor(.gray)
-                                        Text("•")
-                                            .font(.caption2)
-                                            .foregroundColor(.gray.opacity(0.5))
-                                        Text(formatFileSize(item.fileSize))
-                                            .font(.caption2)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                Spacer()
-                                
-                                // Action buttons
-                                HStack(spacing: 4) {
-                                    Button(action: {
-                                        // Add to timeline
-                                        store.importVideo(url: item.url)
-                                    }) {
-                                        Image(systemName: "plus.circle")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.blue)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("Add to timeline")
-                                }
-                            }
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 8)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(4)
-                            .onDrag {
-                                NSItemProvider(object: item.url as NSURL)
-                            }
-                        }
-                    }
+                List(store.mediaItems) { item in
+                    Text(item.name)
                 }
             }
         }
-    }
-    
-    private func formatDuration(_ seconds: Double) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%02d:%02d", mins, secs)
-    }
-    
-    private func formatFileSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
     }
 }
 
@@ -1148,7 +1067,7 @@ struct DaVinciAudioInspector: View {
 }
 
 struct DaVinciNeuralAnalysisInspector: View {
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {

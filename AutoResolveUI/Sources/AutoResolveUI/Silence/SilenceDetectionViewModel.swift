@@ -144,14 +144,7 @@ public class SilenceDetectionViewModel: ObservableObject {
                 paddingAfter: paddingAfter
             )
             
-            let results = try await backendService.detectSilence(
-                videoPath: url.path,
-                settings: BackendSilenceDetectionSettings(
-                    threshold: settings.threshold,
-                    minDuration: settings.minDuration,
-                    padding: settings.paddingAfter
-                )
-            )
+            let results = try await BackendClient.shared.detectSilence(videoPath: url.path)
             
             // Convert results to UI format
             let regions = results.silenceSegments.map { range in
@@ -443,10 +436,12 @@ public class SilenceDetectionViewModel: ObservableObject {
     }
     
     private func timecodeFromSeconds(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
-        let frames = Int((seconds - Double(Int(seconds))) * 30)
+        guard seconds.isFinite && seconds >= 0 else { return "00:00:00:00" }
+        let safeSeconds = min(seconds, 359999) // Cap at 99:59:59:29
+        let hours = Int(safeSeconds) / 3600
+        let minutes = (Int(safeSeconds) % 3600) / 60
+        let secs = Int(safeSeconds) % 60
+        let frames = Int((safeSeconds - Double(Int(safeSeconds))) * 30)
         
         return String(format: "%02d:%02d:%02d:%02d", hours, minutes, secs, frames)
     }

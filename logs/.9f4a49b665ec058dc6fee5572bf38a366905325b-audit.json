@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/hawzhin/AutoResolve/logs/.9f4a49b665ec058dc6fee5572bf38a366905325b-audit.json",
+    "files": [
+        {
+            "date": 1756409563643,
+            "name": "/Users/hawzhin/AutoResolve/logs/mcp-puppeteer-2025-08-28.log",
+            "hash": "614d058a57bc83fce72fb3add379db50adca3497528317cc7850bac7874c25c2"
+        }
+    ],
+    "hashType": "sha256"
+}

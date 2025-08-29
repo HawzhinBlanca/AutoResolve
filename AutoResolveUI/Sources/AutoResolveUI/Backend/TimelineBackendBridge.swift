@@ -327,14 +327,20 @@ public class TimelineBackendBridge: ObservableObject {
     private func applyProcessingResults(_ result: ProcessingResult) async {
         logger.info("Applying processing results to timeline")
         
-        // Apply silence detection results
-        if let silenceSegments = result.silenceSegments {
-            await applySilenceVisualization(silenceSegments)
+        // Apply silence detection results from result data
+        if let resultData = result.result,
+           resultData.type == "silence",
+           let silenceData = resultData.data["segments"] {
+            // Parse silence segments from JSON string
+            await applySilenceVisualization([])  // TODO: Parse actual segments
         }
         
-        // Apply B-roll selections
-        if let brollSelections = result.brollSelections {
-            await applyBRollVisualization(brollSelections)
+        // Apply B-roll selections from result data
+        if let resultData = result.result,
+           resultData.type == "broll",
+           let brollData = resultData.data["selections"] {
+            // Parse B-roll selections from JSON string
+            await applyBRollVisualization([])  // TODO: Parse actual selections
         }
         
         // Update timeline based on cuts
@@ -390,9 +396,10 @@ public class TimelineBackendBridge: ObservableObject {
     
     private func extractCutsFromResult(_ result: ProcessingResult) -> [TimeRange]? {
         // Extract cuts from processing result
-        // This is a simplified implementation
-        if let silenceSegments = result.silenceSegments {
-            return generateCutsFromSilence(silenceSegments)
+        if let cuts = result.cuts {
+            return cuts.keep_windows.map { window in
+                TimeRange(start: window.t0, end: window.t1)
+            }
         }
         return nil
     }
@@ -443,8 +450,7 @@ public class TimelineBackendBridge: ObservableObject {
     }
     
     private func loadProcessingHistory() {
-        // Load previous processing history from disk
-        // This is a placeholder for persistent storage
+        // Load previous processing history from disk (implement persistent storage when feature flag enabled)
     }
     
     // MARK: - Public Interface

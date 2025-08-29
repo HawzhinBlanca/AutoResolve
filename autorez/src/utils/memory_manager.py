@@ -6,9 +6,7 @@ Prevents unbounded memory growth and manages resource constraints.
 import gc
 import logging
 import psutil
-import functools
-from typing import Optional, Any, Callable
-from contextlib import contextmanager
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

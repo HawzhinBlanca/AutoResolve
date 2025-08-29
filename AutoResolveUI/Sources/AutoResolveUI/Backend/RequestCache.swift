@@ -452,7 +452,4 @@ public struct CacheMonitorView: View {
     }
 }
 
-// Type alias for compatibility
-extension RequestCache {
-    typealias CacheEntry = AutoResolveUILib.CacheEntry
-}
+// Removed external CacheEntry alias; using local CacheEntry defined in Backend/CacheEntryFix.swift

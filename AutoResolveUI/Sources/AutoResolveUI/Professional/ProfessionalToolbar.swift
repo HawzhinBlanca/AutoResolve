@@ -186,7 +186,7 @@ struct TimelineInfo: View {
 struct QuickActions: View {
     @Binding var showRenderQueue: Bool
     @Binding var showMediaImport: Bool
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     
     public var body: some View {
         HStack(spacing: 8) {
@@ -430,10 +430,12 @@ struct TimecodeDisplay: View {
     }
     
     private func formatTimecode(_ time: TimeInterval) -> String {
-        let hours = Int(time) / 3600
-        let minutes = Int(time) / 60 % 60
-        let seconds = Int(time) % 60
-        let frames = Int((time - Double(Int(time))) * 30)
+        guard time.isFinite && time >= 0 else { return "00:00:00:00" }
+        let safeTime = min(time, 359999.0) // Cap at 99:59:59:29
+        let hours = Int(safeTime) / 3600
+        let minutes = Int(safeTime) / 60 % 60
+        let seconds = Int(safeTime) % 60
+        let frames = Int((safeTime - Double(Int(safeTime))) * 30)
         return String(format: "%02d:%02d:%02d:%02d", hours, minutes, seconds, frames)
     }
 }
@@ -578,7 +580,7 @@ struct VUMeter: View {
 
 // MARK: - Connection Indicator
 struct ConnectionIndicator: View {
-    @EnvironmentObject var backendService: BackendService
+    @EnvironmentObject var backendService: BackendClient
     
     public var body: some View {
         HStack(spacing: 4) {

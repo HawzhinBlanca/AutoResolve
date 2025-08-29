@@ -1,4 +1,12 @@
 import logging
+import json
+import time
+import os
+import sys
+import numpy as np
+from src.utils.common import set_global_seed, cos
+from src.embedders.vjepa_embedder import VJEPAEmbedder
+from src.embedders.clip_embedder import CLIPEmbedder
 
 logger = logging.getLogger(__name__)
 
@@ -6,14 +14,6 @@ logger = logging.getLogger(__name__)
 Blueprint3 B-roll Module - Selector
 Real implementation meeting ≥0.65 top-3 match rate requirement
 """
-import json
-import time
-import os
-import numpy as np
-from src.utils.common import set_global_seed, cos
-from src.embedders.vjepa_embedder import VJEPAEmbedder
-from src.embedders.clip_embedder import CLIPEmbedder
-from src.align.align_vjepa_to_clip import project
 
 class BrollSelector:
     def __init__(self, library_manifest="datasets/library/stock_manifest.json"):
@@ -75,17 +75,16 @@ class BrollSelector:
         logger.info(f"Query embeddings shape: {query_embeddings.shape if hasattr(query_embeddings, 'shape') else 'unknown'}")
 
         # Load alignment matrix W for V-JEPA→CLIP text space projection
-        # Expect artifacts/alignment_W.npy present from A/B alignment
+        # Graceful fallback if alignment matrix not available
         alignment_path = os.getenv("ALIGNMENT_W", "artifacts/alignment_W.npy")
-        if not os.path.exists(alignment_path):
-            raise FileNotFoundError(f"Alignment matrix not found at {alignment_path}. Run alignment pipeline first.")
-        W = np.load(alignment_path)
-
+        alignment_available = os.path.exists(alignment_path)
+        if not alignment_available:
+            logger.warning(f"Alignment matrix not found at {alignment_path}. Using text-only matching.")
+        
         # Project main video segments into CLIP text space
         # DISABLED: Dimension mismatch issues, using text-only matching for now
         # vjepa_embs = np.array([s["emb"] for s in main_segments], dtype=np.float32)
         # vjepa_proj = project(vjepa_embs, W)
-        vjepa_proj = None
         
         # Pre-compute library CLIP image embeddings (temporal pooled per asset)
         library_embeddings = self._get_library_clip_image_embeddings()
@@ -115,8 +114,8 @@ class BrollSelector:
             for j, query_emb in enumerate(query_embeddings):
                 scores = []
                 for k, lib_emb in enumerate(library_embeddings):
-                    # Text-only matching for now (video projection disabled due to dimension issues)
-                    s_text = cos(query_emb, lib_emb)
+                    # Safe cosine similarity with zero-vector handling
+                    s_text = self._safe_cosine_similarity(query_emb, lib_emb)
                     score = s_text  # 100% text-based for now
                     scores.append((float(score), k))
                 
@@ -240,10 +239,28 @@ class BrollSelector:
         # Store mapping from embedding index to clip index
         self._valid_clip_indices = valid_clips
         return embeddings
+    
+    def _safe_cosine_similarity(self, vec1, vec2):
+        """Compute cosine similarity with zero-vector handling"""
+        # Handle zero vectors to prevent division by zero
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        
+        # If either vector is zero, return 0 similarity
+        if norm1 < 1e-10 or norm2 < 1e-10:
+            return 0.0
+        
+        # Normalize and compute dot product
+        vec1_norm = vec1 / norm1
+        vec2_norm = vec2 / norm2
+        
+        # Clip to [-1, 1] to handle numerical errors
+        similarity = np.clip(np.dot(vec1_norm, vec2_norm), -1.0, 1.0)
+        
+        return float(similarity)
 
 def selector_cli():
     """CLI interface for B-roll selection"""
-    import sys
     if len(sys.argv) < 2:
         logger.info("Usage: python -m src.broll.selector <video_path> [transcript_file] [output_path]")
         sys.exit(1)
@@ -265,7 +282,7 @@ def selector_cli():
     if "error" in selection_data:
         logger.error(f"B-roll selection failed: {selection_data['error']}")
     else:
-        logger.info(f"B-roll selection complete:")
+        logger.info("B-roll selection complete:")
         logger.info(f"  Processing time: {metrics['processing_time_s']:.1f}s")
         logger.info(f"  Total queries: {metrics['total_queries']}")
         logger.info(f"  Successful matches: {metrics['successful_matches']}")

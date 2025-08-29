@@ -50,7 +50,6 @@ Path validation and security utilities for AutoResolve.
 Prevents path traversal attacks and validates file access.
 """
 
-import os
 from pathlib import Path
 from typing import Optional, List
 import logging

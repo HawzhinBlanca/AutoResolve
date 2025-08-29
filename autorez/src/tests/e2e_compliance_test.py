@@ -1,4 +1,6 @@
-import json, os, time
+import json
+import os
+import time
 
 def _read_json(path):
     with open(path) as f:
@@ -20,9 +22,6 @@ End-to-End Compliance Test for AutoResolve v3.0
 Complete workflow validation ensuring 100% blueprint compliance
 """
 
-import json
-import time
-import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Tuple

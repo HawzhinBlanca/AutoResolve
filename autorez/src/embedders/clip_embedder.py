@@ -28,7 +28,8 @@ class CLIPEmbedder:
         return h.hexdigest()[:16]
 
     def _read_frames(self, path, fps=1.0):
-        c = av.open(path); s = c.streams.video[0]
+        c = av.open(path)
+        s = c.streams.video[0]
         frames, ts, step = [], [], int(round(s.average_rate / fps)) if s.average_rate else 30
         for i, fr in enumerate(c.decode(s)):
             if i % step == 0:

@@ -4,6 +4,11 @@ open-clip-torch
 pillow
 av
 psutil
-numpy<2.0
+numpy
 faster-whisper
 ffmpeg-python
+fastapi
+uvicorn[standard]
+pydantic
+openai
+tiktoken

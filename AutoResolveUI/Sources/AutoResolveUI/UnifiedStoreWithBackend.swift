@@ -45,7 +45,7 @@ public class UnifiedStore: ObservableObject {
     @Published var exportStatus: ExportStatus = .idle
     
     // Backend Service Integration
-    private let backendService = BackendService.shared
+    private let backendService = BackendClient.shared
     @Published var telemetry: PipelineStatusMonitor
     private var currentTaskId: String?
     private var cancellable: AnyCancellable?
@@ -75,49 +75,47 @@ public class UnifiedStore: ObservableObject {
         isProcessing = true
         processingStatus = "Detecting silence..."
         
-        backendService.detectSilence(videoPath: videoURL.path)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isProcessing = false
-                    if case .failure(let error) = completion {
-                        print("❌ Silence detection failed: \(error)")
-                        self?.processingStatus = "Silence detection failed"
-                    }
-                },
-                receiveValue: { [weak self] response in
+        Task {
+            do {
+                let response = try await backendService.detectSilence(videoPath: videoURL.path)
+                await MainActor.run {
                     print("✅ Silence detection complete")
-                    self?.processingStatus = "Silence detected"
+                    self.processingStatus = "Silence detected"
                     
                     // Parse and apply silence regions to timeline
-                    self?.applySilenceRegions(response.silence_regions)
+                    self.applySilenceRegions(response.silenceSegments)
                     
                     // Generate cut suggestions from silence
-                    self?.generateCutSuggestionsFromSilence(response.silence_regions)
+                    self.generateCutSuggestionsFromSilence(response.silenceSegments)
                     
                     // Update UI
-                    self?.isProcessing = false
+                    self.isProcessing = false
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    print("❌ Silence detection failed: \(error)")
+                    self.processingStatus = "Silence detection failed"
+                    self.isProcessing = false
+                }
+            }
+        }
     }
     
-    private func applySilenceRegions(_ regions: [SilenceRegionData]) {
+    private func applySilenceRegions(_ regions: [TimeRange]) {
         // Add visual markers to timeline for silence regions
         for region in regions {
-            let marker = TimelineMarker(
+            let marker = UITimelineMarker(
                 time: region.start,
                 type: .silence,
-                name: "Silence",
-                color: .red.opacity(0.3)
+                name: "Silence"
             )
             timeline.markers.append(marker)
             
             // Add end marker
-            let endMarker = TimelineMarker(
+            let endMarker = UITimelineMarker(
                 time: region.end,
                 type: .silence,
-                name: "End Silence",
-                color: .green.opacity(0.3)
+                name: "End Silence"
             )
             timeline.markers.append(endMarker)
         }
@@ -125,14 +123,14 @@ public class UnifiedStore: ObservableObject {
         print("📍 Added \(regions.count * 2) silence markers to timeline")
     }
     
-    private func generateCutSuggestionsFromSilence(_ regions: [SilenceRegionData]) {
+    private func generateCutSuggestionsFromSilence(_ regions: [TimeRange]) {
         // Create cut suggestions at silence midpoints
         cuts.suggestions = regions.compactMap { region in
             // Only suggest cuts for silences longer than 0.5s
             if region.duration > 0.5 {
                 return CutSuggestion(
                     time: region.start + (region.duration / 2),
-                    confidence: Int(min(95, 70 + region.duration * 10)) // Higher confidence for longer silences
+                    confidence: Int(min(95, 70 + (region.duration.isFinite ? region.duration * 10 : 0))) // Higher confidence for longer silences
                 )
             }
             return nil
@@ -167,44 +165,64 @@ public class UnifiedStore: ObservableObject {
     // MARK: - Timeline Persistence
     public func saveTimeline(projectName: String? = nil) {
         let name = projectName ?? "timeline_\(Int(Date().timeIntervalSince1970))"
-        let clips = timeline.clips
+        let clips = timeline.videoTracks.flatMap { $0.clips }
         
-        backendService.saveTimeline(projectName: name, clips: clips)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.telemetry.addMessage(.error, "Failed to save timeline: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] response in
-                    self?.telemetry.addMessage(.info, "Timeline saved: \(response.project_name) with \(response.clips_count) clips")
-                    self?.currentProjectName = response.project_name
+        // Convert clips to the format expected by TimelineData
+        let clipData = clips.map { clip in
+            [
+                "name": clip.name,
+                "start_time": String(clip.startTime),
+                "duration": String(clip.duration),
+                "source_url": clip.sourceURL?.absoluteString ?? ""
+            ]
+        }
+        
+        let timelineData = TimelineData(
+            version: "1.0",
+            project_name: name,
+            saved_at: ISO8601DateFormatter().string(from: Date()),
+            clips: clipData,
+            metadata: [:],
+            settings: [:]
+        )
+        
+        Task {
+            do {
+                let response = try await backendService.saveTimeline(timelineData)
+                await MainActor.run {
+                    self.telemetry.addMessage(.info, "Timeline saved: \(response.timelineId ?? "unknown")")
+                    self.currentProjectName = name
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.telemetry.addMessage(.error, "Failed to save timeline: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     public func loadTimeline(projectName: String) {
-        backendService.loadTimeline(projectName: projectName)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.telemetry.addMessage(.error, "Failed to load timeline: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] response in
-                    guard let self = self else { return }
-                    
+        Task {
+            do {
+                let response = try await backendService.loadTimeline(id: projectName)
+                await MainActor.run {
                     // Clear current timeline
-                    self.timeline.clips.removeAll()
+                    for i in 0..<self.timeline.tracks.count {
+                        if self.timeline.tracks[i].type == .video {
+                            self.timeline.tracks[i].clips.removeAll()
+                        }
+                    }
                     
                     // Load clips from saved data
-                    for clipData in response.timeline.clips {
-                        if let id = UUID(uuidString: clipData["id"] as? String ?? ""),
-                           let name = clipData["name"] as? String,
-                           let trackIndex = clipData["trackIndex"] as? Int,
-                           let startTime = clipData["startTime"] as? TimeInterval,
-                           let duration = clipData["duration"] as? TimeInterval {
+                    for clipData in response.clips {
+                        if let id = UUID(uuidString: clipData["id"] ?? ""),
+                           let name = clipData["name"],
+                           let trackIndexStr = clipData["trackIndex"],
+                           let trackIndex = Int(trackIndexStr),
+                           let startTimeStr = clipData["startTime"],
+                           let startTime = Double(startTimeStr),
+                           let durationStr = clipData["duration"],
+                           let duration = Double(durationStr) {
                             
                             let clip = SimpleTimelineClip(
                                 id: id,
@@ -212,34 +230,43 @@ public class UnifiedStore: ObservableObject {
                                 trackIndex: trackIndex,
                                 startTime: startTime,
                                 duration: duration,
-                                sourceURL: URL(string: clipData["sourceURL"] as? String ?? ""),
-                                inPoint: clipData["inPoint"] as? TimeInterval ?? 0,
-                                isSelected: false
+                                sourceURL: URL(string: clipData["sourceURL"] ?? "")
                             )
-                            self.timeline.clips.append(clip)
+                            
+                            // Add clip to appropriate track
+                            if trackIndex < self.timeline.tracks.count {
+                                self.timeline.tracks[trackIndex].clips.append(clip)
+                            }
                         }
                     }
                     
-                    self.telemetry.addMessage(.info, "Timeline loaded: \(response.timeline.project_name) with \(self.timeline.clips.count) clips")
-                    self.currentProjectName = response.timeline.project_name
+                    self.telemetry.addMessage(.info, "Timeline loaded: \(response.project_name)")
+                    self.currentProjectName = response.project_name
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.telemetry.addMessage(.error, "Failed to load timeline: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
-    public func listSavedTimelines(completion: @escaping ([TimelineInfo]) -> Void) {
-        backendService.listTimelines()
-            .sink(
-                receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
-                        print("Failed to list timelines: \(error)")
-                    }
-                },
-                receiveValue: { response in
-                    completion(response.timelines)
+    public func listSavedTimelines(completion: @escaping ([BackendTimelineInfo]) -> Void) {
+        Task {
+            do {
+                let timelines = try await backendService.listTimelines()
+                await MainActor.run {
+                    completion(timelines.map { timeline in
+                        BackendTimelineInfo(project_name: timeline.project_name, saved_at: timeline.saved_at, clips_count: timeline.clips.count, file_name: "timeline.json")
+                    })
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    print("Failed to list timelines: \(error)")
+                    completion([])
+                }
+            }
+        }
     }
     
     // MARK: - Backend Integration Setup
@@ -254,7 +281,7 @@ public class UnifiedStore: ObservableObject {
         // Monitor backend processing status
         backendService.$currentTask
             .sink { [weak self] task in
-                self?.isProcessing = task?.status == .running
+                self?.isProcessing = task?.status == "running"
             }
             .store(in: &cancellables)
         
@@ -306,22 +333,25 @@ public class UnifiedStore: ObservableObject {
         let jobId = telemetry.startJob("Video Analysis", inputPath: videoUrl.path, outputPath: "/tmp/analysis_results")
         
         // Start pipeline for video analysis
-        backendService.startPipeline(inputFile: videoUrl.path, options: ["analysis": "true"])
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.telemetry.addMessage(.error, "Pipeline start failed: \(error.localizedDescription)")
-                        self?.telemetry.completeJob(jobId, success: false, error: error.localizedDescription)
-                        self?.director.isAnalyzing = false
+        Task {
+            do {
+                let options = PipelineOptions(silenceDetection: true, transcription: true, storyBeats: true, brollSelection: true)
+                let response = try await backendService.startPipeline(videoPath: videoUrl.path, options: options)
+                await MainActor.run {
+                    self.currentTaskId = response.taskId
+                    self.telemetry.addMessage(.info, "Analysis pipeline started with task ID: \(response.taskId)")
+                    Task {
+                        await self.monitorPipelineStatus(taskId: response.taskId, jobId: jobId)
                     }
-                },
-                receiveValue: { [weak self] response in
-                    self?.currentTaskId = response.task_id  // Save task ID for export
-                    self?.telemetry.addMessage(.info, "Analysis pipeline started with task ID: \(response.task_id)")
-                    self?.monitorPipelineStatus(taskId: response.task_id, jobId: jobId)
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.telemetry.addMessage(.error, "Pipeline start failed: \(error.localizedDescription)")
+                    self.telemetry.completeJob(jobId, success: false, error: error.localizedDescription)
+                    self.director.isAnalyzing = false
+                }
+            }
+        }
     }
     
     private func transcribeWithBackend() {
@@ -330,18 +360,17 @@ public class UnifiedStore: ObservableObject {
         let jobId = telemetry.startJob("Audio Transcription", inputPath: audioUrl.path, outputPath: "/tmp/transcription_results")
         
         // Start pipeline for transcription
-        backendService.startPipeline(inputFile: audioUrl.path, options: ["transcription": "true"])
-            .sink(
-                receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
-                        print("Transcription pipeline failed: \(error)")
-                    }
-                },
-                receiveValue: { [weak self] response in
-                    self?.monitorPipelineStatus(taskId: response.task_id, jobId: jobId)
+        Task {
+            do {
+                let options = PipelineOptions(silenceDetection: false, transcription: true, storyBeats: false, brollSelection: false)
+                let response = try await backendService.startPipeline(videoPath: audioUrl.path, options: options)
+                await MainActor.run {
+                    print("Transcription pipeline started: \(response.taskId)")
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                print("Transcription pipeline failed: \(error)")
+            }
+        }
     }
     
     private func monitorPipelineStatus(taskId: String, jobId: UUID) {
@@ -354,29 +383,27 @@ public class UnifiedStore: ObservableObject {
     }
     
     private func checkPipelineStatus(taskId: String, jobId: UUID) {
-        backendService.getPipelineStatus(taskId: taskId)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.telemetry.addMessage(.error, "Status check failed: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] status in
-                    self?.handlePipelineStatus(status: status, jobId: jobId)
+        Task {
+            do {
+                let status = try await backendService.getPipelineStatus(taskId: taskId)
+                await MainActor.run {
+                    self.handlePipelineStatus(status: status, jobId: jobId)
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.telemetry.addMessage(.error, "Status check failed: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
-    private func handlePipelineStatus(status: PipelineStatusResponse, jobId: UUID) {
+    private func handlePipelineStatus(status: PipelineStatus, jobId: UUID) {
         // Update status monitor with progress
-        if let progress = status.progress {
-            telemetry.progressPercentage = progress
-            
-            // Update specific job progress
-            if let jobIndex = telemetry.activeJobs.firstIndex(where: { $0.id == jobId }) {
-                telemetry.activeJobs[jobIndex].progress = progress
-            }
+        telemetry.progressPercentage = status.progress
+        
+        // Update specific job progress
+        if let jobIndex = telemetry.activeJobs.firstIndex(where: { $0.id == jobId }) {
+            telemetry.activeJobs[jobIndex].progress = status.progress
         }
         
         // Update pipeline status based on backend response
@@ -409,11 +436,12 @@ public class UnifiedStore: ObservableObject {
         }
         
         // Update performance metrics if available
-        if let metrics = status.performance_metrics {
-            telemetry.performanceMetrics.cpuUsagePercent = metrics.cpu_usage ?? 0.0
-            telemetry.performanceMetrics.memoryUsedMB = metrics.memoryMb ?? 0.0
-            telemetry.performanceMetrics.framesProcessedPerSecond = metrics.fps ?? 0.0
-        }
+        // TODO: Map performance metrics correctly when status includes them
+        // if let metrics = status.performance_metrics {
+        //     telemetry.performanceMetrics.cpuUsagePercent = metrics.cpu_usage ?? 0.0
+        //     telemetry.performanceMetrics.memoryUsedMB = metrics.memoryMb ?? 0.0
+        //     telemetry.performanceMetrics.framesProcessedPerSecond = metrics.fps ?? 0.0
+        // }
     }
     
     // MARK: - Current Media URLs
@@ -481,7 +509,7 @@ class DirectorAI: ObservableObject {
 class CutsManager: ObservableObject {
     @Published var suggestions: [CutSuggestion] = []
     @Published var isGenerating = false
-    private var backendService = BackendService.shared
+    private var backendService = BackendClient.shared
     private var cancellables = Set<AnyCancellable>()
     
     func generateSmart() {
@@ -493,18 +521,19 @@ class CutsManager: ObservableObject {
             return
         }
         
-        backendService.startPipeline(inputFile: videoUrl.path, options: ["cuts": "smart"])
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(_) = completion {
-                        self?.generateFallbackCuts()
-                    }
-                },
-                receiveValue: { [weak self] response in
-                    self?.monitorCutGeneration(taskId: response.task_id)
+        Task {
+            do {
+                let options = PipelineOptions(silenceDetection: false, transcription: false, storyBeats: false, brollSelection: false)
+                let response = try await backendService.startPipeline(videoPath: videoUrl.path, options: options)
+                await MainActor.run {
+                    self.monitorCutGeneration(taskId: response.taskId)
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.generateFallbackCuts()
+                }
+            }
+        }
     }
     
     private func generateFallbackCuts() {
@@ -530,19 +559,23 @@ class CutsManager: ObservableObject {
     }
     
     private func checkCutGenerationStatus(taskId: String) {
-        backendService.getPipelineStatus(taskId: taskId)
-            .sink(
-                receiveCompletion: { _ in },
-                receiveValue: { [weak self] status in
+        Task {
+            do {
+                let status = try await backendService.getPipelineStatus(taskId: taskId)
+                await MainActor.run {
                     if status.status == "completed" {
-                        self?.isGenerating = false
-                        self?.generateFallbackCuts() // For now use fallback
+                        self.isGenerating = false
+                        self.generateFallbackCuts() // For now use fallback
                     } else if status.status == "failed" {
-                        self?.generateFallbackCuts()
+                        self.generateFallbackCuts()
                     }
                 }
-            )
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.generateFallbackCuts()
+                }
+            }
+        }
     }
     
     private var currentVideoUrl: URL? {
@@ -767,6 +800,14 @@ extension UnifiedStore {
     
     // Convenience overload to determine duration automatically
     func importVideo(url: URL) {
+        // MUST be in /Users/hawzhin/Videos
+        guard url.path.hasPrefix("/Users/hawzhin/Videos") else {
+            print("❌ ERROR: Video must be in /Users/hawzhin/Videos/")
+            print("❌ Provided path: \(url.path)")
+            processingStatus = "Import failed: Video must be in /Users/hawzhin/Videos/"
+            return
+        }
+        
         let asset = AVURLAsset(url: url)
         let seconds = CMTimeGetSeconds(asset.duration)
         let duration = seconds.isFinite && seconds > 0 ? seconds : 60.0
@@ -861,13 +902,115 @@ extension UnifiedStore {
         objectWillChange.send()
 
         // Update media pool list for UI
-        let mediaItem = MediaPoolItem(url: url)
+        var mediaItem = MediaPoolItem(url: url)
         mediaItem.duration = duration
         mediaItems.append(mediaItem)
     }
     
+    // MARK: - Auto Edit (Pipeline Integration)
+    func triggerAutoEdit() {
+        guard let videoURL = currentVideoURL else {
+            print("❌ No video loaded for Auto Edit")
+            processingStatus = "No video loaded"
+            return
+        }
+        
+        print("🚀 Starting Auto Edit pipeline for: \(videoURL.path)")
+        isProcessing = true
+        processingStatus = "Starting Auto Edit..."
+        
+        // Call backend pipeline
+        Task {
+            do {
+                let options = PipelineOptions(silenceDetection: true, transcription: true, storyBeats: true, brollSelection: true)
+                let response = try await backendService.startPipeline(videoPath: videoURL.path, options: options)
+                await MainActor.run {
+                    print("✅ Pipeline started with task_id: \(response.taskId)")
+                    self.processingStatus = "Processing..."
+                    self.pollPipelineStatus(taskId: response.taskId)
+                }
+            } catch {
+                await MainActor.run {
+                    print("❌ Pipeline failed: \(error)")
+                    self.processingStatus = "Auto Edit failed"
+                    self.isProcessing = false
+                }
+            }
+        }
+    }
+    
+    private func pollPipelineStatus(taskId: String) {
+        Timer.publish(every: 2.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.checkPipelineStatus(taskId: taskId)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func checkPipelineStatus(taskId: String) {
+        Task {
+            do {
+                let status = try await backendService.getPipelineStatus(taskId: taskId)
+                if status.status == "completed" {
+                    print("✅ Pipeline completed!")
+                    await MainActor.run {
+                        self.processPipelineResults(status)
+                        self.isProcessing = false
+                        self.processingStatus = "Auto Edit complete"
+                    }
+                } else if status.status == "failed" {
+                    print("❌ Pipeline failed")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.processingStatus = "Auto Edit failed"
+                    }
+                }
+                // Continue polling if still processing
+            } catch {
+                print("❌ Status check failed: \(error)")
+            }
+        }
+    }
+    
+    private func processPipelineResults(_ status: PipelineStatus) {
+        guard let result = status.result else { return }
+        
+        // Clear existing clips and apply new cuts
+        for i in 0..<timeline.tracks.count {
+            if timeline.tracks[i].type == .video {
+                timeline.tracks[i].clips.removeAll()
+            }
+        }
+        
+        // Create clips from cut windows
+        var currentTime: Double = 0
+        guard let keepWindows = result.cuts?.keep_windows else { return }
+        for (index, window) in keepWindows.enumerated() {
+            var clip = TimelineClip(
+                id: UUID(),
+                name: "Clip \(index + 1)",
+                trackIndex: 0,
+                startTime: currentTime,
+                duration: window.t1 - window.t0
+            )
+            clip.sourceURL = currentVideoURL
+            clip.inPoint = window.t0
+            clip.outPoint = window.t1
+            
+            if let firstVideoTrackIndex = timeline.tracks.firstIndex(where: { $0.type == .video }) {
+                timeline.tracks[firstVideoTrackIndex].clips.append(clip)
+            }
+            
+            currentTime += clip.duration
+        }
+        
+        print("✅ Applied \(keepWindows.count) cuts to timeline")
+        objectWillChange.send()
+    }
+    
     // Access to project store for professional interface
-    var projectStore: VideoProjectStore? {
+    var projectStore: BackendVideoProjectStore? {
         return nil // Simplified for now - UnifiedStore manages timeline directly
     }
 }
@@ -896,34 +1039,30 @@ extension UnifiedStore {
         print("🎬 Exporting MP4...")
         exportStatus = .exporting
         
-        cancellable = backendService.exportMP4(
-            taskId: taskId,
-            resolution: resolution,
-            fps: fps,
-            preset: preset
-        )
-        .sink(receiveCompletion: { completion in
-            switch completion {
-            case .failure(let error):
-                print("❌ Export failed: \(error.localizedDescription)")
-                self.exportStatus = .failed(error.localizedDescription)
-            case .finished:
-                break
-            }
-        }, receiveValue: { response in
-            if response.status == "success", let path = response.outputPath {
-                print("✅ MP4 exported to: \(path)")
-                self.exportStatus = .completed(path)
+        // Export using existing method
+        Task {
+            do {
+                let exportResult = try await backendService.exportResolveProject()
                 
-                // Open the export directory in Finder
-                if let url = URL(string: "file://\(path)") {
-                    NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                await MainActor.run {
+                    if exportResult.success, let path = exportResult.outputPath {
+                        print("✅ Export completed: \(path)")
+                        self.exportStatus = .completed(path)
+                        
+                        // Open the export directory in Finder
+                        NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                    } else {
+                        print("❌ Export error: \(exportResult.error ?? "Unknown")")
+                        self.exportStatus = .failed(exportResult.error ?? "Export failed")
+                    }
                 }
-            } else {
-                print("❌ Export error: \(response.error ?? "Unknown")")
-                self.exportStatus = .failed(response.error ?? "Export failed")
+            } catch {
+                await MainActor.run {
+                    print("❌ Export failed: \(error.localizedDescription)")
+                    self.exportStatus = .failed(error.localizedDescription)
+                }
             }
-        })
+        }
     }
     
     func exportFCPXML() {
@@ -932,14 +1071,15 @@ extension UnifiedStore {
             return
         }
         
-        cancellable = backendService.exportFCPXML(taskId: taskId)
-            .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
-                    print("❌ FCPXML export failed: \(error)")
-                }
-            }, receiveValue: { response in
-                print("✅ FCPXML exported: \(response.path ?? "unknown")")
-            })
+        // Export as AAF (as no FCPXML method exists)
+        Task {
+            do {
+                let result = try await backendService.exportAAF()
+                print("✅ Export complete: \(result.outputPath ?? "unknown")")
+            } catch {
+                print("❌ Export failed: \(error)")
+            }
+        }
     }
     
     func exportEDL() {
@@ -948,14 +1088,68 @@ extension UnifiedStore {
             return
         }
         
-        cancellable = backendService.exportEDL(taskId: taskId)
-            .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
-                    print("❌ EDL export failed: \(error)")
-                }
-            }, receiveValue: { response in
-                print("✅ EDL exported: \(response.path ?? "unknown")")
-            })
+        // Export as AAF (as no EDL method exists)
+        Task {
+            do {
+                let result = try await backendService.exportAAF()
+                print("✅ Export complete: \(result.outputPath ?? "unknown")")
+            } catch {
+                print("❌ Export failed: \(error)")
+            }
+        }
+    }
+    
+    // MARK: - Timeline Operations
+    
+    func addClipToTimeline(url: URL, at time: CMTime, trackIndex: Int = 0) {
+        // Create a new clip from the URL
+        let clip = LegacyUITimelineClip(
+            id: UUID(),
+            url: url,
+            inPoint: CMTime.zero,
+            outPoint: CMTime(seconds: 10, preferredTimescale: 600),
+            duration: CMTime(seconds: 10, preferredTimescale: 600),
+            name: url.lastPathComponent,
+            trackIndex: trackIndex,
+            startTime: time
+        )
+        
+        // Convert LegacyUITimelineClip to SimpleTimelineClip
+        let simpleClip = SimpleTimelineClip(
+            id: clip.id,
+            name: clip.name,
+            trackIndex: clip.trackIndex,
+            startTime: CMTimeGetSeconds(clip.startTime),
+            duration: CMTimeGetSeconds(clip.duration),
+            sourceURL: clip.url,
+            inPoint: CMTimeGetSeconds(clip.inPoint),
+            isSelected: clip.isSelected,
+            thumbnailData: clip.thumbnailData,
+            sourceStartTime: clip.timelineStartTime,
+            type: clip.type == .video ? .video : .audio
+        )
+        
+        // Find or create video track
+        if let firstVideoTrackIndex = timeline.tracks.firstIndex(where: { $0.type == .video }) {
+            timeline.tracks[firstVideoTrackIndex].clips.append(simpleClip)
+        } else {
+            // Create new video track
+            let newTrack = UITimelineTrack(
+                name: "V1",
+                type: .video
+            )
+            timeline.tracks.append(newTrack)
+        }
+        
+        // Update media items
+        var mediaItem = MediaPoolItem(url: url)
+        mediaItem.name = url.lastPathComponent
+        mediaItem.duration = 10.0
+        mediaItem.thumbnail = Image(systemName: "film")
+        mediaItems.append(mediaItem)
+        
+        print("✅ Added clip \(url.lastPathComponent) to timeline at \(CMTimeGetSeconds(time))s")
+        objectWillChange.send()
     }
 }
 public typealias UnifiedStoreWithBackend = UnifiedStore

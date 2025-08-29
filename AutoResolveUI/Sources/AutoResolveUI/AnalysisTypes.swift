@@ -649,7 +649,7 @@ public struct Transition: Codable, Sendable {
     }
 }
 
-// VideoProjectStore is defined in BackendTypes.swift
+// BackendVideoProjectStore is defined in BackendTypes.swift
 
 public struct Theme: Codable {
     public let name: String

@@ -229,11 +229,11 @@ class ConfigValidator:
     @staticmethod
     def _convert_type(value_str: str, target_type: type) -> Any:
         """Convert string value to target type."""
-        if target_type == bool:
+        if target_type is bool:
             return value_str.lower() in ('true', '1', 'yes', 'on')
-        elif target_type == int:
+        elif target_type is int:
             return int(float(value_str))  # Handle int values passed as floats
-        elif target_type == float:
+        elif target_type is float:
             return float(value_str)
         else:
             return value_str
@@ -243,7 +243,7 @@ class ConfigValidator:
         """Validate a single value against constraints."""
         # Check type (allow int for float fields)
         expected_type = constraints['type']
-        if expected_type == float and isinstance(value, int):
+        if expected_type is float and isinstance(value, int):
             # Allow integers for float fields
             pass
         elif not isinstance(value, expected_type):

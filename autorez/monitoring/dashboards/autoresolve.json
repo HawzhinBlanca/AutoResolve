@@ -1,0 +1,112 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AutoResolve v3.2 - Production Monitoring",
+    "tags": ["autoresolve", "video-processing"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"autoresolve-backend\"}",
+            "legendFormat": "Backend Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Processing Speed (x Realtime)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "processing_speed_x",
+            "legendFormat": "Speed"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 30},
+                {"color": "green", "value": 50}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Memory Usage (GB)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "memory_usage_gb",
+            "legendFormat": "Memory GB"
+          }
+        ],
+        "yAxes": [
+          {
+            "max": 16,
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 4}
+      },
+      {
+        "id": 4,
+        "title": "Active Tasks",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "active_tasks",
+            "legendFormat": "Tasks"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "API Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "api_response_time_ms",
+            "legendFormat": "Response Time"
+          }
+        ],
+        "yAxes": [
+          {
+            "max": 200,
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 4}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

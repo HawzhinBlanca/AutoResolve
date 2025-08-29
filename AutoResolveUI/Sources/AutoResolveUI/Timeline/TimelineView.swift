@@ -1,31 +1,36 @@
 import SwiftUI
 
 struct TimelineView: View {
-    @EnvironmentObject var projectStore: VideoProjectStore
+    @EnvironmentObject var projectStore: BackendVideoProjectStore
 
     var body: some View {
         List {
-            ForEach(projectStore.project.timeline.clips) { clip in
+            ForEach(projectStore.timeline.tracks.flatMap { $0.clips }) { clip in
                 Text(clip.name)
             }
             .onMove(perform: moveClip)
         }
     }
 
-    private let backendService = BackendService()
+    private let backendService = BackendClient()
 
     private func moveClip(from source: IndexSet, to destination: Int) {
         guard let fromIndex = source.first else { return }
-        let clipId = projectStore.project.timeline.clips[fromIndex].id.uuidString
+        let clips = projectStore.timeline.tracks.flatMap { $0.clips }
+        guard fromIndex < clips.count else { return }
+        let clipId = clips[fromIndex].id.uuidString
 
-        backendService.moveClip(clipId: clipId, fromIndex: fromIndex, toIndex: destination) { success in
-            if success {
-                DispatchQueue.main.async {
-                    self.projectStore.project.timeline.moveClip(from: source, to: destination)
+        Task {
+            do {
+                let success = try await backendService.moveClip(clipId: clipId, fromIndex: fromIndex, toIndex: destination)
+                if success {
+                    // Move logic handled by backend, update local state if needed
+                    print("Clip moved successfully")
+                } else {
+                    print("Failed to move clip on backend")
                 }
-            } else {
-                // Handle error
-                print("Failed to move clip on backend")
+            } catch {
+                print("Error moving clip: \(error)")
             }
         }
     }

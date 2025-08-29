@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'autoresolve-backend'
+    static_configs:
+      - targets: ['autoresolve-backend:8000']
+    scrape_interval: 5s
+    metrics_path: /metrics
+    scheme: http
+    
+  - job_name: 'autoresolve-health'
+    static_configs:
+      - targets: ['autoresolve-backend:8000']
+    scrape_interval: 30s
+    metrics_path: /health
+    scheme: http
+    
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

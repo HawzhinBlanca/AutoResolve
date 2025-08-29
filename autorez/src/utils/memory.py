@@ -1,4 +1,8 @@
-import psutil, torch, time, random, numpy as np
+import psutil
+import torch
+import time
+import random
+import numpy as np
 from dataclasses import dataclass
 
 @dataclass
@@ -109,7 +113,8 @@ def enforce_budget(b: Budget, device: str, aggressive: bool = True):
     return changes, b
 
 # --- Telemetry (lightweight JSONL) ---
-import os, json
+import os
+import json
 
 def get_budget() -> Budget:
     """Get default budget configuration"""

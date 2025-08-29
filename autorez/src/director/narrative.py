@@ -91,14 +91,20 @@ def detect_story_beats(video_path: str, fps=None, window=None):
         except Exception:
             return StoryBeats([],[],[],[],[],[],[])
 
-    energy=[]; times=[]; nov=[]; ctx=None
+    energy=[]
+    times=[]
+    nov=[]
+    ctx=None
     for s in segs:
         F = s.get("frame_cls")
-        if F is None or len(F)<2: continue
+        if F is None or len(F)<2:
+            continue
         e = _complexity_entropy(np.array(F, dtype=np.float32))
-        energy.append(e); times.append((s["t0"], s["t1"]))
+        energy.append(e)
+        times.append((s["t0"], s["t1"]))
         emb = np.array(s["emb"], dtype=np.float32)
-        if ctx is None: ctx = emb.copy()
+        if ctx is None:
+            ctx = emb.copy()
         novelty = _novelty_vs_context(emb, ctx)
         ctx = 0.9*ctx + 0.1*emb
         nov.append(float(novelty))

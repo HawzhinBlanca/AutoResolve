@@ -1,0 +1,11 @@
+{
+  "processing_speed_x": 51.0,
+  "peak_rss_gb": 3.2,
+  "ui_memory_mb": 140.0,
+  "silence_sec_per_min": 0.18,
+  "transcription_rtf": 0.90,
+  "vjepa_sec_per_min": 4.6,
+  "api_sec_per_min": 0.0,
+  "api_cost_per_min": 0.0,
+  "export_time_s": 0.3
+}

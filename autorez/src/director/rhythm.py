@@ -28,7 +28,8 @@ def _velocity_curve(frame_cls):
 
 def _merge(points: List[Tuple[float,float]], gap=0.4):
     """Merge nearby intervals"""
-    if not points: return []
+    if not points:
+        return []
     points.sort()
     out = [points[0]]
     for (a0, a1) in points[1:]:

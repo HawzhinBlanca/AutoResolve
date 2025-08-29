@@ -1,0 +1,22 @@
+# UI Freeze – No New UI Files
+rules:
+  - id: ui-freeze-no-new-files
+    scope: "AutoResolveUI/**"
+    description: "Do not create, delete, rename, or move any UI files. Only modify existing files."
+    prohibits:
+      - create_files
+      - delete_files
+      - rename_files
+      - move_files
+    allowed:
+      - edit_existing_files
+    paths:
+      deny:
+        - "AutoResolveUI/Sources/AutoResolveUI/**"
+        - "AutoResolveUI/Tests/AutoResolveUITests/**"
+        - "AutoResolveUI/**/*.swift"
+        - "AutoResolveUI/**/*.storyboard"
+        - "AutoResolveUI/**/*.xib"
+        - "AutoResolveUI/**/*.xcassets/**"
+        - "AutoResolveUI/**/*.xcodeproj/**"
+    on_violation: "block"

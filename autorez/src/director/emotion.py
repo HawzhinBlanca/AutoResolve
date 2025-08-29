@@ -21,7 +21,8 @@ class TensionProfile:
 
 def _velocity(F):
     """Calculate velocity/movement in frame class tokens"""
-    if F is None or len(F)<2: return 0.0
+    if F is None or len(F)<2:
+        return 0.0
     v = np.linalg.norm(np.diff(F, axis=0), axis=1)
     return float(np.clip(v.mean()/np.sqrt(F.shape[1]), 0, 1))
 
