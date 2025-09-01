@@ -212,14 +212,9 @@ class BrollSelector:
                 logger.debug(f"No path for clip {c.get('id', idx)}")
                 continue
                 
-            # For testing: create dummy embeddings since clips don't exist
+            # If media missing, skip — never fabricate embeddings
             if not os.path.exists(path):
-                logger.info(f"B-roll clip not found at {path}, using dummy embedding")
-                # Create random but consistent embedding for testing
-                dummy_emb = np.random.randn(512).astype(np.float32)
-                dummy_emb = dummy_emb / np.linalg.norm(dummy_emb)
-                embeddings.append(dummy_emb)
-                valid_clips.append(idx)
+                logger.warning(f"B-roll clip not found at {path}, skipping")
                 continue
                 
             # Use CLIP image encoder via segment embedding and mean-pool

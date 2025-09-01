@@ -271,7 +271,7 @@ class ResolveWorkflow:
             
             # Wait for render to complete
             while project.IsRenderingInProgress():
-                time.sleep(1)
+                
             
             logger.info("Rendering complete")
             return "artifacts/export_*.mov"

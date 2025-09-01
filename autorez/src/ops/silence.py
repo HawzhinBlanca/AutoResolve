@@ -1,4 +1,15 @@
 import logging
+import asyncio
+import subprocess
+from typing import Optional, List, Tuple, Union
+import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
+import configparser
+import time
+import os
+import json
+import tempfile
+import wave
 
 logger = logging.getLogger(__name__)
 
@@ -6,13 +17,6 @@ logger = logging.getLogger(__name__)
 Blueprint3 Ops Module - Silence Removal (COMPLIANT)
 Outputs cuts.json with keep_windows and params from [silence] in conf/ops.ini
 """
-import numpy as np
-import configparser
-import time
-import os
-import json
-import tempfile
-import wave
 
 CFG = configparser.ConfigParser()
 CFG.read(os.getenv("OPS_INI", "conf/ops.ini"))
@@ -24,8 +28,14 @@ class SilenceRemover:
         self.min_silence_s = float(CFG.get("silence", "min_silence_s", fallback="0.35"))
         self.min_keep_s = float(CFG.get("silence", "min_keep_s", fallback="0.40"))
         self.pad_s = float(CFG.get("silence", "pad_s", fallback="0.05"))
+        self.duration = 0.0  # Store video duration for backend
 
-    def detect_speech_windows(self, audio_path: str | None = None, y=None, sr: int | None = None):
+    def detect_speech_windows(
+        self, 
+        audio_path: Optional[str] = None, 
+        y: Optional[np.ndarray] = None, 
+        sr: Optional[int] = None
+    ) -> List[Tuple[float, float]]:
         if y is None or sr is None:
             if not audio_path or not os.path.exists(audio_path):
                 raise FileNotFoundError("Audio path not found and no samples provided")
@@ -35,19 +45,29 @@ class SilenceRemover:
         hop_length = 512
         frame_length = 2048
         
-        # NumPy-only RMS calculation (no librosa)
+        # Vectorized RMS calculation using sliding window
         # Pad signal
         y_padded = np.pad(y, (frame_length//2, frame_length//2), mode='constant')
         
-        # Calculate RMS using pure NumPy
-        n_frames = 1 + (len(y_padded) - frame_length) // hop_length
-        rms = np.zeros(n_frames)
-        
-        for i in range(n_frames):
-            start = i * hop_length
-            end = start + frame_length
-            frame = y_padded[start:end]
-            rms[i] = np.sqrt(np.mean(frame ** 2))
+        # Use sliding window view for efficient computation
+        try:
+            # Create sliding windows efficiently
+            windows = sliding_window_view(y_padded, frame_length)[::hop_length]
+            # Vectorized RMS calculation
+            rms = np.sqrt(np.mean(windows ** 2, axis=1))
+        except (ValueError, MemoryError):
+            # Fallback for very large files or memory issues
+            n_frames = 1 + (len(y_padded) - frame_length) // hop_length
+            rms = np.zeros(n_frames)
+            # Process in chunks to avoid memory issues
+            chunk_size = 1000
+            for i in range(0, n_frames, chunk_size):
+                end_idx = min(i + chunk_size, n_frames)
+                chunk_starts = np.arange(i, end_idx) * hop_length
+                chunk_ends = chunk_starts + frame_length
+                # Vectorized within chunk
+                chunk_frames = np.array([y_padded[s:e] for s, e in zip(chunk_starts, chunk_ends)])
+                rms[i:end_idx] = np.sqrt(np.mean(chunk_frames ** 2, axis=1))
         
         # Convert to dB (NumPy only)
         rms_db = 20 * np.log10(rms + 1e-10) - 20 * np.log10(np.max(rms) + 1e-10)
@@ -74,7 +94,105 @@ class SilenceRemover:
                 speech.append((max(0.0, start - self.pad_s), end))
         return speech
 
-    def remove_silence(self, video_path: str, output_path: str | None = None):
+    async def remove_silence_async(self, video_path: str, output_path: Optional[str] = None) -> dict:
+        """Async version using subprocess for non-blocking I/O"""
+        start_time = time.time()
+        
+        # Use tempfile for cross-platform compatibility
+        tmp_wav_fd, tmp_wav = tempfile.mkstemp(suffix=".wav", prefix="autoresolve_silence_")
+        os.close(tmp_wav_fd)
+        
+        try:
+            # Use async subprocess for non-blocking ffmpeg
+            cmd = [
+                'ffmpeg', '-i', video_path,
+                '-ac', '1', '-ar', '22050', '-f', 'wav',
+                '-y', tmp_wav
+            ]
+            
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"FFmpeg failed: {stderr.decode()}")
+                raise RuntimeError("Audio extraction failed")
+            
+            # Read the extracted audio
+            if os.path.exists(tmp_wav):
+                rate, y = _read_wav_mono_float32(tmp_wav)
+                
+                # Detect speech windows
+                speech_windows = self.detect_speech_windows(y=y, sr=rate)
+                
+                # Calculate statistics
+                total_duration = len(y) / rate
+                self.duration = total_duration
+                speech_duration = sum(end - start for start, end in speech_windows)
+                silence_duration = total_duration - speech_duration
+                
+                result = {
+                    "keep_windows": speech_windows,
+                    "silence_segments": self._get_silence_segments(speech_windows, total_duration),
+                    "total_duration": total_duration,
+                    "speech_duration": speech_duration,
+                    "silence_duration": silence_duration,
+                    "processing_time": time.time() - start_time,
+                    "params": {
+                        "rms_thresh_db": self.rms_thresh_db,
+                        "min_silence_s": self.min_silence_s,
+                        "min_keep_s": self.min_keep_s,
+                        "pad_s": self.pad_s
+                    }
+                }
+                
+                # Save to output if specified
+                if output_path:
+                    with open(output_path, 'w') as f:
+                        json.dump(result, f, indent=2)
+                
+                return result
+            else:
+                raise FileNotFoundError("Audio extraction failed")
+                
+        finally:
+            # Cleanup temp file
+            if os.path.exists(tmp_wav):
+                os.unlink(tmp_wav)
+    
+    def remove_silence(self, video_path: str, output_path: Optional[str] = None) -> dict:
+        """Sync wrapper for backward compatibility"""
+        return asyncio.run(self.remove_silence_async(video_path, output_path))
+    
+    def _get_silence_segments(self, speech_windows: List[Tuple[float, float]], total_duration: float) -> List[dict]:
+        """Calculate silence segments from speech windows"""
+        silence_segments = []
+        
+        if not speech_windows:
+            # Entire file is silence
+            silence_segments.append({"start": 0.0, "end": total_duration})
+            return silence_segments
+        
+        # Before first speech
+        if speech_windows[0][0] > 0:
+            silence_segments.append({"start": 0.0, "end": speech_windows[0][0]})
+        
+        # Between speech segments
+        for i in range(len(speech_windows) - 1):
+            silence_start = speech_windows[i][1]
+            silence_end = speech_windows[i + 1][0]
+            if silence_end > silence_start:
+                silence_segments.append({"start": silence_start, "end": silence_end})
+        
+        # After last speech
+        if speech_windows[-1][1] < total_duration:
+            silence_segments.append({"start": speech_windows[-1][1], "end": total_duration})
+        
+        return silence_segments
         start_time = time.time()
 
         # Extract audio using ffmpeg-python (robust), fallback to PyAV
@@ -152,6 +270,7 @@ class SilenceRemover:
                 pass
 
         original_duration = self._get_video_duration(video_path)
+        self.duration = original_duration  # Store for backend access
         estimated_new_duration = sum(e - s for s, e in keep_windows)
 
         cuts = {

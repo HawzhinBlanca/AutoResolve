@@ -62,11 +62,30 @@ class Transcriber:
         # Gather segments
         seg_list = []
         for s in segments:
-            seg_list.append({
+            # Extract raw metrics from faster-whisper when available
+            avg_logprob = None
+            try:
+                avg_logprob = float(getattr(s, "avg_logprob"))
+            except Exception:
+                avg_logprob = None
+
+            # Compute conservative confidence from avg_logprob if available
+            confidence = None
+            if avg_logprob is not None:
+                import math
+                # Map avg_logprob (~-5..0) to 0..1 via sigmoid with mild gain
+                confidence = 1.0 / (1.0 + math.exp(-avg_logprob * 2.0))
+
+            item = {
                 "t0": float(getattr(s, "start", 0.0) or 0.0),
                 "t1": float(getattr(s, "end", 0.0) or 0.0),
-                "text": (getattr(s, "text", "") or "").strip()
-            })
+                "text": (getattr(s, "text", "") or "").strip(),
+            }
+            if avg_logprob is not None:
+                item["avg_logprob"] = float(avg_logprob)
+            if confidence is not None:
+                item["confidence"] = float(confidence)
+            seg_list.append(item)
 
         elapsed = time.time() - start_time
         rtf = (elapsed / duration) if duration > 0 else float("inf")

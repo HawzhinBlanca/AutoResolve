@@ -186,14 +186,147 @@ def analyze_video(video_path: str, modules=None, fps=None, window=None, config=N
 analyze_footage = analyze_video
 
 def make_creative_decisions(results):
-    """Make creative decisions based on analysis results"""
+    """Make creative decisions based on real analysis results"""
+    import numpy as np
+    
     decisions = []
-    if "emotion" in results and "tension_peaks" in results["emotion"]:
-        for peak in results["emotion"]["tension_peaks"]:
-            decisions.append(f"Add slow motion at {peak[0]:.2f}s due to high tension")
-    if "rhythm" in results and "peaks" in results["rhythm"]:
-        for peak in results["rhythm"]["peaks"]:
-            decisions.append(f"Cut to a new shot at {peak[0]:.2f}s due to high rhythm")
+    
+    # Process real emotion data with statistical analysis
+    if "emotion" in results and isinstance(results["emotion"], dict):
+        # Extract tension data - could be peaks or curve
+        tension_peaks = results["emotion"].get("tension_peaks", [])
+        tension_curve = results["emotion"].get("tension_curve", [])
+        
+        if tension_curve:
+            # Analyze the full tension curve statistically
+            times = [t[0] for t in tension_curve]
+            values = np.array([t[1] for t in tension_curve])
+            
+            if len(values) > 0:
+                mean_tension = np.mean(values)
+                std_tension = np.std(values)
+                
+                # Find statistically significant peaks
+                for i, (time, value) in enumerate(tension_curve):
+                    z_score = (value - mean_tension) / std_tension if std_tension > 0 else 0
+                    
+                    if z_score > 2.0:  # Very high tension (2+ std deviations)
+                        decisions.append({
+                            "time": float(time),
+                            "action": "slow_motion",
+                            "duration": min(2.0, 0.5 * z_score),
+                            "reason": "extreme_tension_peak",
+                            "confidence": min(1.0, z_score / 3.0),
+                            "z_score": float(z_score)
+                        })
+                    elif z_score > 1.5:  # High tension
+                        decisions.append({
+                            "time": float(time),
+                            "action": "emphasis",
+                            "intensity": "high",
+                            "reason": "tension_peak",
+                            "confidence": (z_score - 1.5) / 0.5,
+                            "z_score": float(z_score)
+                        })
+        elif tension_peaks:
+            # Process discrete peaks
+            for peak in tension_peaks:
+                if isinstance(peak, (list, tuple)) and len(peak) >= 2:
+                    time, intensity = peak[0], peak[1]
+                    decisions.append({
+                        "time": float(time),
+                        "action": "emphasis",
+                        "intensity": float(intensity),
+                        "reason": "tension_peak",
+                        "confidence": min(1.0, float(intensity))
+                    })
+    
+    # Process real rhythm data with beat pattern analysis
+    if "rhythm" in results and isinstance(results["rhythm"], dict):
+        peaks = results["rhythm"].get("peaks", [])
+        beat_times = results["rhythm"].get("beat_times", [])
+        tempo = results["rhythm"].get("tempo", 0)
+        
+        if beat_times and len(beat_times) > 1:
+            # Analyze beat intervals for rhythm patterns
+            intervals = np.diff(beat_times)
+            
+            for i in range(1, len(beat_times)):
+                interval = beat_times[i] - beat_times[i-1]
+                
+                # Fast cutting for rapid beats
+                if interval < 0.5 and tempo > 120:
+                    decisions.append({
+                        "time": float(beat_times[i]),
+                        "action": "quick_cut",
+                        "interval": float(interval),
+                        "reason": "fast_rhythm",
+                        "tempo": float(tempo),
+                        "confidence": 0.8
+                    })
+                # Hold shots for slow beats
+                elif interval > 2.0 and tempo < 80:
+                    decisions.append({
+                        "time": float(beat_times[i]),
+                        "action": "hold_shot",
+                        "duration": float(interval),
+                        "reason": "slow_rhythm",
+                        "tempo": float(tempo),
+                        "confidence": 0.7
+                    })
+                # Sync cuts to beat
+                elif 0.5 <= interval <= 2.0:
+                    decisions.append({
+                        "time": float(beat_times[i]),
+                        "action": "beat_cut",
+                        "reason": "rhythm_sync",
+                        "tempo": float(tempo),
+                        "confidence": 0.9
+                    })
+    
+    # Process continuity data for scene transitions
+    if "continuity" in results and isinstance(results["continuity"], dict):
+        cuts = results["continuity"].get("cuts", [])
+        transitions = results["continuity"].get("transitions", [])
+        
+        for cut_time in cuts:
+            decisions.append({
+                "time": float(cut_time),
+                "action": "scene_transition",
+                "type": "cut",
+                "reason": "shot_boundary",
+                "confidence": 1.0
+            })
+    
+    # Process emphasis/saliency data
+    if "emphasis" in results and isinstance(results["emphasis"], dict):
+        saliency_peaks = results["emphasis"].get("peaks", [])
+        
+        for peak in saliency_peaks:
+            if isinstance(peak, (list, tuple)) and len(peak) >= 2:
+                time, saliency = peak[0], peak[1]
+                if saliency > 0.7:  # High saliency threshold
+                    decisions.append({
+                        "time": float(time),
+                        "action": "zoom_in",
+                        "saliency": float(saliency),
+                        "reason": "high_visual_interest",
+                        "confidence": float(saliency)
+                    })
+    
+    # Sort decisions by time and remove duplicates
+    decisions.sort(key=lambda x: x["time"])
+    
+    # Merge nearby decisions (within 0.5 seconds)
+    if decisions:
+        merged = [decisions[0]]
+        for decision in decisions[1:]:
+            if decision["time"] - merged[-1]["time"] > 0.5:
+                merged.append(decision)
+            elif decision["confidence"] > merged[-1]["confidence"]:
+                merged[-1] = decision  # Replace with higher confidence decision
+        decisions = merged
+    
     return decisions
 
 def evaluate_director_quality(results, annotations=None):
@@ -228,18 +361,59 @@ def evaluate_director_quality(results, annotations=None):
     
     # If we have annotations, calculate F1@IoU
     if annotations:
-        # This would compare predicted intervals with ground truth
-        # For now, return placeholder metrics
+        # Compute F1 at IoU≥0.5 between predicted events and annotated intervals
+        def iou(a, b):
+            a0, a1 = float(a[0]), float(a[1])
+            b0, b1 = float(b[0]), float(b[1])
+            inter = max(0.0, min(a1, b1) - max(a0, b0))
+            union = max(a1, b1) - min(a0, b0)
+            return (inter / union) if union > 0 else 0.0
+
+        # Build predicted intervals from available module outputs
+        predicted = []
+        # Use shot boundaries if available
+        if "continuity" in results and isinstance(results["continuity"], dict):
+            cuts = results["continuity"].get("cuts") or []
+            # Treat cuts as zero-length events expanded to small intervals
+            for c in cuts:
+                t = float(c)
+                predicted.append([max(0.0, t - 0.25), t + 0.25])
+        # Fallback to narrative beats if present
+        if not predicted and "narrative" in results and isinstance(results["narrative"], dict):
+            beats = results["narrative"].get("beats") or []
+            for b in beats:
+                t = float(b)
+                predicted.append([max(0.0, t - 0.25), t + 0.25])
+
+        gold = []
+        ann_intervals = annotations.get("intervals") if isinstance(annotations, dict) else annotations
+        if isinstance(ann_intervals, list):
+            for it in ann_intervals:
+                try:
+                    gold.append([float(it[0]), float(it[1])])
+                except Exception:
+                    continue
+
+        tp = 0
+        matched = set()
+        for p in predicted:
+            for gi, g in enumerate(gold):
+                if gi in matched:
+                    continue
+                if iou(p, g) >= 0.5:
+                    tp += 1
+                    matched.add(gi)
+                    break
+        fp = max(0, len(predicted) - tp)
+        fn = max(0, len(gold) - tp)
+        precision = (tp / (tp + fp)) if (tp + fp) > 0 else 0.0
+        recall = (tp / (tp + fn)) if (tp + fn) > 0 else 0.0
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+
         metrics["f1_iou_0.5"] = {
-            "value": 0.65,  # Placeholder
+            "value": round(f1, 3),
             "target": "≥0.60",
-            "pass": True
-        }
-        
-        metrics["pr_auc"] = {
-            "value": 0.70,  # Placeholder
-            "target": "≥0.65",
-            "pass": True
+            "pass": f1 >= 0.60
         }
     
     # Check module completeness
@@ -273,11 +447,144 @@ analyze_footage = analyze_video
 
 def continuity_between(shotA, shotB):
     """
-    Check continuity between two shots
+    Check real continuity between two shots using actual visual analysis
     Blueprint line 232
     """
-    # Simple implementation - would use motion vectors and color histograms in production
-    return {"continuity_score": 0.8, "match": True}
+    import numpy as np
+    
+    def extract_shot_features(shot_data):
+        """Extract real visual features from shot"""
+        features = {}
+        
+        # Process frame data if available
+        if isinstance(shot_data, dict):
+            # Color histogram analysis
+            if "color_histogram" in shot_data:
+                features["color_hist"] = np.array(shot_data["color_histogram"])
+            elif "dominant_colors" in shot_data:
+                # Convert dominant colors to histogram
+                colors = shot_data["dominant_colors"]
+                hist = np.zeros(96)  # 32 bins per channel
+                for color in colors:
+                    if isinstance(color, (list, tuple)) and len(color) >= 3:
+                        r_bin = int(color[0] * 32 / 256)
+                        g_bin = int(color[1] * 32 / 256) 
+                        b_bin = int(color[2] * 32 / 256)
+                        hist[r_bin] += 1
+                        hist[32 + g_bin] += 1
+                        hist[64 + b_bin] += 1
+                features["color_hist"] = hist / (np.sum(hist) + 1e-10)
+            
+            # Motion analysis
+            if "motion_vectors" in shot_data:
+                vectors = shot_data["motion_vectors"]
+                if isinstance(vectors, (list, np.ndarray)) and len(vectors) > 0:
+                    features["motion"] = np.mean(np.abs(vectors))
+                else:
+                    features["motion"] = 0.0
+            elif "motion_intensity" in shot_data:
+                features["motion"] = float(shot_data["motion_intensity"])
+            
+            # Object tracking
+            if "objects" in shot_data:
+                features["objects"] = set(shot_data["objects"])
+            elif "detected_items" in shot_data:
+                features["objects"] = set(shot_data["detected_items"])
+            
+            # Lighting analysis
+            if "brightness" in shot_data:
+                features["brightness"] = float(shot_data["brightness"])
+            if "contrast" in shot_data:
+                features["contrast"] = float(shot_data["contrast"])
+        
+        return features
+    
+    # Extract features from both shots
+    features_a = extract_shot_features(shotA)
+    features_b = extract_shot_features(shotB)
+    
+    # Calculate continuity score based on multiple factors
+    score = 0.0
+    factors = {}
+    weights = {"color": 0.35, "motion": 0.25, "objects": 0.25, "lighting": 0.15}
+    
+    # Color continuity (histogram correlation)
+    if "color_hist" in features_a and "color_hist" in features_b:
+        hist_a = features_a["color_hist"]
+        hist_b = features_b["color_hist"]
+        
+        # Compute correlation coefficient
+        if len(hist_a) == len(hist_b) and len(hist_a) > 0:
+            mean_a = np.mean(hist_a)
+            mean_b = np.mean(hist_b)
+            std_a = np.std(hist_a)
+            std_b = np.std(hist_b)
+            
+            if std_a > 0 and std_b > 0:
+                correlation = np.sum((hist_a - mean_a) * (hist_b - mean_b)) / (len(hist_a) * std_a * std_b)
+                factors["color"] = float(np.clip(correlation, -1, 1))
+                score += factors["color"] * weights["color"]
+            else:
+                factors["color"] = 0.5  # Neutral if no variation
+                score += 0.5 * weights["color"]
+    
+    # Motion continuity
+    if "motion" in features_a and "motion" in features_b:
+        motion_a = features_a["motion"]
+        motion_b = features_b["motion"]
+        
+        # Calculate motion similarity (inverse of normalized difference)
+        max_motion = max(motion_a, motion_b, 1.0)
+        motion_diff = abs(motion_a - motion_b) / max_motion
+        motion_score = 1.0 - min(1.0, motion_diff)
+        
+        factors["motion"] = float(motion_score)
+        score += motion_score * weights["motion"]
+    
+    # Object continuity
+    if "objects" in features_a and "objects" in features_b:
+        objects_a = features_a["objects"]
+        objects_b = features_b["objects"]
+        
+        if objects_a or objects_b:
+            # Jaccard similarity
+            intersection = len(objects_a & objects_b)
+            union = len(objects_a | objects_b)
+            object_score = intersection / union if union > 0 else 0.0
+            factors["objects"] = float(object_score)
+            score += object_score * weights["objects"]
+    
+    # Lighting continuity
+    lighting_score = 0.0
+    lighting_factors = 0
+    
+    if "brightness" in features_a and "brightness" in features_b:
+        brightness_diff = abs(features_a["brightness"] - features_b["brightness"])
+        brightness_score = 1.0 - min(1.0, brightness_diff)
+        lighting_score += brightness_score
+        lighting_factors += 1
+    
+    if "contrast" in features_a and "contrast" in features_b:
+        contrast_diff = abs(features_a["contrast"] - features_b["contrast"])
+        contrast_score = 1.0 - min(1.0, contrast_diff)
+        lighting_score += contrast_score
+        lighting_factors += 1
+    
+    if lighting_factors > 0:
+        factors["lighting"] = float(lighting_score / lighting_factors)
+        score += factors["lighting"] * weights["lighting"]
+    
+    # Normalize score if not all factors were available
+    total_weight = sum(weights[k] for k in factors.keys() if k in weights)
+    if total_weight > 0:
+        score = score / total_weight
+    
+    return {
+        "continuity_score": float(np.clip(score, 0, 1)),
+        "match": score > 0.6,
+        "factors": factors,
+        "confidence": float(len(factors) / 4.0)  # Confidence based on available features
+    }
 
 
 def main():

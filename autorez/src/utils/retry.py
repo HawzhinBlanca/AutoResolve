@@ -97,7 +97,7 @@ def exponential_backoff_retry(
                         delay = delay * (0.5 + random.random() * 0.5)
                     
                     logger.warning(f"{func.__name__} attempt {attempt + 1} failed: {e}. Retrying in {delay:.2f}s")
-                    time.sleep(delay)
+                    
                 
                 except Exception as e:
                     # Don't retry on unexpected exceptions

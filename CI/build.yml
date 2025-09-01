@@ -1,0 +1,50 @@
+name: Build and Test
+on: 
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-core:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build AutoResolveCore
+        run: |
+          cd AutoResolveCore
+          swift build --product AutoResolveCore
+          
+      - name: Test AutoResolveCore
+        run: |
+          cd AutoResolveCore
+          swift test
+          
+      - name: Check for warnings
+        run: |
+          cd AutoResolveCore
+          swift build 2>&1 | tee build.log
+          if grep -q "warning:" build.log; then
+            echo "Build contains warnings"
+            exit 1
+          fi
+          
+  build-ui:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build AutoResolveUI
+        run: |
+          cd AutoResolveUI
+          swift build --product AutoResolveUI
+          
+      - name: Check for warnings
+        run: |
+          cd AutoResolveUI
+          swift build 2>&1 | tee build.log
+          if grep -q "warning:" build.log; then
+            echo "Build contains warnings"
+            exit 1
+          fi

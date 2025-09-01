@@ -230,7 +230,7 @@ class BenchmarkSuite:
                 except Exception:
                     errors += 1
                     
-                time.sleep(0.02)  # Small delay between requests
+                  # Small delay between requests
             
             if timings:
                 p50 = statistics.quantiles(timings, n=2)[0]

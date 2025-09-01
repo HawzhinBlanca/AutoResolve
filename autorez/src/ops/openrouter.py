@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional, Dict, List
 from openai import OpenAI
 from src.security.bedrock_guardrails import validate_content_safety
+from src.security.pytector_wrapper import scan_strict
 
 class OpenRouterClient:
     def __init__(self, config):
@@ -55,6 +56,7 @@ class OpenRouterClient:
             
         # Pre-flight safety check
         try:
+            scan_strict({"system": system, "user": user})
             pre = validate_content_safety({"system": system, "user": user}, source="openrouter_pre")
             if not pre.get("safe", True):
                 return {"_error": "content_blocked_pre", "_skipped": True}
@@ -96,6 +98,7 @@ class OpenRouterClient:
             result = json.loads(response.choices[0].message.content)
             # Post-flight safety check
             try:
+                scan_strict(result)
                 post = validate_content_safety(result, source="openrouter_post")
                 if not post.get("safe", True):
                     return {"_error": "content_blocked_post", "_skipped": True}

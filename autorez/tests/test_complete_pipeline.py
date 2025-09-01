@@ -63,7 +63,7 @@ class TestPipeline:
                 break
             elif status["status"] == "failed":
                 pytest.fail(f"Pipeline failed: {status.get('error')}")
-            time.sleep(1)
+            
         
         # Verify results
         assert status["status"] == "completed"
@@ -95,7 +95,7 @@ class TestPipeline:
         task_id = pipeline_response.json()["task_id"]
         
         # Wait for completion
-        time.sleep(10)
+        
         
         # Export MP4
         export_response = self.session.post(
@@ -221,7 +221,7 @@ class TestPerformance:
             ).json()
             if status["status"] in ["completed", "failed"]:
                 break
-            time.sleep(0.5)
+            
         
         processing_time = time.time() - start_time
         
@@ -258,7 +258,7 @@ class TestPerformance:
             
             if status["status"] in ["completed", "failed"]:
                 break
-            time.sleep(0.5)
+            
         
         # Check memory bounds
         memory_increase = peak_memory - initial_memory
@@ -287,7 +287,7 @@ class TestExports:
             json={"video_path": TEST_VIDEO}
         )
         task_id = pipeline.json()["task_id"]
-        time.sleep(10)  # Wait for completion
+          # Wait for completion
         
         response = self.session.post(
             f"{self.base_url}/api/export/fcpxml",
@@ -304,7 +304,7 @@ class TestExports:
             json={"video_path": TEST_VIDEO}
         )
         task_id = pipeline.json()["task_id"]
-        time.sleep(10)  # Wait for completion
+          # Wait for completion
         
         response = self.session.post(
             f"{self.base_url}/api/export/edl",

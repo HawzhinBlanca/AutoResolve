@@ -1,301 +1,339 @@
-# AutoResolve v3.2 - FINAL PRODUCTION BLUEPRINT
+AutoResolve + AIDirector — Blueprint.md (v7.5, Hybrid, Apple-Grade)
 
-## Critical Protection Matrix
+Contract: This document is the single source of truth. Shipping is blocked unless all gates and proof artifacts pass. Any change to protected structure requires a VERSION bump, manifest update, and green CI.
 
-```
-/Users/hawzhin/AutoResolve/
-├── [PROTECTED] Blueprint.md
-├── [PROTECTED] README.md
-├── [PROTECTED] CLAUDE.md
-├── [PROTECTED] .gitignore
+⸻
+
+0) Scope & Goals
+	•	Product: AutoResolve (macOS app) with AIDirector (smart editing assistant).
+	•	Architecture: Swift-only app (UI + core). Optional localhost Python backend (autorez) for analysis/ASR. No subprocesses spawned by the app.
+	•	User: Single-user, personal pro tool. Privacy first, offline works.
+
+⸻
+
+1) Non-Negotiables
+	•	Sandboxed + Hardened Runtime + Privacy Manifest + Notarized.
+	•	Warnings = Errors.
+	•	Loopback-only networking (if enabled). No outbound hosts.
+	•	Bloat-Guard (fixed file counts). Event-sourced timeline with snapshot-safe compaction.
+	•	Proof artifacts (5):
+perf_report.json, round_trip_proof.json, backend_health.json, diff.json, notarization.log.
+
+⸻
+
+2) Protected Repository Manifest (counts locked)
+
+Any deviation fails CI unless manifest & VERSION updated in same PR with green proofs.
+
+AutoResolve/ (ROOT)
+├─ Package.swift                                  [PROTECTED]
+├─ Makefile                                       [PROTECTED]
+├─ VERSION                                        [PROTECTED]
+├─ .gitignore
 │
-├── AutoResolveUI/                    # Swift Package - Desktop-Class Video Editor
-│   ├── [PROTECTED] Package.swift
-│   └── Sources/
-│       └── AutoResolveUI/           # Production-Grade SwiftUI + Metal Architecture
-│           ├── [PROTECTED] main.swift
-│           ├── App/
-│           │   ├── AutoResolveApp.swift     # Main app with Resolve-style layout
-│           │   ├── AppState.swift           # Central state management
-│           │   └── Theme.swift              # UITheme design system (DaVinci-style)
-│           ├── Core/
-│           │   ├── Timebase.swift           # Frame-accurate SMPTE timecode
-│           │   ├── Transport.swift          # AV-synced playback transport
-│           │   ├── BackendClient.swift      # Type-safe API contracts
-│           │   └── MenuBarCommands.swift    # macOS menu integration
-│           ├── Timeline/
-│           │   ├── TimelinePage.swift       # Main timeline view
-│           │   ├── TimelineRenderer.swift   # Metal-accelerated virtualized rendering
-│           │   ├── TimelineModel.swift      # Timeline data model
-│           │   └── TimelineInteractions.swift # JKL editing, snapping
-│           ├── Views/
-│           │   ├── ShellView.swift          # Page-based shell (Cut/Edit/Deliver)
-│           │   ├── ViewerDock.swift         # Dual source/record viewers
-│           │   ├── InspectorView.swift      # Right-panel inspector
-│           │   ├── StatusBar.swift          # Bottom status with timecode
-│           │   └── ToolbarView.swift        # Top toolbar with AI toggles
-│           ├── Backend/
-│           │   ├── BackendTypes.swift       # API response types
-│           │   ├── ConnectionManager.swift  # WebSocket connectivity
-│           │   └── TimelineBackendBridge.swift # Timeline <-> API sync
-│           └── Export/
-│               └── ProfessionalExporter.swift # FCPXML/EDL export
+├─ AutoResolveCore/                               [PROTECTED FOLDER]
+│  ├─ Package.swift                               [PROTECTED]
+│  └─ Sources/AutoResolveCore/  (6 files)         [COUNT=6]
+│     ├─ Timebase.swift
+│     ├─ Commands.swift
+│     ├─ Events.swift
+│     ├─ Timeline.swift
+│     ├─ ProjectManager.swift
+│     └─ Errors.swift
 │
-└── autorez/
-    ├── [PROTECTED] requirements.txt
-    ├── [PROTECTED] Makefile
-    ├── [PROTECTED] autoresolve_cli.py
-    ├── [PROTECTED] backend_service_final.py
-    │
-    ├── conf/
-    │   ├── [PROTECTED] embeddings.ini
-    │   ├── [PROTECTED] director.ini
-    │   └── [PROTECTED] ops.ini
-    │
-    ├── datasets/
-    │   └── broll_pilot/
-    │       └── [PROTECTED] manifest.json
-    │
-    ├── assets/
-    │   └── [PROTECTED] test_30min.mp4
-    │
-    └── src/
-        ├── embedders/
-        │   ├── [PROTECTED] vjepa_embedder.py
-        │   └── [PROTECTED] clip_embedder.py
-        ├── ops/
-        │   ├── [PROTECTED] transcribe.py
-        │   ├── [PROTECTED] silence.py      # NumPy-only RMS
-        │   ├── [PROTECTED] shortsify.py
-        │   ├── [PROTECTED] resolve_api.py
-        │   ├── [PROTECTED] edl.py
-        │   ├── [PROTECTED] media.py
-        │   └── [PROTECTED] openrouter.py   # In ops/, not embedders/
-        ├── director/
-        │   └── [PROTECTED] *.py
-        ├── broll/
-        │   └── [PROTECTED] *.py
-        ├── eval/
-        │   ├── [PROTECTED] ablate_vjepa_vs_clip.py
-        │   └── [PROTECTED] gates.py        # With CLI support
-        └── utils/
-            └── [PROTECTED] *.py
-```
+├─ AutoResolveUI/                                 [PROTECTED FOLDER]
+│  ├─ AutoResolveUI.xcodeproj/                    [PROTECTED]
+│  ├─ Package.swift                               [PROTECTED]
+│  ├─ Info.plist                                  [PROTECTED]
+│  ├─ Entitlements.plist                          [PROTECTED]
+│  ├─ PrivacyInfo.xcprivacy                       [PROTECTED]
+│  ├─ Resources/
+│  │  ├─ Assets.xcassets/
+│  │  └─ Shaders.metal                            [PROTECTED]
+│  └─ Sources/  (31 swift files)                  [COUNT=31]
+│     ├─ App/ (4)           AutoResolveApp.swift, AppState.swift, ProjectManager.swift, CommandProcessor.swift
+│     ├─ Timeline/ (6)      TimelineEngine.swift, MetalRenderer.swift, HitTesting.swift, SnappingEngine.swift, DrawList.swift, TimelineStyles.swift
+│     ├─ Playback/ (3)      AsyncDecoder.swift, FrameCache.swift, AudioEngine.swift
+│     ├─ Caches/ (2)        WaveformCache.swift, ThumbnailCache.swift
+│     ├─ Tools/ (4)         SelectTool.swift, BladeTool.swift, TrimTool.swift, ToolContext.swift
+│     ├─ Overlays/ (3)      SilenceOverlay.swift, BeatsOverlay.swift, SuggestionsOverlay.swift
+│     ├─ Export/ (2)        EDLExporter.swift, FCPXMLExporter.swift
+│     ├─ Metrics/ (2)       LatencyTracker.swift, PerformanceHUD.swift
+│     ├─ Networking/ (3)    BackendClient.swift, NetworkPolicy.swift, HealthCheck.swift
+│     └─ Analysis/ (2)      ColorPipeline.swift, LoudnessMeter.swift
+│
+├─ AIDirector/                                    [PROTECTED FOLDER]
+│  ├─ Package.swift                               [PROTECTED]
+│  ├─ Resources/ (optional) whisper-tiny.en.mlmodelc
+│  └─ Sources/AIDirector/  (6 files)              [COUNT=6]
+│     ├─ Director.swift
+│     ├─ EventStore.swift
+│     ├─ Understanding.swift
+│     ├─ Planner.swift
+│     ├─ Gates.swift
+│     └─ Learning.swift
+│
+├─ Tests/                                         [PROTECTED FOLDER]
+│  ├─ AutoResolveUITests/ (6 files)               [COUNT=6]
+│  │  ├─ TimebaseTests.swift
+│  │  ├─ SnappingTests.swift
+│  │  ├─ RoundTripTests.swift
+│  │  ├─ PerfTests.swift
+│  │  ├─ HybridPathTests.swift
+│  │  └─ Fixtures.swift
+│  └─ AIDirectorTests/ (5 files)                  [COUNT=5]
+│     ├─ SilenceTests.swift
+│     ├─ HistogramTests.swift
+│     ├─ PlannerTests.swift
+│     ├─ GatesTests.swift
+│     └─ EventReplayTests.swift
+│
+├─ CI/                                            [PROTECTED FOLDER]
+│  ├─ build.yml
+│  ├─ test.yml
+│  ├─ perf.yml
+│  ├─ release.yml
+│  └─ manifest_check.sh                           [PROTECTED]
+│
+└─ Artifacts/  (generated by CI)
 
-## Fixed: src/eval/gates.py (Complete with CLI)
 
-```python
-OPS = {
-    "gte": lambda a,b: a >= b,
-    "lte": lambda a,b: a <= b,
+⸻
+
+3) Architecture
+	•	App: Swift, single process, MTKView timeline, event-sourced edits, AIDirector planner/gates.
+	•	Backend (optional): Python autorez on localhost:8000 (run by user/dev/ops).
+Endpoints (JSON):
+/health, /analyze/silence, /analyze/scenes, /asr, /plan, /export/edl, /version.
+	•	Modes:
+HYBRID_PREFERRED (default) → use backend, fallback to local on timeout/5xx.
+OFFLINE_FORCE → local only.
+LOCAL_ONLY → local only (network entitlement may be present for single binary).
+	•	No process spawning from app; never launches backend.
+
+⸻
+
+4) Security & Privacy
+
+Entitlements.plist
+
+<dict>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
+  <key>com.apple.security.files.user-selected.read-write</key><true/>
+  <key>com.apple.security.device.audio-input</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+</dict>
+
+Info.plist
+
+<key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+<key>NSMicrophoneUsageDescription</key><string>Voiceover recording.</string>
+
+NetworkPolicy.swift
+
+enum NetworkPolicy {
+  static func validate(_ url: URL) -> Bool {
+    ["localhost","127.0.0.1","::1"].contains(url.host)
+  }
 }
 
-PERFORMANCE_GATES = {
-    "processing_speed_x":    ("gte", 30,   "pipeline speed (× realtime)"),
-    "peak_rss_gb":           ("lte", 16.0, "peak RAM during embeddings"),
-    "ui_memory_mb":          ("lte", 200,  "UI memory ceiling"),
-    "silence_sec_per_min":   ("lte", 0.5,  "silence detector runtime"),
-    "transcription_rtf":     ("lte", 1.5,  "transcribe real-time factor"),
-    "vjepa_sec_per_min":     ("lte", 5.0,  "V-JEPA time per video minute"),
-    "api_sec_per_min":       ("lte", 3.0,  "OpenRouter time per video minute"),
-    "api_cost_per_min":      ("lte", 0.05, "OpenRouter cost per minute"),
-    "export_time_s":         ("lte", 2.0,  "EDL export time (s)"),
+CI fails if:
+	•	Any URL host ≠ loopback.
+	•	App listens on any port (lsof).
+
+⸻
+
+5) Performance Budgets (Ship Gates)
+	•	FPS (1080p) p95 ≥ 60
+	•	Scrub latency p95 ≤ 16 ms
+	•	Tool latency p95 ≤ 8 ms
+	•	Memory typical ≤ 500 MB, peak ≤ 1.5 GB (30-min)
+	•	Apply latency p95 ≤ 200 ms
+
+Adaptive rendering: EMA over frame time → degrade overlays → waveform detail → drop to 30fps last.
+
+⸻
+
+6) Core Model (Determinism)
+	•	Timebase: 1000 fps integer Tick.
+	•	Commands: blade, trim, delete, snapToggle, undo, redo.
+	•	Events: canonical, append-only; SQLite WAL store.
+	•	Snapshots: every 5000 events & on clean exit.
+	•	Compaction (snapshot-safe):
+
+WITH s AS (SELECT COALESCE(MAX(version),0) v FROM snapshots)
+DELETE FROM events WHERE seq <= (SELECT v FROM s)
+                    AND ts < strftime('%s','now','-90 day');
+
+diff.json (CI): session events + stable hash of final timeline graph.
+
+⸻
+
+7) Media Pipeline
+	•	AsyncDecoder: AVAssetReader NV12; alwaysCopiesSampleData=false; ring buffer=90; thread-safe; cleans on .completed/.failed/.cancelled.
+	•	FrameCache: bounded LRU; no main-thread I/O.
+	•	Thumbnails: AVAssetImageGenerator (appliesPreferredTrackTransform=true, zero tolerances), URL-keyed cache.
+	•	Waveforms: vDSP RMS + windowed peak (downsampleFactor=64), tiles keyed by (assetURL, zoom, position).
+
+⸻
+
+8) Timeline Engine
+	•	MTKView + MetalRenderer: triple-buffer vertex data; passes: tracks, waveforms, overlays, playhead. Region invalidation, p95 budgets enforced.
+	•	HitTesting: quad-tree (clip rects, edges, markers).
+	•	Snapping: 6 px radius; snap to clip edges, markers, playhead, silence bounds.
+	•	Tools: Select (multi/marquee), Blade (through-edit), Trim (ripple/roll/slip/slide), Delete+gap close.
+Tools → Commands → Events → Projection.
+
+⸻
+
+9) AIDirector
+
+Understanding (local path):
+	•	Silence: 20 ms window / 10 ms hop; < −40 dBFS for ≥ 300 ms; merge gaps < 120 ms; trim ±(80–120 ms).
+	•	Scenes (histogram cuts): 1 fps frames; 32-bin/channel; cut at L1 Δ ≥ 0.25.
+
+ASR:
+	•	Prefer backend /asr.
+	•	If CoreML tiny.en exists → enable MidWord gate; else disable (log AID-ASR-OFF).
+
+Planner (Greedy + PQ):
+	•	Features: [silence_frac, cut_density, avg_shot_len, asr_conf, revert_rate].
+	•	Weights clamped weekly by ±10% from keep/reject rates.
+
+Gates:
+	•	MinShot ≥ 0.8 s
+	•	RenderSanity: no black at transition (luma threshold)
+	•	MidWord: only if ASR present
+	•	AudioPop: step > 6 dB/10 ms → insert 80 ms crossfade
+
+Overlays: silence zones, scene boundaries, suggested cuts + confidence.
+
+⸻
+
+10) Export & Round-Trip
+	•	EDL (CMX3600) + FCPXML exporters.
+	•	EDLImporter: cuts + dissolves + notes; fallback to OTIO on parse error.
+	•	RoundTripTests: Import→Export→Import; normalize reel/timecode; structural and hashStable() equality → round_trip_proof.json.
+
+⸻
+
+11) Backend Contract (loopback-only)
+
+Base: http://localhost:8000
+	•	GET /health → { ok: true, ver: "x.y.z" } (≤ 500 ms)
+	•	POST /analyze/silence { path } → { ranges:[{ s:sec, e:sec }] }
+	•	POST /analyze/scenes { path, fps? } → { cuts:[sec] }
+	•	POST /asr { path, lang } → { words:[{ t0,t1,conf,text }] }
+	•	POST /plan { goal, context } → { edits:[…], proof:{ features, weights } }
+	•	POST /export/edl { timeline } → { edl_path }
+	•	GET /version → { backend:"autorez", ver:"…" }
+
+Client (BackendClient.swift): validates loopback host; 10 s connect / 15 s req; 1 retry (idempotent); fallback to local on error/timeout; log AID-NET-FALLBACK.
+App never spawns backend (CI greps).
+
+⸻
+
+12) CI/CD (arm64 runners)
+
+Pipelines: build.yml, test.yml, perf.yml, release.yml
+	•	Build: xcodebuild (warnings→errors).
+	•	Tests (unit + perf): produce 5 artifacts.
+	•	Hybrid tests: start backend in venv (CI only), then kill for offline path.
+	•	Policy checks: no subprocess, no listeners, loopback-only URLs.
+	•	Release: codesign (hardened), notarytool --wait, stapler staple → notarization.log.
+
+⸻
+
+13) Proof Artifacts (must exist, not placeholder)
+	1.	perf_report.json — p95 FPS/latency/memory + run metadata.
+	2.	round_trip_proof.json — equality report with clip counts/hash.
+	3.	backend_health.json — /health OK + endpoint timings.
+	4.	diff.json — command/event audit & final graph hash.
+	5.	notarization.log — notarization success log.
+
+Missing/invalid → fail CI.
+
+⸻
+
+14) Phased Build & Exit Criteria (20 weeks solo)
+	•	Phase 0 (Days 1–2): repo/CI skeleton; artifacts wiring → Exit: CI green, 5 artifacts real.
+	•	Phase 1 (Weeks 1–3): Timebase/Commands/Events/Store → Exit: deterministic replay (100 seeds), diff.json sane.
+	•	Phase 2 (Weeks 4–6): MTKView/Metal/AsyncDecoder/FrameCache → Exit: p95 FPS ≥ 60; scrub ≤ 16 ms; mem ≤ 500 MB.
+	•	Phase 3 (Weeks 7–9): Waveforms/Thumbnails/Hit-testing/Snapping → Exit: snap tests ≥ 99%; p95 tool ≤ 8 ms.
+	•	Phase 4 (Weeks 10–12): Tools + Undo/Redo → Exit: invariants pass; fuzz 1k ops; TestFlight build.
+	•	Phase 5 (Weeks 13–15): Hybrid backend + offline fallback → Exit: backend health OK; offline path OK; no listeners.
+	•	Phase 6 (Weeks 16–17): Overlays/Planner/Gates/Learning → Exit: keep-rate ≥ 70% internal; gates 100% on fixtures.
+	•	Phase 7 (Week 18): Export + Round-Trip → Exit: equality holds; round_trip_proof.json.
+	•	Phase 8 (Weeks 19–20): Perf hardening + Notarize → Exit: perf gates green; notarization.log success.
+
+Do not advance with red gates.
+
+⸻
+
+15) Minimal Critical Snippets
+
+Tick
+
+public struct Tick: Comparable, Hashable {
+  public let value: Int64
+  public init(_ v:Int64){ value=v }
+  public static func from(seconds:TimeInterval)->Tick { Tick(Int64(seconds*1000)) }
+  public var seconds: TimeInterval { Double(value)/1000.0 }
+  public static func <(l:Tick,r:Tick)->Bool { l.value<r.value }
 }
 
-def verify_gates(metrics: dict):
-    failures = []
-    for name, (op, thr, desc) in PERFORMANCE_GATES.items():
-        val = metrics.get(name)
-        if val is None:
-            failures.append(f"{name} missing")
-            continue
-        if not OPS[op](val, thr):
-            failures.append(f"{name}({val}) !{op} {thr}  ← {desc}")
-    if failures:
-        raise ValueError("Gates failed: " + "; ".join(failures))
-    return True
+Network Policy
 
-if __name__ == "__main__":
-    import argparse, json, sys
-    p = argparse.ArgumentParser()
-    p.add_argument("--verify", action="store_true", help="Verify gates")
-    p.add_argument("--metrics", type=str, default="artifacts/metrics.json")
-    args = p.parse_args()
-
-    if args.verify:
-        try:
-            with open(args.metrics, "r") as f:
-                metrics = json.load(f)
-        except FileNotFoundError:
-            # Default metrics for testing
-            metrics = {
-                "processing_speed_x": 51.0,
-                "peak_rss_gb": 3.2,
-                "ui_memory_mb": 140.0,
-                "silence_sec_per_min": 0.18,
-                "transcription_rtf": 0.90,
-                "vjepa_sec_per_min": 4.6,
-                "api_sec_per_min": 0.0,
-                "api_cost_per_min": 0.0,
-                "export_time_s": 0.3,
-            }
-        verify_gates(metrics)
-        print("Gates: PASS")
-```
-
-## Backend REST Endpoints (Final)
-
-The backend exposes the following production endpoints:
-
-- GET /health
-- POST /api/transcribe
-- POST /api/silence
-- POST /api/export/edl
-- POST /api/process
-
-Minimal EDL export route for self-contained spec:
-
-```python
-from fastapi import Depends, HTTPException
-
-@app.post("/api/export/edl")
-async def export_edl(task_id: str, _: None = Depends(_require_authorized)):
-    export_dir = _ensure_dir("EXPORT_DIR", "exports")
-    edl_path = str(export_dir / f"{task_id}.edl")
-    if task_id not in state.tasks:
-        raise HTTPException(status_code=404, detail="Task not found")
-    task = state.tasks[task_id]
-    if task["status"] != "completed":
-        raise HTTPException(status_code=400, detail="Task not completed")
-    timeline = task["result"].get("timeline_data", [])
-    with open(edl_path, "w") as f:
-        f.write("TITLE: AutoResolve Timeline\n\n")
-        for i, clip in enumerate(timeline, 1):
-            start = clip.get("start", 0)
-            end = clip.get("end", start + clip.get("duration", 0))
-            f.write(f"{i:03d}  AX       V     C        00:00:00:00 00:00:00:00 00:00:{int(start):02d}:00 00:00:{int(end):02d}:00\n")
-    return {"status": "exported", "format": "edl", "path": edl_path}
-```
-
-## requirements.txt (NumPy-only, no LibROSA)
-
-```
-torch
-transformers
-open-clip-torch
-pillow
-av
-psutil
-numpy
-faster-whisper
-ffmpeg-python
-fastapi
-uvicorn[standard]
-pydantic
-openai
-tiktoken
-```
-
-## Production Deployment Script
-
-```bash
-#!/bin/bash
-# deploy_final.sh
-
-echo "AutoResolve v3.2 Final Deployment"
-
-# 1. Structure check
-test -f autorez/backend_service_final.py || exit 1
-test -f autorez/src/eval/gates.py || exit 1
-test -f autorez/datasets/broll_pilot/manifest.json || exit 1
-
-# 2. Dependency check
-cd autorez
-python -c "import torch, fastapi, numpy" || exit 1
-
-# 3. Verify no LibROSA dependency (NumPy-only)
-! grep -q "import librosa" src/ops/silence.py || echo "WARNING: LibROSA found but not in requirements"
-
-# 4. Gates verification
-make verify-gates || exit 1
-
-# 5. Backend test
-uvicorn backend_service_final:app --port 8000 &
-PID=$!
-sleep 2
-curl -s http://localhost:8000/health | grep healthy || exit 1
-kill $PID
-
-# 6. Tag release
-git add -A
-git commit -m "AutoResolve v3.2: production final"
-git tag v3.2.0
-
-echo "✓ Deployment ready - v3.2.0"
-```
-
-## Guaranteed Performance
-
-```yaml
-Metrics:
-  processing_speed: 51x realtime
-  memory_peak: 3.2GB (V-JEPA), 892MB (CLIP)
-  silence_detection: 0.18s/min
-  transcription: 0.9x realtime
-  edl_export: 0.3s
-  
-Gates: ALL PASS
-```
-
-## Swift UI Architecture - Production Implementation
-
-### M1→M2 Milestone: Desktop-Class Video Editor
-The AutoResolveUI Swift package implements a professional-grade video editing interface matching DaVinci Resolve quality standards.
-
-**Core Architecture Stack:**
-- **SwiftUI + Metal + AVFoundation** - Native performance
-- **MVVM with Centralized State** - AppState manages global timeline/backend state  
-- **Frame-Accurate Timebase** - SMPTE timecode with sub-frame precision
-- **Metal Timeline Renderer** - Virtualized rendering for massive projects
-- **Type-Safe Backend Integration** - Codable contracts with WebSocket real-time
-
-**Key Implementation Details:**
-```swift
-// Frame-accurate timebase with SMPTE timecode
-public struct Timebase {
-    let fps: Double = 30.0
-    let preferredTimescale: CMTimeScale = 3000
-    
-    func timecodeFromTime(_ time: CMTime) -> String
-    func snapToFrame(_ time: CMTime) -> CMTime
+enum NetworkPolicy {
+  static func validate(_ url: URL) -> Bool {
+    ["localhost","127.0.0.1","::1"].contains(url.host)
+  }
 }
 
-// Metal timeline renderer with virtualization
-public struct TimelineRenderer: NSViewRepresentable {
-    private func calculateVisibleClips() -> [(UITimelineTrack, [SimpleTimelineClip])]
-    private func renderClip(_ clip: SimpleTimelineClip, encoder: MTLRenderCommandEncoder)
-}
+Compaction SQL (snapshot-safe)
 
-// Type-safe API contracts
-public struct BackendClient: ObservableObject {
-    func detectSilence(videoPath: String) async throws -> SilenceDetectionResult
-    func transcribe(videoPath: String) async throws -> TranscriptionResult
-}
-```
+WITH s AS (SELECT COALESCE(MAX(version),0) v FROM snapshots)
+DELETE FROM events WHERE seq <= (SELECT v FROM s)
+                    AND ts < strftime('%s','now','-90 day');
 
-**Design System (UITheme):**
-- DaVinci Resolve-inspired dark theme
-- Professional color palette with accessibility
-- Consistent typography and spacing tokens
-- Animation system with spring physics
+AsyncDecoder essentials
+	•	AVAssetReader NV12
+	•	alwaysCopiesSampleData=false
+	•	Ring buffer = 90
+	•	Cleanup on all terminal states
 
-**Production Features Implemented:**
-✅ AV-synced playhead with JKL transport controls  
-✅ Frame-accurate timeline snapping and editing  
-✅ Metal-accelerated rendering with clip virtualization  
-✅ Dual source/record viewers matching professional workflow  
-✅ AI-powered annotations (silence, transcription, story beats, B-roll)  
-✅ Professional export (FCPXML/EDL) with DaVinci Resolve integration  
-✅ macOS-native experience with menu bar integration  
+⸻
 
-This is the complete, production-ready blueprint with all fixes applied. Every file is protected, all dependencies are explicit (NumPy-only for silence), and the gates module is fully runnable.
+16) Error Codes (user-visible)
+	•	AR-E001 Import failure (unsupported/DRM).
+	•	AR-E010 Backend unreachable (loopback only).
+	•	AR-E020 ASR unavailable (MidWord gate disabled).
+	•	AR-E030 Export failure (EDL/FCPXML).
+	•	AR-E040 Notarization required (CI only).
+
+All mapped to actionable UI guidance.
+
+⸻
+
+17) Acceptance Checklist (Definition of Done)
+	•	✅ 5 artifacts present & green.
+	•	✅ Perf gates p95 met; memory caps respected.
+	•	✅ Hybrid and offline paths functional.
+	•	✅ No app listeners; ATS loopback-only; sandbox verified.
+	•	✅ Round-trip proof equality.
+	•	✅ Bloat-Guard manifest unchanged or updated with VERSION bump.
+	•	✅ App notarized & stapled.
+
+⸻
+
+18) Post-1.0 (optional)
+	•	CoreML Whisper tiny.en (guarded, off by default) to re-enable MidWord gate offline.
+	•	4K/60 tuning (perf_report_4k.json, non-gating initially).
+	•	Advanced color/HDR and loudness audits as real needs surface.
+
+⸻
+
+Reality Clause
+
+This blueprint is “100% working” only when its gates and artifacts pass. If a phase reveals foundational issues, stop and fix the foundation—no hacks. The shortest path to a professional app is the one that ships and measures.

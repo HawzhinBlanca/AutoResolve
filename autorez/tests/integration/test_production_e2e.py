@@ -91,7 +91,7 @@ class ProductionE2ETest:
             if response.status_code == 429:
                 rate_limited_count += 1
             
-            time.sleep(0.1)
+            
         
         assert rate_limited_count >= 3, f"Expected rate limiting, got {rate_limited_count} blocks"
         print(f"  ✅ Rate limiting active ({rate_limited_count} blocks)")

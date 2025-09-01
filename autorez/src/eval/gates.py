@@ -22,41 +22,53 @@ PERFORMANCE_GATES = {
 }
 
 def verify_gates(metrics: dict):
+    import math
     failures = []
     for name, (op, thr, desc) in PERFORMANCE_GATES.items():
         val = metrics.get(name)
         if val is None:
             failures.append(f"{name} missing")
             continue
-        if not OPS[op](val, thr):
+        # Type and NaN validation
+        if not isinstance(val, (int, float)) or (isinstance(val, float) and math.isnan(val)):
+            failures.append(f"{name} invalid value: {val}")
+            continue
+        if op not in OPS:
+            failures.append(f"unsupported op {op} for {name}")
+            continue
+        if not OPS[op](float(val), float(thr)):
             failures.append(f"{name}({val}) !{op} {thr}  ← {desc}")
     if failures:
         raise ValueError("Gates failed: " + "; ".join(failures))
     return True
 
 if __name__ == "__main__":
-    import argparse, json, sys
+    import argparse, json, sys, os
     p = argparse.ArgumentParser()
     p.add_argument("--verify", action="store_true", help="Verify gates")
-    p.add_argument("--metrics", type=str, default="artifacts/metrics.json")
+    p.add_argument("--metrics", type=str, default=os.getenv("METRICS_PATH", "autoresz/artifacts/metrics.jsonl"))
     args = p.parse_args()
 
     if args.verify:
+        # Load metrics from JSON or JSONL (use last record)
         try:
             with open(args.metrics, "r") as f:
-                metrics = json.load(f)
+                if args.metrics.endswith(".jsonl"):
+                    last = None
+                    for line in f:
+                        if line.strip():
+                            last = line
+                    if not last:
+                        raise ValueError("Empty metrics file")
+                    metrics = json.loads(last)
+                else:
+                    metrics = json.load(f)
         except FileNotFoundError:
-            # Default metrics for testing
-            metrics = {
-                "processing_speed_x": 51.0,
-                "peak_rss_gb": 3.2,
-                "ui_memory_mb": 140.0,
-                "silence_sec_per_min": 0.18,
-                "transcription_rtf": 0.90,
-                "vjepa_sec_per_min": 4.6,
-                "api_sec_per_min": 0.0,
-                "api_cost_per_min": 0.0,
-                "export_time_s": 0.3,
-            }
+            print(f"Metrics file not found: {args.metrics}", file=sys.stderr)
+            sys.exit(2)
+        except json.JSONDecodeError as e:
+            print(f"Invalid metrics JSON: {e}", file=sys.stderr)
+            sys.exit(3)
+
         verify_gates(metrics)
         print("Gates: PASS")

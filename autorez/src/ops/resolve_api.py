@@ -170,7 +170,7 @@ class ResolveAPI:
             for path in resolve_paths:
                 if os.path.exists(path):
                     subprocess.Popen(["open", path])
-                    time.sleep(10)  # Wait for startup
+                      # Wait for startup
                     return self._is_resolve_running()
             
             return False

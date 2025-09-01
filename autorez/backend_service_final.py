@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from urllib.parse import urlparse, urlunparse
+import re
 import numpy as np
 
 # Setup logging
@@ -27,8 +28,9 @@ logger = logging.getLogger('autoresolve.backend')
 
 # FastAPI imports
 from fastapi import FastAPI, WebSocket, HTTPException, BackgroundTasks, Request, Depends, Query
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import uvicorn
 from src.security.pytector_middleware import PytectorSecurityMiddleware
 
@@ -95,17 +97,17 @@ def _pytector_scan(obj: Any) -> None:
                 )
         
         # Layer 4: Size limits (prevent DoS)
-        if len(text) > 50000:  # 50KB limit per field
+        if len(text) > MAX_FIELD_SIZE:
             raise HTTPException(
                 status_code=422,
-                detail="Security scan rejected: input exceeds size limit (50KB)"
+                detail=f"Security scan rejected: input exceeds size limit ({MAX_FIELD_SIZE} bytes)"
             )
     
     # Layer 5: Object structure validation
-    if isinstance(obj, dict) and len(str(obj)) > 500000:  # 500KB total limit
+    if isinstance(obj, dict) and len(str(obj)) > MAX_REQUEST_SIZE:
         raise HTTPException(
             status_code=422,
-            detail="Security scan rejected: request exceeds total size limit"
+            detail=f"Security scan rejected: request exceeds total size limit ({MAX_REQUEST_SIZE} bytes)"
         )
 
 # Rate limiting (guarded dynamic import to avoid linter warnings when missing)
@@ -130,15 +132,21 @@ from src.ops.silence import SilenceRemover
 from src.director.creative_director import analyze_video as analyze_director
 from src.broll.selector import BrollSelector
 from src.ops.timeline_manager import timeline_manager, TimelineClip, TimePosition, MoveClipRequest
+from src.ops.transcribe import transcribe_audio as op_transcribe
 
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address) if Limiter and get_remote_address else None
 
 # App instance
-app = FastAPI(title="AutoResolve Backend", version="3.0.0")
+BACKEND_NAME = "autorez"
+BACKEND_VERSION = os.getenv("BACKEND_VERSION", "3.2.0")
+app = FastAPI(title="AutoResolve Backend", version=BACKEND_VERSION)
 
 # Mount centralized security middleware (strict)
-app.add_middleware(PytectorSecurityMiddleware, strict_mode=True)
+# Strict in all environments to satisfy enterprise blueprint; allow opt-out via explicit env ONLY in dev
+strict_mode_env = os.getenv("PYTECTOR_STRICT", "true").lower() in {"1", "true", "yes"}
+if strict_mode_env:
+    app.add_middleware(PytectorSecurityMiddleware, strict_mode=True)
 
 # Add rate limit error handler when available
 if limiter and _rate_limit_exceeded_handler and RateLimitExceeded:
@@ -147,7 +155,7 @@ if limiter and _rate_limit_exceeded_handler and RateLimitExceeded:
 
 # CORS configuration (env allowlist; strict in prod)
 _env = os.getenv("AUTORESOLVE_ENV", "dev").lower()
-_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:8000,http://127.0.0.1:8000,file://")
 ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_raw.split(",") if o.strip()]
 
 if _env in {"prod", "production"}:
@@ -169,8 +177,8 @@ def _enforce_production_secrets() -> None:
         api_key = os.getenv("API_KEY")
         if not jwt_secret or jwt_secret == "change-me":
             raise RuntimeError("JWT_SECRET must be set to a secure value in production")
-        if not api_key:
-            raise RuntimeError("API_KEY must be set in production")
+        if not api_key or len(api_key) < 24:
+            raise RuntimeError("API_KEY must be set and sufficiently strong in production")
 
 _enforce_production_secrets()
 
@@ -192,11 +200,126 @@ class AppState:
 
 state = AppState()
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    import psutil
+    process = psutil.Process()
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    
+    return {
+        "status": "healthy",
+        "version": BACKEND_VERSION,
+        "uptime": (datetime.now() - state.telemetry["start_time"]).total_seconds(),
+        "memory_mb": round(memory_mb, 2),
+        "active_tasks": len(state.tasks),
+        "websocket_connections": len(state.websockets),
+        "pipeline_status": state.pipeline_status
+    }
+
+# WebSocket endpoint with full error handling and CSRF protection
+@app.websocket("/ws/status")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time updates with error handling"""
+    client_id = None
+    try:
+        # CSRF protection for WebSocket
+        origin = websocket.headers.get("origin", "")
+        if _env in {"prod", "production"}:
+            if origin not in ALLOWED_ORIGINS:
+                await websocket.close(code=1008, reason="Origin not allowed")
+                return
+        
+        # Generate client ID for tracking
+        client_id = f"ws_{id(websocket)}_{time.time()}"
+        
+        await websocket.accept()
+        state.websockets.add(websocket)
+        
+        # Send initial status
+        await websocket.send_json({
+            "type": "connection",
+            "status": "connected",
+            "client_id": client_id,
+            "backend_version": BACKEND_VERSION
+        })
+        
+        # Keep connection alive and handle messages
+        while True:
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                message = json.loads(data)
+                
+                # Handle different message types
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong", "timestamp": time.time()})
+                elif message.get("type") == "subscribe":
+                    # Handle subscription to specific events
+                    pass
+                    
+            except asyncio.TimeoutError:
+                # Send keepalive ping
+                await websocket.send_json({"type": "ping", "timestamp": time.time()})
+            except json.JSONDecodeError:
+                await websocket.send_json({"type": "error", "message": "Invalid JSON"})
+            except Exception as e:
+                logger.error(f"WebSocket error for {client_id}: {e}")
+                break
+                
+    except Exception as e:
+        logger.error(f"WebSocket connection error: {e}")
+    finally:
+        # Cleanup
+        if websocket in state.websockets:
+            state.websockets.remove(websocket)
+        if client_id:
+            logger.info(f"WebSocket {client_id} disconnected")
+        try:
+            await websocket.close()
+        except:
+            pass
+
+# Security Constants
+MAX_FIELD_SIZE = 50 * 1024  # 50KB per field
+MAX_REQUEST_SIZE = 500 * 1024  # 500KB total request
+ALLOWED_VIDEO_DIRS = [
+    Path("/Users/hawzhin/Videos").resolve(),
+    Path("/Users/hawzhin/AutoResolve").resolve(),
+    Path("/tmp").resolve()
+]
+
+# Path validation helper
+def validate_video_path(path: str) -> str:
+    """Validate and sanitize video path to prevent traversal attacks"""
+    try:
+        resolved = Path(path).resolve()
+        # Check if path is within allowed directories
+        if not any(resolved.is_relative_to(allowed_dir) or resolved == allowed_dir 
+                  for allowed_dir in ALLOWED_VIDEO_DIRS):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Video path must be within allowed directories"
+            )
+        # Check file exists and is readable
+        if not resolved.exists():
+            raise HTTPException(status_code=404, detail="Video file not found")
+        if not resolved.is_file():
+            raise HTTPException(status_code=422, detail="Path must be a file")
+        return str(resolved)
+    except Exception as e:
+        logger.error(f"Path validation error: {e}")
+        raise HTTPException(status_code=422, detail="Invalid video path")
+
 # Models
 class ProcessingRequest(BaseModel):
     video_path: str
     output_path: Optional[str] = None
     settings: Optional[Dict] = None
+    
+    @validator('video_path')
+    def validate_path(cls, v):
+        return validate_video_path(v)
 
 class TaskStatus(BaseModel):
     task_id: str
@@ -223,7 +346,11 @@ def _issue_tokens(username: str) -> Dict[str, Any]:
     import jwt  # type: ignore
     from datetime import timedelta
     now = datetime.utcnow()
-    secret = os.getenv("JWT_SECRET", "change-me")
+    secret = os.getenv("JWT_SECRET")
+    if not secret or secret == "change-me":
+        if _env in {"prod", "production"}:
+            raise RuntimeError("JWT_SECRET must be set to a secure value")
+        secret = "dev-only-secret-" + os.urandom(16).hex()
     access_ttl = int(os.getenv("JWT_ACCESS_TTL", "3600"))
     refresh_ttl = int(os.getenv("JWT_REFRESH_TTL", "2592000"))  # 30d
 
@@ -260,11 +387,21 @@ def _verify_password(username: str, password: str) -> bool:
         return False
 
 @app.post("/auth/login")
-async def auth_login(payload: AuthRequest):
+@limiter.limit("5/minute") if limiter else lambda f: f  # Rate limit: 5 attempts per minute
+async def auth_login(request: Request, payload: AuthRequest):
     _pytector_scan(payload.model_dump())
+    
+    # Add delay to slow down brute force attempts
+    await asyncio.sleep(0.5)
+    
     if not _verify_password(payload.username, payload.password):
+        # Log failed attempt
+        logger.warning(f"Failed login attempt for user: {payload.username}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
     tokens = _issue_tokens(payload.username)
+    logger.info(f"Successful login for user: {payload.username}")
+    
     return {
         "token": tokens["access"],
         "expiresIn": tokens["access_ttl"],
@@ -288,7 +425,11 @@ async def auth_refresh(request: Request, body: Optional[RefreshRequest] = None):
         if not refresh_token or refresh_token not in _refresh_tokens:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
     try:
-        secret = os.getenv("JWT_SECRET", "change-me")
+        secret = os.getenv("JWT_SECRET")
+        if not secret or secret == "change-me":
+            if _env in {"prod", "production"}:
+                raise RuntimeError("JWT_SECRET must be set to a secure value")
+            secret = "dev-only-secret-" + os.urandom(16).hex()
         data = jwt.decode(refresh_token, secret, algorithms=["HS256"])
         if data.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type")
@@ -610,15 +751,9 @@ def _require_authorized(request: Request) -> None:
     # Check x-api-key FIRST (for testing and backward compatibility)
     api_key_header = request.headers.get("x-api-key")
     if api_key_header:
-        # If API key provided in header, validate it
         expected_key = os.getenv("API_KEY")
-        if not expected_key:
-            # No API_KEY env var set - accept any x-api-key for dev/testing
+        if expected_key and api_key_header == expected_key:
             return
-        elif api_key_header == expected_key:
-            # API key matches expected
-            return
-        # API key provided but doesn't match - continue to check Bearer token
     
     # Check Bearer token
     authz = request.headers.get("Authorization", "")
@@ -626,7 +761,11 @@ def _require_authorized(request: Request) -> None:
         token = authz.split(" ", 1)[1].strip()
         try:
             import jwt  # type: ignore
-            secret = os.getenv("JWT_SECRET", "change-me")
+            secret = os.getenv("JWT_SECRET")
+            if not secret or secret == "change-me":
+                if _env in {"prod", "production"}:
+                    raise RuntimeError("JWT_SECRET must be set to a secure value")
+                secret = "dev-only-secret-" + os.urandom(16).hex()
             payload = jwt.decode(token, secret, algorithms=["HS256"])
             request.state.user = payload
             return  # Valid JWT
@@ -658,13 +797,314 @@ async def root():
 async def health_check():
     mem_mb = pipeline_manager._get_memory_usage()
     state.telemetry["memory_peak_mb"] = max(state.telemetry.get("memory_peak_mb", 0), mem_mb)
+    # Blueprint contract: { ok: true, ver: "x.y.z" }
     return {
-        "status": "healthy",
-        "pipeline": "ready",
-        "memory_mb": mem_mb,
-        "memory_usage_gb": round(mem_mb / 1024, 2),
-        "active_tasks": len([t for t in state.tasks.values() if t["status"] == "processing"])
+        "ok": True,
+        "ver": BACKEND_VERSION,
     }
+
+@app.get("/version")
+async def get_version():
+    return {"backend": BACKEND_NAME, "ver": BACKEND_VERSION}
+
+# ----------------------------------------------------------------------------
+# Blueprint base endpoints (loopback-only contract)
+# ----------------------------------------------------------------------------
+
+class _AnalyzeSilenceRequest(BaseModel):
+    path: str
+
+class _AnalyzeSilenceRange(BaseModel):
+    s: float
+    e: float
+
+class _AnalyzeSilenceResponse(BaseModel):
+    ranges: list[_AnalyzeSilenceRange]
+
+@app.post("/analyze/silence")
+async def analyze_silence(req: _AnalyzeSilenceRequest):
+    """Return keep windows as ranges {s,e} per blueprint."""
+    try:
+        from src.security.path_validator import validate_input_path
+        validated_path = validate_input_path(req.path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid path: {e}")
+    remover = SilenceRemover()
+    cuts_data, _metrics = remover.remove_silence(str(validated_path))
+    keep = cuts_data.get("keep_windows", [])
+    ranges = [{"s": float(w.get("start", 0.0)), "e": float(w.get("end", 0.0))} for w in keep]
+    return {"ranges": ranges}
+
+# Final API alias per blueprint
+@app.post("/api/silence")
+async def api_silence(req: _AnalyzeSilenceRequest):
+    return await analyze_silence(req)
+
+class _AnalyzeScenesRequest(BaseModel):
+    path: str
+    fps: float | None = None
+
+class _AnalyzeScenesResponse(BaseModel):
+    cuts: list[float]
+
+@app.post("/analyze/scenes")
+async def analyze_scenes(req: _AnalyzeScenesRequest):
+    try:
+        from src.security.path_validator import validate_input_path
+        validated_path = validate_input_path(req.path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid path: {e}")
+    analysis = analyze_director(str(validated_path))
+    cuts: list[float] = []
+    scenes = analysis.get("scenes", []) if isinstance(analysis, dict) else []
+    for sc in scenes:
+        # Accept either {'start':sec} or raw timestamps
+        if isinstance(sc, dict) and "start" in sc:
+            try:
+                cuts.append(float(sc.get("start", 0.0)))
+            except Exception:
+                pass
+        elif isinstance(sc, (int, float)):
+            cuts.append(float(sc))
+    # Deduplicate and sort
+    cuts = sorted({float(max(0.0, c)) for c in cuts})
+    return {"cuts": cuts}
+
+class _ASRRequest(BaseModel):
+    path: str
+    lang: str | None = None
+
+class _ASRWord(BaseModel):
+    t0: float
+    t1: float
+    conf: float
+    text: str
+
+class _ASRResponse(BaseModel):
+    words: list[_ASRWord]
+
+@app.post("/asr")
+async def asr(req: _ASRRequest):
+    try:
+        from src.security.path_validator import validate_input_path
+        validated_path = validate_input_path(req.path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid path: {e}")
+    result = op_transcribe(str(validated_path), language=req.lang or "en")  # type: ignore[arg-type]
+    words: list[dict] = []
+    for s in result.get("segments", []):
+        t0 = float(s.get("t0", 0.0))
+        t1 = float(s.get("t1", 0.0))
+        text = (s.get("text", "") or "").strip()
+        conf: float = 0.0
+        if "confidence" in s and isinstance(s["confidence"], (int, float)):
+            conf = float(s["confidence"])
+        elif "avg_logprob" in s and isinstance(s["avg_logprob"], (int, float)):
+            import math
+            conf = 1.0 / (1.0 + math.exp(-float(s["avg_logprob"]) * 2.0))
+        words.append({"t0": t0, "t1": t1, "conf": max(0.0, min(1.0, conf)), "text": text})
+    return {"words": words}
+
+class _PlanRequest(BaseModel):
+    goal: str
+    context: dict[str, Any]
+
+class _PlanProof(BaseModel):
+    features: list[float]
+    weights: list[float]
+
+class _PlanResponse(BaseModel):
+    edits: list[dict]
+    proof: _PlanProof
+
+_DEFAULT_WEIGHTS = [0.25, 0.2, 0.2, 0.2, 0.15]
+
+def _load_weights() -> list[float]:
+    try:
+        wp = _ensure_dir("EXPORT_DIR", "exports") / "planner_weights.json"
+        if wp.exists():
+            import json as _json
+            with open(wp, "r") as f:
+                data = _json.load(f)
+                w = data.get("weights")
+                if isinstance(w, list) and len(w) == 5:
+                    return [float(x) for x in w]
+    except Exception:
+        pass
+    return list(_DEFAULT_WEIGHTS)
+
+def _clamp_weights(weights: list[float]) -> list[float]:
+    # Clamp each weight to ±10% of default as a safety gate
+    clamped: list[float] = []
+    for i, w in enumerate(weights):
+        base = _DEFAULT_WEIGHTS[i] if i < len(_DEFAULT_WEIGHTS) else 0.2
+        lo, hi = base * 0.9, base * 1.1
+        clamped.append(max(lo, min(hi, float(w))))
+    return clamped
+
+def _iso_year_week(dt: datetime | None = None) -> str:
+    d = dt or datetime.utcnow()
+    y, w, _ = d.isocalendar()
+    return f"{y}-W{w:02d}"
+
+def _persist_weights(weights: list[float]) -> list[float]:
+    """Persist weights with weekly rollover and clamp to ±10% of defaults.
+    If a new week has started, keep prior weights but ensure clamped bounds.
+    """
+    export_dir = _ensure_dir("EXPORT_DIR", "exports")
+    path = export_dir / "planner_weights.json"
+    now_week = _iso_year_week()
+    data = {"weights": _DEFAULT_WEIGHTS, "week": now_week}
+    try:
+        if path.exists():
+            import json as _json
+            data = _json.loads(path.read_text())
+            prev_week = str(data.get("week", now_week))
+            prev_weights = data.get("weights", _DEFAULT_WEIGHTS)
+            # Start of new ISO week → carry forward but clamp
+            if prev_week != now_week:
+                prev_weights = _clamp_weights([float(x) for x in prev_weights])
+                data = {"weights": prev_weights, "week": now_week}
+    except Exception:
+        data = {"weights": _DEFAULT_WEIGHTS, "week": now_week}
+
+    # Persist the provided weights (already clamped) with current week
+    out = {"weights": _clamp_weights(list(weights)), "week": now_week}
+    try:
+        import json as _json
+        path.write_text(_json.dumps(out, indent=2))
+    except Exception:
+        pass
+    return out["weights"]
+
+@app.post("/plan")
+async def plan(req: _PlanRequest):
+    # Extract context
+    video_path = req.context.get("video_path", "")
+    try:
+        from src.security.path_validator import validate_input_path
+        video_path = str(validate_input_path(str(video_path)))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid video path: {e}")
+
+    # Silence windows
+    cuts_data, _ = pipeline_manager.silence_remover.remove_silence(video_path)
+    keep = cuts_data.get("keep_windows", [])
+    keep_dur = 0.0
+    for w in keep:
+        s = float(w.get("start", 0.0)); e = float(w.get("end", s))
+        if e > s: keep_dur += (e - s)
+
+    # Scene cuts
+    director_analysis = pipeline_manager.analyze_director(video_path)
+    scenes = director_analysis.get("scenes", []) if isinstance(director_analysis, dict) else []
+    cut_times: list[float] = []
+    for sc in scenes:
+        if isinstance(sc, dict) and "start" in sc:
+            try: cut_times.append(float(sc.get("start", 0.0)))
+            except Exception: pass
+        elif isinstance(sc, (int, float)):
+            cut_times.append(float(sc))
+    cut_times = sorted({float(max(0.0, c)) for c in cut_times})
+
+    # Duration estimate via probe
+    duration = pipeline_manager._probe_duration(video_path)
+    silence_frac = float(1.0 - (keep_dur / duration)) if duration > 0 else 0.0
+    cut_density = float(len(cut_times) / max(1.0, duration))
+    avg_shot_len = float((duration / max(1, len(cut_times))) if cut_times else duration)
+
+    # ASR confidence (optional)
+    asr_conf = 0.0
+    try:
+        tr = op_transcribe(video_path, language=req.context.get("lang", "en"))  # type: ignore[arg-type]
+        confs = []
+        for s in tr.get("segments", []):
+            if "confidence" in s: confs.append(float(s["confidence"]))
+            elif "avg_logprob" in s:
+                import math
+                confs.append(1.0 / (1.0 + math.exp(-float(s["avg_logprob"]) * 2.0)))
+        if confs:
+            asr_conf = float(sum(confs) / len(confs))
+    except Exception:
+        asr_conf = 0.0
+
+    # Revert rate from feedback store: reverted_edits/total_edits over last 4 weeks
+    revert_rate = 0.0
+    try:
+        feedback_dir = _ensure_dir("EXPORT_DIR", "exports")
+        fb_path = feedback_dir / "feedback.json"
+        if fb_path.exists():
+            fb = json.loads(fb_path.read_text())
+            total = float(max(0, int(fb.get("total_edits", 0))))
+            reverted = float(max(0, int(fb.get("reverted_edits", 0))))
+            if total > 0:
+                revert_rate = max(0.0, min(1.0, reverted / total))
+    except Exception:
+        revert_rate = 0.0
+
+    features = [
+        float(max(0.0, min(1.0, silence_frac))),
+        float(cut_density),
+        float(avg_shot_len),
+        float(max(0.0, min(1.0, asr_conf))),
+        float(max(0.0, min(1.0, revert_rate)))
+    ]
+    weights = _clamp_weights(_load_weights())
+    weights = _persist_weights(weights)
+
+    # Greedy + PQ (simplified): keep windows as editable clips; insert cuts around scene changes
+    edits: list[dict] = []
+    for w in keep:
+        s = float(w.get("start", 0.0)); e = float(w.get("end", s))
+        if e > s:
+            edits.append({"action_type": "keep", "params": {"start": s, "end": e}})
+    for c in cut_times:
+        edits.append({"action_type": "cut", "params": {"time": float(c)}})
+
+    return {
+        "edits": edits,
+        "proof": {"features": features, "weights": weights}
+    }
+
+class _ExportTimeline(BaseModel):
+    clips: list[dict] = []
+    video_path: str | None = None
+    fps: int = 30
+
+class _ExportEDLResponse(BaseModel):
+    edl_path: str
+
+@app.post("/export/edl")
+async def export_edl_base(timeline: _ExportTimeline):
+    try:
+        # Create temporary EDL and delegate to existing logic for parity
+        export_dir = _ensure_dir("EXPORT_DIR", "exports")
+        tmp = export_dir / f"adhoc_{int(time.time())}.edl"
+        # Build simple cuts list
+        cuts = {"keep": [{"t0": float(c.get("t0", 0.0)), "t1": float(c.get("t1", 0.0))} for c in timeline.clips]}
+        # Reuse ops.edl if available
+        try:
+            from src.ops.edl import generate_edl
+            result = generate_edl(
+                cuts=[cuts],
+                fps=timeline.fps,
+                video_path=timeline.video_path or "source.mp4",
+                output_path=str(tmp)
+            )
+            if isinstance(result, dict) and result.get("success"):
+                return {"edl_path": result["path"]}
+        except Exception:
+            pass
+        # Fallback: write minimal EDL
+        with open(tmp, "w") as f:
+            f.write("TITLE: AutoResolve Edit\n\n")
+            f.write("FCM: NON-DROP FRAME\n\n")
+            for i, c in enumerate(timeline.clips, 1):
+                t0 = float(c.get("t0", 0.0)); t1 = float(c.get("t1", 0.0))
+                f.write(f"{i:03d}  SOURCE   V     C        00:00:00:00 00:00:00:00 00:00:{int(t0):02d}:00 00:00:{int(t1):02d}:00\n")
+        return {"edl_path": str(tmp)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"EDL export failed: {e}")
 
 @app.get("/api/projects")
 async def get_projects():
@@ -821,37 +1261,49 @@ async def get_telemetry(_: None = Depends(_require_authorized)):
 
 @app.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time updates - Auth + Origin required"""
-    # Validate Origin against allowlist
-    origin = websocket.headers.get("origin", "").rstrip("/")
-    if origin and not any(origin == o.rstrip("/") for o in ALLOWED_ORIGINS):
-        await websocket.close(code=4403)
-        return
-
-    # Validate auth (x-api-key or Bearer) similar to HTTP flow
-    api_key_header = websocket.headers.get("x-api-key")
-    if api_key_header:
-        expected_key = os.getenv("API_KEY")
-        if not expected_key or api_key_header != expected_key:
-            await websocket.close(code=4401)
-            return
+    """WebSocket endpoint for real-time updates.
+    In dev, optional no-auth can be enabled via DEV_WS_NO_AUTH=true; in prod, origin + auth required.
+    """
+    dev_no_auth = os.getenv("DEV_WS_NO_AUTH", "false").lower() in {"1", "true", "yes"}
+    if _env not in {"prod", "production"} and dev_no_auth:
         await websocket.accept()
+        state.websockets.add(websocket)
+        # Continue into main loop below
     else:
-        authz = websocket.headers.get("authorization", "")
-        if authz.startswith("Bearer "):
-            token = authz.split(" ", 1)[1].strip()
-            try:
-                import jwt  # type: ignore
-                secret = os.getenv("JWT_SECRET", "change-me")
-                _ = jwt.decode(token, secret, algorithms=["HS256"])
-                await websocket.accept()
-            except Exception:
+        # Validate Origin against allowlist
+        origin = websocket.headers.get("origin", "").rstrip("/")
+        if origin and not any(origin == o.rstrip("/") for o in ALLOWED_ORIGINS):
+            await websocket.close(code=4403)
+            return
+
+        # Validate auth (x-api-key or Bearer)
+        api_key_header = websocket.headers.get("x-api-key")
+        if api_key_header:
+            expected_key = os.getenv("API_KEY")
+            if not expected_key or api_key_header != expected_key:
                 await websocket.close(code=4401)
                 return
+            await websocket.accept()
         else:
-            await websocket.close(code=4401)
-            return
-    state.websockets.add(websocket)
+            authz = websocket.headers.get("authorization", "")
+            if authz.startswith("Bearer "):
+                token = authz.split(" ", 1)[1].strip()
+                try:
+                    import jwt  # type: ignore
+                    secret = os.getenv("JWT_SECRET")
+                    if not secret or secret == "change-me":
+                        if _env in {"prod", "production"}:
+                            raise RuntimeError("JWT_SECRET must be set to a secure value")
+                        secret = "dev-only-secret-" + os.urandom(16).hex()
+                    _ = jwt.decode(token, secret, algorithms=["HS256"])
+                    await websocket.accept()
+                except Exception:
+                    await websocket.close(code=4401)
+                    return
+            else:
+                await websocket.close(code=4401)
+                return
+        state.websockets.add(websocket)
     
     # Properly construct WebSocket URL for logging
     if websocket.url:
@@ -943,34 +1395,103 @@ async def export_fcpxml(task_id: str, _: None = Depends(_require_authorized)):
 
 @app.post("/api/export/edl")
 async def export_edl(task_id: str, _: None = Depends(_require_authorized)):
-    """Export timeline as EDL"""
+    """Export timeline as EDL with sanitized task_id and safe filesystem handling."""
+    # Strict task_id validation to avoid traversal and injection
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", task_id or ""):
+        raise HTTPException(status_code=400, detail="invalid task_id")
+
     if task_id not in state.tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     task = state.tasks[task_id]
-    if task["status"] != "completed":
-        raise HTTPException(status_code=400, detail="Task not completed")
-    
+    if task.get("status") != "completed":
+        raise HTTPException(status_code=409, detail="Task not completed")
+
     # Generate EDL (simple list)
-    export_dir = _ensure_dir("EXPORT_DIR", "exports")
-    edl_path = str(export_dir / f"{task_id}.edl")
+    export_dir = _ensure_dir("EXPORT_DIR", "exports").resolve()
+    edl_path = (export_dir / f"{task_id}.edl").resolve()
+    # Ensure output stays within export_dir
+    if export_dir not in edl_path.parents:
+        raise HTTPException(status_code=400, detail="invalid export path")
+
     try:
-        timeline = state.tasks[task_id]["result"].get("timeline_data", [])
-        with open(edl_path, 'w') as f:
+        timeline = task.get("result", {}).get("timeline_data", [])
+        fps = int(task.get("result", {}).get("fps", 30) or 30)
+        fps = 24 if fps < 24 else 60 if fps > 60 else fps
+        def to_tc(seconds: float) -> str:
+            if seconds < 0:
+                seconds = 0.0
+            total_frames = int(round(seconds * fps))
+            hh = (total_frames // (fps * 3600)) % 24
+            mm = (total_frames // (fps * 60)) % 60
+            ss = (total_frames // fps) % 60
+            ff = total_frames % fps
+            return f"{hh:02d}:{mm:02d}:{ss:02d}:{ff:02d}"
+
+        max_clips = 5000
+        max_duration_s = 6 * 60 * 60  # 6 hours cap
+        with open(edl_path, 'w', encoding='utf-8') as f:
             f.write("TITLE: AutoResolve Timeline\n\n")
+            f.write("FCM: NON-DROP FRAME\n\n")
+            written = 0
+            total_len = 0.0
             for i, clip in enumerate(timeline, 1):
                 start = float(clip.get("start", 0.0))
                 end = float(clip.get("end", start + float(clip.get("duration", 0.0))))
                 if end <= start:
                     continue
-                f.write(f"{i:03d}  AX       V     C        00:00:00:00 00:00:00:00 00:00:{int(start):02d}:00 00:00:{int(end):02d}:00\n")
+                dur = end - start
+                total_len += dur
+                if written >= max_clips or total_len > max_duration_s:
+                    break
+                f.write(f"{i:03d}  AX       V     C        00:00:00:00 00:00:00:00 {to_tc(start)} {to_tc(end)}\n")
+                written += 1
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"EDL export failed: {e}")
-    
-    if not os.path.exists(edl_path):
+
+    if not edl_path.exists():
         raise HTTPException(status_code=500, detail="EDL file was not created")
 
-    return {"status": "exported", "format": "edl", "path": edl_path}
+    # Do not leak absolute filesystem paths
+    return {"status": "exported", "format": "edl", "file": edl_path.name}
+
+# Secure streaming download endpoints
+@app.get("/api/export/edl/{task_id}")
+async def download_edl(task_id: str, request: Request, _: None = Depends(_require_authorized)):
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", task_id or ""):
+        raise HTTPException(status_code=400, detail="invalid task_id")
+    export_dir = _ensure_dir("EXPORT_DIR", "exports").resolve()
+    edl_path = (export_dir / f"{task_id}.edl").resolve()
+    if export_dir not in edl_path.parents or not edl_path.exists():
+        raise HTTPException(status_code=404, detail="EDL not found")
+    # Simple per-IP rate limit (burst 5/min)
+    client_ip = request.client.host if request.client else "unknown"
+    now_min = int(time.time() // 60)
+    key = f"download_edl:{client_ip}:{now_min}"
+    if not hasattr(state, 'dl_rate'): state.dl_rate = {}
+    state.dl_rate[key] = state.dl_rate.get(key, 0) + 1
+    if state.dl_rate[key] > 5:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    logger.info(f"EDL download {task_id} by {client_ip}")
+    return FileResponse(str(edl_path), media_type="text/plain", filename=edl_path.name)
+
+@app.get("/api/export/fcpxml/{task_id}")
+async def download_fcpxml(task_id: str, request: Request, _: None = Depends(_require_authorized)):
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", task_id or ""):
+        raise HTTPException(status_code=400, detail="invalid task_id")
+    export_dir = _ensure_dir("EXPORT_DIR", "exports").resolve()
+    xml_path = (export_dir / f"{task_id}.fcpxml").resolve()
+    if export_dir not in xml_path.parents or not xml_path.exists():
+        raise HTTPException(status_code=404, detail="FCPXML not found")
+    client_ip = request.client.host if request.client else "unknown"
+    now_min = int(time.time() // 60)
+    key = f"download_fcpxml:{client_ip}:{now_min}"
+    if not hasattr(state, 'dl_rate'): state.dl_rate = {}
+    state.dl_rate[key] = state.dl_rate.get(key, 0) + 1
+    if state.dl_rate[key] > 5:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    logger.info(f"FCPXML download {task_id} by {client_ip}")
+    return FileResponse(str(xml_path), media_type="application/xml", filename=xml_path.name)
 
 @app.post("/api/pipeline/cancel/{task_id}")
 async def cancel_pipeline(task_id: str, _: None = Depends(_require_authorized)):

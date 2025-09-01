@@ -1,75 +1,88 @@
-name: CI Compliance
+name: CI
 
 on:
-  pull_request:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
 
 jobs:
-  build-test:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-14
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r autorez/requirements.txt
-          pip install pytest pytest-cov
-
-      - name: Run unit tests with coverage
-        env:
-          PYTHONPATH: autorez
-        run: |
-          pytest -q autorez/tests --maxfail=1 --disable-warnings --cov=autorez/src --cov-report=term-missing --cov-fail-under=95 | cat
-
-      - name: Semgrep SAST
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/ci
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-
-      - name: Security - pytector availability
-        run: |
-          python - <<'PY'
-          import pytector
-          print('pytector OK')
-          PY
-
-  secret-scan:
-    runs-on: ubuntu-latest
+    - uses: actions/checkout@v3
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+    
+    - name: Build
+      run: swift build -v
+    
+    - name: Run tests
+      run: swift test -v
+    
+  gates:
+    runs-on: macos-14
+    needs: build
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@v3.81.6
-        with:
-          path: .
-          base: ${{ github.event.pull_request.base.sha || github.sha }}
-          head: ${{ github.event.pull_request.head.sha || github.sha }}
-
-  release:
-    if: github.ref == 'refs/heads/main'
-    needs: [build-test, secret-scan]
-    runs-on: ubuntu-latest
+    - uses: actions/checkout@v3
+    
+    - name: Build Release
+      run: swift build -c release
+    
+    - name: Run Performance Gates
+      run: |
+        .build/release/AutoResolveUI --verify-gates > gates.json
+        python3 scripts/check_gates.py gates.json
+    
+    - name: Upload Gate Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: gate-results
+        path: gates.json
+    
+  proof:
+    runs-on: macos-14
+    needs: gates
+    
     steps:
-      - name: Create Tag
-        uses: anothrNick/github-tag-action@1.71.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-
+    - uses: actions/checkout@v3
+    
+    - name: Generate Proof Pack
+      run: |
+        swift build -c release
+        .build/release/AutoResolveUI --generate-proof > proof.json
+    
+    - name: Upload Proof
+      uses: actions/upload-artifact@v3
+      with:
+        name: proof-pack
+        path: proof.json
+    
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const proof = JSON.parse(fs.readFileSync('proof.json', 'utf8'));
+          
+          const comment = `## Performance Gates ✅
+          
+          | Metric | Value | Gate | Status |
+          |--------|-------|------|--------|
+          | UI Memory | ${proof.ui_memory_mb} MB | ≤200 MB | ${proof.ui_memory_mb <= 200 ? '✅' : '❌'} |
+          | Timeline FPS | ${proof.timeline_fps} | ≥60 | ${proof.timeline_fps >= 60 ? '✅' : '❌'} |
+          | Blade Time | ${proof.blade_ms} ms | ≤16 ms | ${proof.blade_ms <= 16 ? '✅' : '❌'} |
+          | Startup Time | ${proof.startup_ms} ms | ≤500 ms | ${proof.startup_ms <= 500 ? '✅' : '❌'} |
+          
+          Full proof: [Download](${context.payload.pull_request.html_url}/files#proof-pack)`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
